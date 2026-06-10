@@ -22,8 +22,8 @@ const links = [
   { href: "/blocks", label: "The Blocks", icon: Zap },
   { href: "/debriefs", label: "שימור ידע", icon: FileText },
   { href: "/infra", label: "פרויקטי תשתית", icon: Wrench },
-  { href: "/collaborators", label: "אנשים שהשזם לא מזהה", icon: HandshakeIcon },
   { href: "/finance", label: "פיננסים", icon: DollarSign },
+  { href: "/collaborators", label: "אנשים שהשזם לא מזהה", icon: HandshakeIcon },
   { href: "/contacts", label: "אנשי קשר", icon: Users },
 ];
 

@@ -1,6 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Plus, Trash2, Pencil, ChevronRight, ChevronLeft } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 type OKR = { id: number; text: string; progress: number };
 type Principle = { id: number; title: string; description: string };
@@ -119,12 +120,48 @@ function Sidekick({ okrs, principles }: { okrs: OKR[]; principles: Principle[] }
 export default function StrategyPage() {
   const [periodIdx, setPeriodIdx] = useState(DEFAULT_PERIOD_IDX);
   const [allData, setAllData] = useState<Record<string, PeriodData>>({});
+  const [saving, setSaving] = useState(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const period = ALL_PERIODS[periodIdx];
   const data: PeriodData = allData[period] ?? emptyPeriod();
 
-  const setData = (patch: Partial<PeriodData>) =>
-    setAllData(d => ({ ...d, [period]: { ...data, ...patch } }));
+  // Load from Supabase when period changes
+  useEffect(() => {
+    if (allData[period]) return; // already loaded
+    supabase
+      .from("strategy_periods")
+      .select("okrs, principles, focuses")
+      .eq("period", period)
+      .maybeSingle()
+      .then(({ data: row }) => {
+        if (row) {
+          setAllData(d => ({ ...d, [period]: row as PeriodData }));
+        }
+      });
+  }, [period]);
+
+  // Debounced save to Supabase
+  const saveToSupabase = useCallback((p: string, d: PeriodData) => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      setSaving(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log("Auth session:", session?.user?.email ?? "NOT LOGGED IN");
+      const { error } = await supabase.from("strategy_periods").upsert(
+        { period: p, okrs: d.okrs, principles: d.principles, focuses: d.focuses, updated_at: new Date().toISOString() },
+        { onConflict: "period" }
+      );
+      if (error) console.error("Strategy save error:", error.message, error.code);
+      setSaving(false);
+    }, 800);
+  }, []);
+
+  const setData = (patch: Partial<PeriodData>) => {
+    const next = { ...data, ...patch };
+    setAllData(d => ({ ...d, [period]: next }));
+    saveToSupabase(period, next);
+  };
 
   const okrs = data.okrs;
   const principles = data.principles;
@@ -159,7 +196,9 @@ export default function StrategyPage() {
       {/* Header */}
       <div className="rounded-2xl px-8 py-6 flex items-center justify-between" style={{ background: "linear-gradient(135deg, #2a1a0e, #4a2e1b)" }}>
         <div>
-          <p className="text-[#aec6cf] text-xs tracking-widest uppercase mb-1">ניהול אסטרטגי</p>
+          <p className="text-[#aec6cf] text-xs tracking-widest uppercase mb-1">
+            ניהול אסטרטגי{saving && <span className="mr-2 opacity-60">· שומר...</span>}
+          </p>
           <div className="flex items-center gap-3 mt-1">
             <button onClick={() => setPeriodIdx(i => Math.max(0, i - 1))} disabled={periodIdx === 0}
               className="text-white/40 hover:text-white disabled:opacity-20 transition-colors">

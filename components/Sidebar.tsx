@@ -13,10 +13,12 @@ import {
   HandshakeIcon,
   DollarSign,
   FileText,
+  Target,
 } from "lucide-react";
 
 const links = [
   { href: "/", label: "דאשבורד", icon: LayoutDashboard },
+  { href: "/strategy", label: "ניהול אסטרטגי", icon: Target },
   { href: "/leads", label: "לידים", icon: TrendingUp },
   { href: "/projects", label: "פרויקטים פעילים", icon: FolderOpen },
   { href: "/blocks", label: "The Blocks", icon: Zap },

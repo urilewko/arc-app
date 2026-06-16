@@ -258,6 +258,53 @@ function ICPPanel({ clients }: { clients: Client[] }) {
   );
 }
 
+function BreakdownBar({ label, data, total }: { label: string; data: Record<string, number>; total: number }) {
+  const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  if (!sorted.length) return null;
+  return (
+    <div className="bg-white rounded-2xl p-4 shadow-sm border border-black/5">
+      <p className="text-[10px] font-bold text-[#4a2e1b]/40 uppercase tracking-wider mb-3">{label}</p>
+      <div className="space-y-2">
+        {sorted.map(([name, count]) => {
+          const pct = Math.round((count / total) * 100);
+          return (
+            <div key={name}>
+              <div className="flex justify-between mb-0.5">
+                <span className="text-xs text-[#4a2e1b] truncate">{name}</span>
+                <span className="text-xs font-bold text-[#4a2e1b]/50 shrink-0 mr-2">{pct}%</span>
+              </div>
+              <div className="h-1.5 bg-[#f5f4f0] rounded-full overflow-hidden">
+                <div className="h-full rounded-full bg-[#aec6cf] transition-all" style={{ width: `${pct}%` }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function StatsBreakdown({ clients }: { clients: Client[] }) {
+  if (clients.length < 2) return null;
+
+  const freq = (key: keyof Client) => {
+    const map: Record<string, number> = {};
+    clients.forEach(c => { const v = c[key] as string; if (v) map[v] = (map[v] || 0) + 1; });
+    return map;
+  };
+
+  return (
+    <div className="space-y-3 mt-3">
+      <p className="text-[10px] font-bold text-white/30 uppercase tracking-wider px-1">פילוח</p>
+      <BreakdownBar label="תעשייה" data={freq("industry")} total={clients.length} />
+      <BreakdownBar label="גודל חברה" data={freq("size")} total={clients.length} />
+      <BreakdownBar label="מקור" data={freq("source")} total={clients.length} />
+      <BreakdownBar label="סוג פרויקט" data={freq("project_type")} total={clients.length} />
+      <BreakdownBar label="NPS" data={freq("nps")} total={clients.length} />
+    </div>
+  );
+}
+
 function mostCommon(arr: string[]) {
   const filtered = arr.filter(Boolean);
   if (!filtered.length) return "";
@@ -411,9 +458,10 @@ export default function ClientsPage() {
           })}
         </div>
 
-        {/* ICP */}
+        {/* ICP + Breakdown */}
         <div>
           <ICPPanel clients={clients} />
+          <StatsBreakdown clients={clients} />
         </div>
       </div>
 

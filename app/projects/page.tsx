@@ -116,7 +116,7 @@ export default function ProjectsPage() {
   const [typeFilter, setTypeFilter] = useState<ProductType | "הכל">("הכל");
 
   const openNew = () => { setEditing(null); setForm(emptyProject); setOpenModal(true); };
-  const openEdit = (p: Project) => { setEditing(p); setForm({ ...p }); setOpenModal(true); };
+  const openEdit = (p: Project) => { setEditing(p); setForm({ ...p, driveLink: p.driveLink || "" }); setOpenModal(true); };
 
   const save = () => {
     if (!form.orgName) return;

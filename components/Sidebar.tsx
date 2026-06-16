@@ -17,6 +17,7 @@ import {
   Target,
   Menu,
   X,
+  BarChart2,
 } from "lucide-react";
 
 const links = [
@@ -29,6 +30,7 @@ const links = [
   { href: "/debriefs", label: "שימור ידע", icon: FileText },
   { href: "/infra", label: "פרויקטי תשתית", icon: Wrench },
   { href: "/collaborators", label: "אנשים שהשזם לא מזהה", icon: HandshakeIcon },
+  { href: "/clients", label: "ניתוח לקוחות", icon: BarChart2 },
   { href: "/contacts", label: "אנשי קשר", icon: Users },
 ];
 

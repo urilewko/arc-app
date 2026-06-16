@@ -1,9 +1,10 @@
 "use client";
 import { useState, useMemo } from "react";
 import { useStore } from "@/lib/store";
-import { TrendingUp, FolderOpen, ChevronRight, ChevronLeft, Users, Zap, BookOpen, AlertCircle } from "lucide-react";
+import Link from "next/link";
+import { TrendingUp, FolderOpen, ChevronRight, ChevronLeft, Users, BookOpen, AlertCircle, ExternalLink } from "lucide-react";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area,
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from "recharts";
 import {
   format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
@@ -13,18 +14,13 @@ import {
 import { he } from "date-fns/locale";
 
 type CalView = "day" | "week" | "month";
-interface CalEvent { date: Date; label: string; type: "פרויקט" | "ליד" | "תשתית"; }
+interface CalEvent { date: Date; label: string; type: "פרויקט" | "ליד" | "תשתית"; href: string; }
 type FinancePeriod = "h1" | "h2" | "year";
 
-const TYPE_COLORS: Record<string, string> = {
-  פרויקט: "bg-emerald-900/60 text-emerald-300 border border-emerald-700/40",
-  ליד:    "bg-cyan-900/60 text-cyan-300 border border-cyan-700/40",
-  תשתית:  "bg-purple-900/60 text-purple-300 border border-purple-700/40",
-};
-const TYPE_DOT: Record<string, string> = {
-  פרויקט: "bg-emerald-400",
-  ליד:    "bg-cyan-400",
-  תשתית:  "bg-purple-400",
+const TYPE_STYLE: Record<string, { bg: string; text: string }> = {
+  פרויקט: { bg: "bg-emerald-500", text: "text-white" },
+  ליד:    { bg: "bg-cyan-500",    text: "text-white" },
+  תשתית:  { bg: "bg-violet-500",  text: "text-white" },
 };
 
 function safeDate(str: string): Date | null {
@@ -34,38 +30,38 @@ function safeDate(str: string): Date | null {
 }
 
 function blockColor(pct: number) {
-  if (pct <= 20) return { bg: "#ef4444", glow: "rgba(239,68,68,0.4)" };
-  if (pct <= 40) return { bg: "#f97316", glow: "rgba(249,115,22,0.4)" };
-  if (pct <= 60) return { bg: "#eab308", glow: "rgba(234,179,8,0.4)" };
-  if (pct <= 80) return { bg: "#84cc16", glow: "rgba(132,204,22,0.4)" };
-  return { bg: "#10b981", glow: "rgba(16,185,129,0.4)" };
+  if (pct <= 20) return { bg: "#ef4444", glow: "rgba(239,68,68,0.4)", label: "#fca5a5" };
+  if (pct <= 40) return { bg: "#f97316", glow: "rgba(249,115,22,0.4)", label: "#fdba74" };
+  if (pct <= 60) return { bg: "#eab308", glow: "rgba(234,179,8,0.4)", label: "#fde047" };
+  if (pct <= 80) return { bg: "#84cc16", glow: "rgba(132,204,22,0.4)", label: "#bef264" };
+  return { bg: "#10b981", glow: "rgba(16,185,129,0.4)", label: "#6ee7b7" };
 }
 
-// ── Glowing stat card ──────────────────────────────────────────────────────
-function StatCard({ label, value, sub, subAlert, icon: Icon, color }: {
+function StatCard({ label, value, sub, subAlert, icon: Icon, color, href }: {
   label: string; value: string | number; sub?: string; subAlert?: boolean;
-  icon: React.ElementType; color: string;
+  icon: React.ElementType; color: string; href: string;
 }) {
   return (
-    <div className="relative rounded-2xl p-5 overflow-hidden border"
-      style={{ background: "rgba(255,255,255,0.03)", borderColor: color + "40" }}>
-      <div className="absolute inset-0 opacity-10" style={{ background: `radial-gradient(circle at 30% 50%, ${color}, transparent 70%)` }} />
-      <div className="relative">
-        <div className="flex items-center justify-between mb-3">
-          <div className="p-2 rounded-xl" style={{ background: color + "20", border: `1px solid ${color}40` }}>
-            <Icon size={16} style={{ color }} />
+    <Link href={href} className="block">
+      <div className="relative rounded-2xl p-5 overflow-hidden border cursor-pointer transition-transform hover:scale-[1.02]"
+        style={{ background: "rgba(255,255,255,0.03)", borderColor: color + "40" }}>
+        <div className="absolute inset-0 opacity-10" style={{ background: `radial-gradient(circle at 30% 50%, ${color}, transparent 70%)` }} />
+        <div className="relative">
+          <div className="flex items-center justify-between mb-3">
+            <div className="p-2 rounded-xl" style={{ background: color + "20", border: `1px solid ${color}40` }}>
+              <Icon size={16} style={{ color }} />
+            </div>
+            {subAlert && <AlertCircle size={14} style={{ color: "#f97316" }} />}
           </div>
-          {subAlert && <AlertCircle size={14} style={{ color: "#f97316" }} />}
+          <div className="text-3xl font-black text-white mb-1">{value}</div>
+          <div className="text-xs font-medium" style={{ color: color + "cc" }}>{label}</div>
+          {sub && <div className={`text-xs mt-1 ${subAlert ? "text-orange-400" : "text-white/30"}`}>{sub}</div>}
         </div>
-        <div className="text-3xl font-black text-white mb-1">{value}</div>
-        <div className="text-xs font-medium" style={{ color: color + "cc" }}>{label}</div>
-        {sub && <div className={`text-xs mt-1 ${subAlert ? "text-orange-400" : "text-white/30"}`}>{sub}</div>}
       </div>
-    </div>
+    </Link>
   );
 }
 
-// ── Panel wrapper ──────────────────────────────────────────────────────────
 function Panel({ title, children, action, className }: {
   title: string; children: React.ReactNode; action?: React.ReactNode; className?: string;
 }) {
@@ -147,12 +143,12 @@ export default function Dashboard() {
 
   const allEvents: CalEvent[] = useMemo(() => {
     const evs: CalEvent[] = [];
-    projects.forEach((p) => { const d = safeDate(p.startDate); if (d) evs.push({ date: d, label: p.orgName, type: "פרויקט" }); });
+    projects.forEach((p) => { const d = safeDate(p.startDate); if (d) evs.push({ date: d, label: p.orgName, type: "פרויקט", href: "/projects" }); });
     leads.forEach((l) => {
-      const d = safeDate(l.dueDate); if (d) evs.push({ date: d, label: `${l.orgName} — ${l.nextAction}`, type: "ליד" });
-      const a = safeDate(l.activityDate); if (a) evs.push({ date: a, label: `${l.orgName} (פעילות)`, type: "פרויקט" });
+      const d = safeDate(l.dueDate); if (d) evs.push({ date: d, label: `${l.orgName} — ${l.nextAction}`, type: "ליד", href: "/leads" });
+      const a = safeDate(l.activityDate); if (a) evs.push({ date: a, label: `${l.orgName} (פעילות)`, type: "פרויקט", href: "/leads" });
     });
-    infraProjects.forEach((p) => { const d = safeDate(p.dueDate); if (d) evs.push({ date: d, label: p.name, type: "תשתית" }); });
+    infraProjects.forEach((p) => { const d = safeDate(p.dueDate); if (d) evs.push({ date: d, label: p.name, type: "תשתית", href: "/infra" }); });
     return evs;
   }, [projects, leads, infraProjects]);
 
@@ -193,9 +189,11 @@ export default function Dashboard() {
                 }`}>{format(day, "d")}</div>
                 <div className="space-y-0.5">
                   {evs.slice(0, 2).map((e, j) => (
-                    <div key={j} className={`text-[9px] px-1 py-0.5 rounded truncate ${TYPE_COLORS[e.type]}`}>{e.label}</div>
+                    <Link key={j} href={e.href}>
+                      <div className={`text-[9px] px-1 py-0.5 rounded truncate font-medium ${TYPE_STYLE[e.type].bg} ${TYPE_STYLE[e.type].text}`}>{e.label}</div>
+                    </Link>
                   ))}
-                  {evs.length > 2 && <div className="text-[9px] text-white/20">+{evs.length - 2}</div>}
+                  {evs.length > 2 && <div className="text-[9px] text-white/30">+{evs.length - 2}</div>}
                 </div>
               </div>
             );
@@ -221,7 +219,9 @@ export default function Dashboard() {
               </div>
               <div className="space-y-1">
                 {evs.map((e, j) => (
-                  <div key={j} className={`text-[10px] px-1.5 py-1 rounded truncate ${TYPE_COLORS[e.type]}`}>{e.label}</div>
+                  <Link key={j} href={e.href}>
+                    <div className={`text-[10px] px-1.5 py-1 rounded truncate font-medium ${TYPE_STYLE[e.type].bg} ${TYPE_STYLE[e.type].text}`}>{e.label}</div>
+                  </Link>
                 ))}
               </div>
             </div>
@@ -238,11 +238,12 @@ export default function Dashboard() {
     ) : (
       <div className="space-y-2">
         {evs.map((e, i) => (
-          <div key={i} className={`flex items-center gap-3 px-4 py-3 rounded-xl ${TYPE_COLORS[e.type]}`}>
-            <div className={`w-2 h-2 rounded-full ${TYPE_DOT[e.type]}`} />
-            <span className="text-sm font-medium text-white">{e.label}</span>
-            <span className="text-xs opacity-40 mr-auto">{e.type}</span>
-          </div>
+          <Link key={i} href={e.href}>
+            <div className={`flex items-center gap-3 px-4 py-3 rounded-xl ${TYPE_STYLE[e.type].bg}`}>
+              <span className="text-sm font-medium text-white">{e.label}</span>
+              <span className="text-xs opacity-60 mr-auto">{e.type}</span>
+            </div>
+          </Link>
         ))}
       </div>
     );
@@ -259,30 +260,30 @@ export default function Dashboard() {
           <p className="text-white/30 text-xs mt-0.5">{format(new Date(), "EEEE, d MMMM yyyy", { locale: he })}</p>
         </div>
         {urgentLeads.length > 0 && (
-          <div className="flex items-center gap-2 text-sm px-4 py-2 rounded-xl border border-orange-500/40 text-orange-400" style={{ background: "rgba(249,115,22,0.1)" }}>
-            <AlertCircle size={15} />
-            {urgentLeads.length} לידים דחופים
-          </div>
+          <Link href="/leads">
+            <div className="flex items-center gap-2 text-sm px-4 py-2 rounded-xl border border-orange-500/40 text-orange-400 cursor-pointer hover:bg-orange-500/10 transition-colors" style={{ background: "rgba(249,115,22,0.1)" }}>
+              <AlertCircle size={15} />
+              {urgentLeads.length} לידים דחופים
+            </div>
+          </Link>
         )}
       </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-4 gap-4 mb-6">
-        <StatCard label="פרויקטים פעילים" value={activeProjects.length} icon={FolderOpen} color="#aec6cf" />
+        <StatCard label="פרויקטים פעילים" value={activeProjects.length} icon={FolderOpen} color="#aec6cf" href="/projects" />
         <StatCard label="לידים פתוחים" value={openLeads.length}
           sub={urgentLeads.length > 0 ? `${urgentLeads.length} דחופים` : undefined}
-          subAlert={urgentLeads.length > 0} icon={TrendingUp} color="#f97316" />
+          subAlert={urgentLeads.length > 0} icon={TrendingUp} color="#f97316" href="/leads" />
         <StatCard label="שימור ידע" value={`${debriefs.length}/${projects.length}`}
           sub={projectsWithoutDebrief.length > 0 ? `${projectsWithoutDebrief.length} ממתינים לתחקיר` : "הכל מתוחקר ✓"}
-          subAlert={projectsWithoutDebrief.length > 0} icon={BookOpen} color="#a78bfa" />
-        <StatCard label="אנשים ברשת" value={collaborators.length} icon={Users} color="#34d399" />
+          subAlert={projectsWithoutDebrief.length > 0} icon={BookOpen} color="#a78bfa" href="/debriefs" />
+        <StatCard label="אנשים ברשת" value={collaborators.length} icon={Users} color="#34d399" href="/collaborators" />
       </div>
 
-      {/* Finance summary + Blocks row */}
+      {/* Finance + Blocks */}
       <div className="grid grid-cols-3 gap-4 mb-4">
-        {/* Finance summary */}
         <div className="col-span-2">
-          {/* Period selector */}
           <div className="flex items-center gap-3 mb-3">
             <span className="text-white/30 text-xs">תקופה:</span>
             <select value={financeYear} onChange={(e) => setFinanceYear(Number(e.target.value))}
@@ -297,6 +298,7 @@ export default function Dashboard() {
                 </button>
               ))}
             </div>
+            <Link href="/finance" className="text-cyan-400 text-[10px] hover:underline mr-auto">לפיננסים ←</Link>
           </div>
 
           <div className="grid grid-cols-5 gap-2 mb-4">
@@ -307,14 +309,15 @@ export default function Dashboard() {
               { label: "רווח בפועל", value: totalProfit, color: totalProfit >= 0 ? "#10b981" : "#f87171" },
               { label: "פוטנציאל צינור", value: pipelineRevenue, color: "#fb923c" },
             ].map((item) => (
-              <div key={item.label} className="rounded-xl p-3 border border-white/5" style={{ background: "rgba(255,255,255,0.03)" }}>
-                <div className="text-lg font-black" style={{ color: item.color }}>₪{item.value.toLocaleString()}</div>
-                <div className="text-[10px] text-white/30 mt-0.5">{item.label}</div>
-              </div>
+              <Link key={item.label} href="/finance">
+                <div className="rounded-xl p-3 border border-white/5 hover:border-white/15 transition-colors" style={{ background: "rgba(255,255,255,0.03)" }}>
+                  <div className="text-lg font-black" style={{ color: item.color }}>₪{item.value.toLocaleString()}</div>
+                  <div className="text-[10px] text-white/30 mt-0.5">{item.label}</div>
+                </div>
+              </Link>
             ))}
           </div>
 
-          {/* Chart */}
           <Panel title={`גרף פיננסי — ${PERIOD_LABELS[financePeriod]} ${financeYear}`}
             action={
               <div className="flex gap-3 text-[10px] text-white/30">
@@ -338,25 +341,31 @@ export default function Dashboard() {
           </Panel>
         </div>
 
-        {/* Blocks */}
-        <Panel title="The Blocks — התקדמות" action={<a href="/blocks" className="text-[10px] text-cyan-400 hover:underline">לכל הבלוקים ←</a>}>
+        {/* Blocks — visual cards */}
+        <Panel title="The Blocks" action={<Link href="/blocks" className="text-[10px] text-cyan-400 hover:underline flex items-center gap-1">כל הבלוקים <ExternalLink size={10} /></Link>}>
           {blocks.length === 0 ? (
             <p className="text-white/20 text-sm text-center py-8">אין Blocks עדיין</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {blocks.map((b) => {
                 const pct = b.completionPercent || 0;
-                const { bg, glow } = blockColor(pct);
+                const { bg, glow, label: labelColor } = blockColor(pct);
                 return (
-                  <div key={b.id}>
-                    <div className="flex justify-between mb-1">
-                      <span className="text-xs text-white/60 truncate">{b.name}</span>
-                      <span className="text-xs font-bold" style={{ color: bg }}>{pct}%</span>
+                  <Link key={b.id} href="/blocks" className="block">
+                    <div className="rounded-xl p-3 border border-white/5 hover:border-white/20 transition-colors" style={{ background: "rgba(255,255,255,0.04)" }}>
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-xs font-semibold text-white/80 leading-tight">{b.name}</span>
+                        <span className="text-sm font-black mr-2 shrink-0" style={{ color: labelColor }}>{pct}%</span>
+                      </div>
+                      <div className="h-2.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.07)" }}>
+                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: bg, boxShadow: `0 0 10px ${glow}` }} />
+                      </div>
+                      <div className="mt-1.5 flex justify-between text-[9px] text-white/25">
+                        <span>{b.status}</span>
+                        <span>{b.productType}</span>
+                      </div>
                     </div>
-                    <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.07)" }}>
-                      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: bg, boxShadow: `0 0 8px ${glow}` }} />
-                    </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>
@@ -387,9 +396,9 @@ export default function Dashboard() {
         {calView === "week" && <WeekView />}
         {calView === "day" && <DayView />}
         <div className="flex gap-5 mt-4 pt-3 border-t border-white/5">
-          {Object.entries(TYPE_DOT).map(([type, dot]) => (
-            <div key={type} className="flex items-center gap-1.5 text-[10px] text-white/30">
-              <div className={`w-2 h-2 rounded-full ${dot}`} /> {type}
+          {Object.entries(TYPE_STYLE).map(([type, s]) => (
+            <div key={type} className="flex items-center gap-1.5 text-[10px] text-white/40">
+              <div className={`w-2.5 h-2.5 rounded-sm ${s.bg}`} /> {type}
             </div>
           ))}
         </div>

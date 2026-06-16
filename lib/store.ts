@@ -128,7 +128,17 @@ export interface Project {
   teamMembers: string[];
   tasks: ProjectTask[];
   notes: string;
+  driveLink?: string;
   createdAt: string;
+}
+
+export interface InfraTask {
+  id: string;
+  title: string;
+  status: TaskStatus;
+  responsible: string;
+  dueDate: string;
+  notes: string;
 }
 
 export interface InfraProject {
@@ -141,6 +151,7 @@ export interface InfraProject {
   notes: string;
   createdAt: string;
   expenses: ExpenseItem[];
+  tasks: InfraTask[];
 }
 
 export interface BlockContentItem {
@@ -271,6 +282,9 @@ interface ARCStore {
   addInfraProject: (p: Omit<InfraProject, "id" | "createdAt">) => void;
   updateInfraProject: (id: string, p: Partial<InfraProject>) => void;
   deleteInfraProject: (id: string) => void;
+  addInfraTask: (projectId: string, task: Omit<InfraTask, "id">) => void;
+  updateInfraTask: (projectId: string, taskId: string, task: Partial<InfraTask>) => void;
+  deleteInfraTask: (projectId: string, taskId: string) => void;
 
   addBlock: (b: Omit<Block, "id" | "createdAt">) => void;
   updateBlock: (id: string, b: Partial<Block>) => void;
@@ -433,7 +447,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
 
   // ── Infra ──
   addInfraProject: (p) => {
-    const row: InfraProject = { ...p, id: uid(), createdAt: new Date().toISOString() };
+    const row: InfraProject = { ...p, id: uid(), createdAt: new Date().toISOString(), tasks: p.tasks || [] };
     set((s) => ({ infraProjects: [...s.infraProjects, row] }));
     dbInsert("infra_projects", row as unknown as Rec);
   },
@@ -444,6 +458,38 @@ export const useStore = create<ARCStore>()((set, get) => ({
   deleteInfraProject: (id) => {
     set((s) => ({ infraProjects: s.infraProjects.filter((x) => x.id !== id) }));
     dbDelete("infra_projects", id);
+  },
+  addInfraTask: (projectId, task) => {
+    const newTask = { ...task, id: uid() };
+    set((s) => ({
+      infraProjects: s.infraProjects.map((p) =>
+        p.id === projectId ? { ...p, tasks: [...(p.tasks || []), newTask] } : p
+      ),
+    }));
+    const project = get().infraProjects.find((p) => p.id === projectId);
+    if (project) dbUpdate("infra_projects", projectId, { tasks: project.tasks } as Rec);
+  },
+  updateInfraTask: (projectId, taskId, task) => {
+    set((s) => ({
+      infraProjects: s.infraProjects.map((p) =>
+        p.id === projectId
+          ? { ...p, tasks: (p.tasks || []).map((t) => t.id === taskId ? { ...t, ...task } : t) }
+          : p
+      ),
+    }));
+    const project = get().infraProjects.find((p) => p.id === projectId);
+    if (project) dbUpdate("infra_projects", projectId, { tasks: project.tasks } as Rec);
+  },
+  deleteInfraTask: (projectId, taskId) => {
+    set((s) => ({
+      infraProjects: s.infraProjects.map((p) =>
+        p.id === projectId
+          ? { ...p, tasks: (p.tasks || []).filter((t) => t.id !== taskId) }
+          : p
+      ),
+    }));
+    const project = get().infraProjects.find((p) => p.id === projectId);
+    if (project) dbUpdate("infra_projects", projectId, { tasks: project.tasks } as Rec);
   },
 
   // ── Blocks ──

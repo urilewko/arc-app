@@ -5,7 +5,7 @@ import {
   ProductType, ProductionStatus, TaskCategory, TaskStatus
 } from "@/lib/store";
 import Modal from "@/components/Modal";
-import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, CheckSquare } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, CheckSquare, ExternalLink } from "lucide-react";
 
 const PRODUCT_TYPES: ProductType[] = ["ריטריט", "סדנה חד פעמית", "Offsite", "קורס"];
 const PRODUCTION_STATUSES: ProductionStatus[] = ["עוד לא התחלנו", "בעבודה", "בוצע"];
@@ -46,7 +46,7 @@ const emptyProject = {
   productType: "סדנה חד פעמית" as ProductType,
   startDate: "", endDate: "",
   productionStatus: "עוד לא התחלנו" as ProductionStatus,
-  price: 0, teamMembers: [] as string[], tasks: [] as ProjectTask[], notes: "",
+  price: 0, teamMembers: [] as string[], tasks: [] as ProjectTask[], notes: "", driveLink: "",
 };
 
 const emptyTask = {
@@ -238,9 +238,16 @@ export default function ProjectsPage() {
                       {p.productionStatus}
                     </span>
                   </div>
-                  <div className="flex gap-5 text-sm text-gray-500 mt-1.5 flex-wrap">
+                  <div className="flex gap-5 text-sm text-gray-500 mt-1.5 flex-wrap items-center">
                     {p.startDate && <span>📅 {p.startDate}{p.endDate ? ` — ${p.endDate}` : ""}</span>}
                     {p.price > 0 && <span>💰 ₪{p.price.toLocaleString()}</span>}
+                    {p.driveLink && (
+                      <a href={p.driveLink} target="_blank" rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-1 text-blue-500 hover:text-blue-700 text-xs font-medium">
+                        <ExternalLink size={12} /> Google Drive
+                      </a>
+                    )}
                     {prog && (
                       <span className="flex items-center gap-1.5">
                         <CheckSquare size={13} />
@@ -391,6 +398,12 @@ export default function ProjectsPage() {
               <label className="block text-sm font-medium mb-1">תמחור (₪)</label>
               <input type="number" className="w-full border rounded-lg px-3 py-2 text-sm" value={form.price}
                 onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">קישור Google Drive</label>
+              <input type="url" className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="https://drive.google.com/..."
+                value={form.driveLink || ""}
+                onChange={(e) => setForm({ ...form, driveLink: e.target.value })} />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">הערות</label>

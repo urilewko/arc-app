@@ -18,10 +18,12 @@ import {
   Menu,
   X,
   BarChart2,
+  ListTodo,
 } from "lucide-react";
 
 const links = [
   { href: "/", label: "דאשבורד", icon: LayoutDashboard },
+  { href: "/my-work", label: "העבודה שלי", icon: ListTodo },
   { href: "/strategy", label: "ניהול אסטרטגי", icon: Target },
   { href: "/leads", label: "לידים", icon: TrendingUp },
   { href: "/projects", label: "פרויקטים פעילים", icon: FolderOpen },

@@ -1,11 +1,13 @@
 "use client";
 import { useState } from "react";
-import { useStore, InfraProject, InfraCategory, ProductionStatus, ExpenseItem } from "@/lib/store";
+import { useStore, InfraProject, InfraCategory, ProductionStatus, ExpenseItem, InfraTask, TaskStatus } from "@/lib/store";
 import Modal from "@/components/Modal";
-import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, X } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, X, CheckSquare } from "lucide-react";
 
 const CATEGORIES: InfraCategory[] = ["The Blocks", "מרחב פיזי", "ארגוני", "שיווק", "אחר"];
 const PRODUCTION_STATUSES: ProductionStatus[] = ["עוד לא התחלנו", "בעבודה", "בוצע"];
+const TASK_STATUSES: TaskStatus[] = ["לביצוע", "בעבודה", "הושלם"];
+const RESPONSIBLE = ["אורי", "ינון"];
 
 const STATUS_COLORS: Record<ProductionStatus, string> = {
   "עוד לא התחלנו": "bg-gray-100 text-gray-600",
@@ -21,6 +23,12 @@ const CAT_COLORS: Record<InfraCategory, string> = {
   "אחר": "bg-gray-100 text-gray-600",
 };
 
+const TASK_STATUS_COLORS: Record<TaskStatus, string> = {
+  "לביצוע": "bg-gray-100 text-gray-500",
+  "בעבודה": "bg-yellow-100 text-yellow-700",
+  "הושלם": "bg-green-100 text-green-700",
+};
+
 const uid = () => Math.random().toString(36).slice(2);
 
 const emptyProject = {
@@ -31,18 +39,31 @@ const emptyProject = {
   dueDate: "",
   notes: "",
   expenses: [] as ExpenseItem[],
+  tasks: [] as InfraTask[],
+};
+
+const emptyTask: Omit<InfraTask, "id"> = {
+  title: "",
+  status: "לביצוע",
+  responsible: "",
+  dueDate: "",
+  notes: "",
 };
 
 export default function InfraPage() {
-  const { infraProjects, addInfraProject, updateInfraProject, deleteInfraProject } = useStore();
+  const { infraProjects, addInfraProject, updateInfraProject, deleteInfraProject,
+          addInfraTask, updateInfraTask, deleteInfraTask } = useStore();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<InfraProject | null>(null);
   const [form, setForm] = useState(emptyProject);
   const [catFilter, setCatFilter] = useState<InfraCategory | "הכל">("הכל");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedSection, setExpandedSection] = useState<Record<string, "tasks" | "expenses" | null>>({});
+  const [taskModal, setTaskModal] = useState<string | null>(null);
+  const [taskForm, setTaskForm] = useState(emptyTask);
 
   const openNew = () => { setEditing(null); setForm(emptyProject); setOpen(true); };
-  const openEdit = (p: InfraProject) => { setEditing(p); setForm({ ...p, expenses: p.expenses || [] }); setOpen(true); };
+  const openEdit = (p: InfraProject) => { setEditing(p); setForm({ ...p, expenses: p.expenses || [], tasks: p.tasks || [] }); setOpen(true); };
 
   const save = () => {
     if (!form.name) return;
@@ -53,7 +74,14 @@ export default function InfraPage() {
 
   const filtered = catFilter === "הכל" ? infraProjects : infraProjects.filter((p) => p.category === catFilter);
 
-  // Expense helpers (inline, per project)
+  const toggleSection = (projectId: string, section: "tasks" | "expenses") => {
+    setExpandedSection((prev) => ({
+      ...prev,
+      [projectId]: prev[projectId] === section ? null : section,
+    }));
+  };
+
+  // Expense helpers
   const addExpense = (projectId: string) => {
     const p = infraProjects.find((x) => x.id === projectId);
     if (!p) return;
@@ -72,6 +100,13 @@ export default function InfraPage() {
     const p = infraProjects.find((x) => x.id === projectId);
     if (!p) return;
     updateInfraProject(projectId, { expenses: (p.expenses || []).filter((e) => e.id !== expId) });
+  };
+
+  const saveTask = (projectId: string) => {
+    if (!taskForm.title) return;
+    addInfraTask(projectId, taskForm);
+    setTaskForm(emptyTask);
+    setTaskModal(null);
   };
 
   return (
@@ -100,9 +135,11 @@ export default function InfraPage() {
           <div className="bg-white rounded-xl p-10 text-center text-gray-400 shadow-sm">אין פרויקטים להצגה</div>
         )}
         {filtered.map((p) => {
-          const isExpanded = expandedId === p.id;
           const expenses = p.expenses || [];
+          const tasks = p.tasks || [];
           const totalExp = expenses.reduce((s, e) => s + (e.amount || 0), 0);
+          const doneTasks = tasks.filter((t) => t.status === "הושלם").length;
+          const section = expandedSection[p.id] || null;
 
           return (
             <div key={p.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -118,6 +155,11 @@ export default function InfraPage() {
                         💸 ₪{totalExp.toLocaleString()}
                       </span>
                     )}
+                    {tasks.length > 0 && (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-600">
+                        ✅ {doneTasks}/{tasks.length} משימות
+                      </span>
+                    )}
                   </div>
                   <div className="flex gap-6 text-sm text-gray-500">
                     {p.owner && <span>👤 {p.owner}</span>}
@@ -125,20 +167,72 @@ export default function InfraPage() {
                   </div>
                   {p.notes && <p className="text-sm text-gray-500 mt-2">{p.notes}</p>}
                 </div>
-                <div className="flex gap-2 items-center shrink-0">
+                <div className="flex gap-2 items-center shrink-0 flex-wrap justify-end">
                   <button
-                    onClick={() => setExpandedId(isExpanded ? null : p.id)}
-                    className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-700 border border-gray-200 rounded-lg px-2.5 py-1.5 transition-colors">
+                    onClick={() => toggleSection(p.id, "tasks")}
+                    className={`flex items-center gap-1 text-xs border rounded-lg px-2.5 py-1.5 transition-colors ${
+                      section === "tasks" ? "bg-blue-50 text-blue-700 border-blue-200" : "text-gray-400 hover:text-gray-700 border-gray-200"}`}>
+                    <CheckSquare size={13} /> משימות ({tasks.length})
+                    {section === "tasks" ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                  </button>
+                  <button
+                    onClick={() => toggleSection(p.id, "expenses")}
+                    className={`flex items-center gap-1 text-xs border rounded-lg px-2.5 py-1.5 transition-colors ${
+                      section === "expenses" ? "bg-red-50 text-red-700 border-red-200" : "text-gray-400 hover:text-gray-700 border-gray-200"}`}>
                     💸 הוצאות ({expenses.length})
-                    {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                    {section === "expenses" ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                   </button>
                   <button onClick={() => openEdit(p)} className="text-gray-400 hover:text-gray-700"><Pencil size={16} /></button>
                   <button onClick={() => deleteInfraProject(p.id)} className="text-gray-400 hover:text-red-600"><Trash2 size={16} /></button>
                 </div>
               </div>
 
+              {/* Tasks panel */}
+              {section === "tasks" && (
+                <div className="border-t border-gray-100 bg-gray-50/50 px-5 py-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-semibold text-gray-600">משימות הפרויקט</span>
+                    <button onClick={() => { setTaskForm(emptyTask); setTaskModal(p.id); }}
+                      className="flex items-center gap-1 text-xs text-blue-600 border border-blue-200 rounded-lg px-2.5 py-1 hover:bg-blue-50">
+                      <Plus size={12} /> משימה חדשה
+                    </button>
+                  </div>
+                  {tasks.length === 0 && (
+                    <p className="text-xs text-gray-400 text-center py-4">אין משימות. לחץ "משימה חדשה" להוסיף.</p>
+                  )}
+                  <div className="space-y-2">
+                    {tasks.map((task) => (
+                      <div key={task.id} className="flex items-center gap-3 bg-white rounded-lg px-3 py-2.5 border border-gray-100 group">
+                        <button
+                          onClick={() => updateInfraTask(p.id, task.id, { status: task.status === "הושלם" ? "לביצוע" : "הושלם" })}
+                          className={`shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
+                            task.status === "הושלם" ? "bg-green-500 border-green-500" : "border-gray-300 hover:border-green-400"}`}>
+                          {task.status === "הושלם" && <span className="text-white text-[10px]">✓</span>}
+                        </button>
+                        <span className={`flex-1 text-sm ${task.status === "הושלם" ? "line-through text-gray-400" : "text-gray-800"}`}>
+                          {task.title}
+                        </span>
+                        {task.responsible && (
+                          <span className={`text-[10px] font-semibold rounded-full px-2 py-0.5 shrink-0 ${task.responsible === "אורי" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>
+                            {task.responsible}
+                          </span>
+                        )}
+                        {task.dueDate && (
+                          <span className="text-[10px] text-gray-400 shrink-0">{task.dueDate}</span>
+                        )}
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full shrink-0 ${TASK_STATUS_COLORS[task.status]}`}>{task.status}</span>
+                        <button onClick={() => deleteInfraTask(p.id, task.id)}
+                          className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 shrink-0 transition-opacity">
+                          <X size={13} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Expenses panel */}
-              {isExpanded && (
+              {section === "expenses" && (
                 <div className="border-t border-gray-100 bg-gray-50/50 px-5 py-4">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-sm font-semibold text-gray-600">הוצאות הפרויקט</span>
@@ -147,11 +241,9 @@ export default function InfraPage() {
                       <Plus size={12} /> הוסף הוצאה
                     </button>
                   </div>
-
                   {expenses.length === 0 && (
                     <p className="text-xs text-gray-400 text-center py-4">אין הוצאות רשומות לפרויקט זה</p>
                   )}
-
                   <div className="space-y-2">
                     {expenses.map((exp) => (
                       <div key={exp.id} className="grid grid-cols-12 gap-2 items-center">
@@ -175,7 +267,6 @@ export default function InfraPage() {
                       </div>
                     ))}
                   </div>
-
                   {expenses.length > 0 && (
                     <div className="flex justify-end mt-3 pt-2 border-t border-gray-200">
                       <span className="text-sm font-bold text-red-500">סה״כ: ₪{totalExp.toLocaleString()}</span>
@@ -188,6 +279,7 @@ export default function InfraPage() {
         })}
       </div>
 
+      {/* Project modal */}
       {open && (
         <Modal title={editing ? "עריכת פרויקט" : "פרויקט תשתית חדש"} onClose={() => setOpen(false)}>
           <div className="space-y-3">
@@ -213,8 +305,11 @@ export default function InfraPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium mb-1">אחראי</label>
-                <input className="w-full border rounded-lg px-3 py-2 text-sm" value={form.owner}
-                  onChange={(e) => setForm({ ...form, owner: e.target.value })} />
+                <select className="w-full border rounded-lg px-3 py-2 text-sm" value={form.owner}
+                  onChange={(e) => setForm({ ...form, owner: e.target.value })}>
+                  <option value="">בחר...</option>
+                  {RESPONSIBLE.map((r) => <option key={r}>{r}</option>)}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">תאריך יעד</label>
@@ -230,6 +325,45 @@ export default function InfraPage() {
             <div className="flex gap-2 pt-2">
               <button onClick={save} className="flex-1 bg-[#4a2e1b] text-white py-2 rounded-lg text-sm hover:bg-[#3a2415]">שמור</button>
               <button onClick={() => setOpen(false)} className="flex-1 border py-2 rounded-lg text-sm hover:bg-gray-50">ביטול</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Task modal */}
+      {taskModal && (
+        <Modal title="משימה חדשה" onClose={() => setTaskModal(null)}>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium mb-1">כותרת משימה *</label>
+              <input className="w-full border rounded-lg px-3 py-2 text-sm" value={taskForm.title}
+                onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">אחראי</label>
+                <select className="w-full border rounded-lg px-3 py-2 text-sm" value={taskForm.responsible}
+                  onChange={(e) => setTaskForm({ ...taskForm, responsible: e.target.value })}>
+                  <option value="">בחר...</option>
+                  {RESPONSIBLE.map((r) => <option key={r}>{r}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">תאריך יעד</label>
+                <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm" value={taskForm.dueDate}
+                  onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })} />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">הערות</label>
+              <textarea className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} value={taskForm.notes}
+                onChange={(e) => setTaskForm({ ...taskForm, notes: e.target.value })} />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button onClick={() => saveTask(taskModal)}
+                className="flex-1 bg-[#4a2e1b] text-white py-2 rounded-lg text-sm hover:bg-[#3a2415]">הוסף משימה</button>
+              <button onClick={() => setTaskModal(null)}
+                className="flex-1 border py-2 rounded-lg text-sm hover:bg-gray-50">ביטול</button>
             </div>
           </div>
         </Modal>

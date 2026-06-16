@@ -110,9 +110,15 @@ function LeadCard({ lead, onEdit, onDelete, onClose, onQuote, dragHandleProps }:
   onQuote: () => void;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
 }) {
+  const daysUntilDue = lead.dueDate
+    ? Math.ceil((new Date(lead.dueDate).getTime() - Date.now()) / 86400000)
+    : null;
+  const isUrgent = daysUntilDue !== null && daysUntilDue <= 3;
+
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between mb-2">
+    <div className={`bg-white rounded-xl border shadow-sm hover:shadow-md transition-shadow ${isUrgent ? "border-orange-300" : "border-gray-200"}`}>
+      {/* Header */}
+      <div className="flex items-start justify-between p-3 pb-2">
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
           {dragHandleProps && (
             <div {...dragHandleProps} className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 shrink-0 touch-none">
@@ -122,28 +128,61 @@ function LeadCard({ lead, onEdit, onDelete, onClose, onQuote, dragHandleProps }:
               </svg>
             </div>
           )}
-          <span className="font-semibold text-sm leading-tight truncate">{lead.orgName}</span>
+          <span className="font-bold text-sm leading-tight">{lead.orgName}</span>
         </div>
         <div className="flex gap-1 shrink-0 mr-1">
           {lead.status !== "נסגר" && lead.status !== "נפל" && (
-            <button onClick={onClose} title="סגור עסקה" className="text-green-500 hover:text-green-700">
-              <CheckCircle size={13} />
-            </button>
+            <button onClick={onClose} title="סגור עסקה" className="text-green-500 hover:text-green-700"><CheckCircle size={13} /></button>
           )}
           <button onClick={onQuote} title="הצעת מחיר" className="text-blue-400 hover:text-blue-600"><FileText size={12} /></button>
           <button onClick={onEdit} className="text-gray-300 hover:text-gray-600"><Pencil size={12} /></button>
           <button onClick={onDelete} className="text-gray-300 hover:text-red-500"><Trash2 size={12} /></button>
         </div>
       </div>
-      {lead.dealValue > 0 && (
-        <div className="text-xs font-semibold text-gray-700 mb-1.5">₪{lead.dealValue.toLocaleString()}</div>
-      )}
+
+      {/* Meta row */}
+      <div className="flex gap-2 flex-wrap px-3 pb-2">
+        {lead.productType && (
+          <span className="text-[10px] bg-gray-100 text-gray-500 rounded-full px-2 py-0.5">{lead.productType}</span>
+        )}
+        {lead.source && (
+          <span className="text-[10px] bg-gray-100 text-gray-500 rounded-full px-2 py-0.5">{lead.source}</span>
+        )}
+        {lead.dealValue > 0 && (
+          <span className="text-[10px] bg-blue-50 text-blue-600 font-semibold rounded-full px-2 py-0.5">₪{lead.dealValue.toLocaleString()}</span>
+        )}
+      </div>
+
+      {/* Next action — prominent */}
       {lead.nextAction && (
-        <div className="text-xs bg-gray-50 rounded px-2 py-1 mb-1.5 text-gray-600 truncate">⚡ {lead.nextAction}</div>
+        <div className={`mx-3 mb-2 rounded-lg px-2.5 py-2 ${isUrgent ? "bg-orange-50 border border-orange-200" : "bg-amber-50 border border-amber-100"}`}>
+          <div className="text-[9px] font-bold uppercase tracking-wide text-gray-400 mb-0.5">פעולה הבאה</div>
+          <div className={`text-xs font-semibold ${isUrgent ? "text-orange-700" : "text-amber-800"}`}>⚡ {lead.nextAction}</div>
+          <div className="flex items-center justify-between mt-1">
+            {lead.responsible && (
+              <span className={`text-[10px] font-bold rounded-full px-2 py-0.5 ${lead.responsible === "אורי" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>
+                {lead.responsible}
+              </span>
+            )}
+            {lead.dueDate && (
+              <span className={`text-[10px] font-medium ${isUrgent ? "text-orange-600 font-bold" : "text-gray-400"}`}>
+                {isUrgent && daysUntilDue !== null
+                  ? (daysUntilDue < 0 ? `איחור של ${Math.abs(daysUntilDue)} ימים` : daysUntilDue === 0 ? "היום!" : `${daysUntilDue} ימים`)
+                  : lead.dueDate}
+              </span>
+            )}
+          </div>
+        </div>
       )}
-      <div className="flex items-center justify-between text-xs text-gray-400 mt-2 pt-1.5 border-t border-gray-100">
-        <span className="font-medium text-gray-500">{lead.responsible}</span>
-        <span>{lead.dueDate}</span>
+
+      {/* Activity date + notes */}
+      <div className="px-3 pb-3 space-y-1">
+        {lead.activityDate && (
+          <div className="text-[10px] text-gray-400">📅 פעילות: <span className="text-gray-600">{lead.activityDate}</span></div>
+        )}
+        {lead.notes && (
+          <div className="text-[10px] text-gray-400 truncate">{lead.notes}</div>
+        )}
       </div>
     </div>
   );

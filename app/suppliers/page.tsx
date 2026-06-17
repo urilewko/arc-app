@@ -73,7 +73,7 @@ export default function SuppliersPage() {
 
   useEffect(() => {
     supabase.from("suppliers").select("*").then(({ data }) => {
-      if (data) setSuppliers(data.map(toCamel) as Supplier[]);
+      if (data) setSuppliers(data.map((r) => toCamel(r as Record<string, unknown>)) as unknown as Supplier[]);
     });
   }, []);
 

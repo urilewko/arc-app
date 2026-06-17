@@ -5,14 +5,15 @@ import { supabase } from "@/lib/supabase";
 
 type OKR = { id: number; text: string; progress: number };
 type Principle = { id: number; title: string; description: string };
-type Focus = { id: number; title: string; description: string };
+type FocusType = "שבועי" | "חודשי" | "תקופתי";
+type Focus = { id: number; title: string; description: string; focusType: FocusType };
 type PeriodData = { okrs: OKR[]; principles: Principle[]; focuses: Focus[]; uvp: string };
 
 function emptyPeriod(): PeriodData {
   return {
     okrs: [{ id: Date.now(), text: "Objective חדש", progress: 0 }],
     principles: [{ id: Date.now() + 1, title: "עקרון ראשון", description: "תאר כאן" }],
-    focuses: [{ id: Date.now() + 2, title: "מיקוד ראשון", description: "תאר כאן" }],
+    focuses: [{ id: Date.now() + 2, title: "מיקוד ראשון", description: "תאר כאן", focusType: "חודשי" as FocusType }],
     uvp: "",
   };
 }
@@ -185,7 +186,7 @@ export default function StrategyPage() {
   const removePrinciple = (id: number) => setPrinciples(p => p.filter(x => x.id !== id));
   const updatePrinciple = (id: number, patch: Partial<Principle>) => setPrinciples(p => p.map(x => x.id === id ? { ...x, ...patch } : x));
 
-  const addFocus = () => setFocuses(f => [...f, { id: Date.now(), title: "מיקוד חדש", description: "תאר כאן" }]);
+  const addFocus = () => setFocuses(f => [...f, { id: Date.now(), title: "מיקוד חדש", description: "תאר כאן", focusType: "חודשי" as FocusType }]);
   const removeFocus = (id: number) => setFocuses(f => f.filter(x => x.id !== id));
   const updateFocus = (id: number, patch: Partial<Focus>) => setFocuses(f => f.map(x => x.id === id ? { ...x, ...patch } : x));
 
@@ -324,28 +325,59 @@ export default function StrategyPage() {
               <Plus size={12} />
             </button>
           </div>
-          <div className="space-y-2">
-            {focuses.map((f) => (
-              <div key={f.id} className="group rounded-xl p-3 bg-[#aec6cf]/10 flex items-start gap-3">
-                <div className="flex-1 min-w-0">
-                  <EditableText
-                    value={f.title}
-                    onSave={v => updateFocus(f.id, { title: v })}
-                    className="text-sm font-bold text-[#4a2e1b] block w-full"
-                  />
-                  <EditableText
-                    value={f.description}
-                    onSave={v => updateFocus(f.id, { description: v })}
-                    className="text-xs text-gray-500 block w-full mt-0.5"
-                    multiline
-                  />
+          {/* Group by type */}
+          {(["שבועי", "חודשי", "תקופתי"] as FocusType[]).map((type) => {
+            const group = focuses.filter(f => (f.focusType || "חודשי") === type);
+            const TYPE_STYLE: Record<FocusType, { label: string; bg: string; badge: string }> = {
+              "שבועי":   { label: "שבועי",   bg: "bg-blue-50",   badge: "bg-blue-100 text-blue-700" },
+              "חודשי":   { label: "חודשי",   bg: "bg-[#aec6cf]/10", badge: "bg-[#aec6cf]/30 text-[#4a2e1b]" },
+              "תקופתי":  { label: "תקופתי",  bg: "bg-purple-50", badge: "bg-purple-100 text-purple-700" },
+            };
+            return (
+              <div key={type} className="mb-4 last:mb-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${TYPE_STYLE[type].badge}`}>{TYPE_STYLE[type].label}</span>
+                  <div className="flex-1 h-px bg-gray-100" />
                 </div>
-                <button onClick={() => removeFocus(f.id)} className="opacity-0 group-hover:opacity-40 hover:!opacity-100 transition-opacity text-red-400 shrink-0 mt-0.5">
-                  <Trash2 size={11} />
-                </button>
+                <div className="space-y-2">
+                  {group.map((f) => (
+                    <div key={f.id} className={`group rounded-xl p-3 flex items-start gap-3 ${TYPE_STYLE[type].bg}`}>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <EditableText
+                            value={f.title}
+                            onSave={v => updateFocus(f.id, { title: v })}
+                            className="text-sm font-bold text-[#4a2e1b]"
+                          />
+                          <select
+                            value={f.focusType || "חודשי"}
+                            onChange={e => updateFocus(f.id, { focusType: e.target.value as FocusType })}
+                            className="text-[9px] border-0 bg-transparent text-gray-400 outline-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <option>שבועי</option>
+                            <option>חודשי</option>
+                            <option>תקופתי</option>
+                          </select>
+                        </div>
+                        <EditableText
+                          value={f.description}
+                          onSave={v => updateFocus(f.id, { description: v })}
+                          className="text-xs text-gray-500 block w-full"
+                          multiline
+                        />
+                      </div>
+                      <button onClick={() => removeFocus(f.id)} className="opacity-0 group-hover:opacity-40 hover:!opacity-100 transition-opacity text-red-400 shrink-0 mt-0.5">
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  ))}
+                  {group.length === 0 && (
+                    <p className="text-[10px] text-gray-300 text-center py-1">אין מיקודים. הוסף מיקוד ושנה את הסוג שלו.</p>
+                  )}
+                </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
 
       </div>

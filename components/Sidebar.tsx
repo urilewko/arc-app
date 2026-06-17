@@ -19,6 +19,7 @@ import {
   X,
   BarChart2,
   ListTodo,
+  ShoppingCart,
 } from "lucide-react";
 
 const links = [
@@ -33,6 +34,7 @@ const links = [
   { href: "/infra", label: "פרויקטי תשתית", icon: Wrench },
   { href: "/collaborators", label: "אנשים שהשזם לא מזהה", icon: HandshakeIcon },
   { href: "/clients", label: "ניתוח לקוחות", icon: BarChart2 },
+  { href: "/suppliers", label: "ספקים", icon: ShoppingCart },
   { href: "/contacts", label: "אנשי קשר", icon: Users },
 ];
 

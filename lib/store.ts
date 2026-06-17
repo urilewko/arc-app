@@ -13,7 +13,7 @@ export type LeadStatus =
 
 export type ProductType = "ריטריט" | "סדנה חד פעמית" | "Offsite" | "קורס";
 export type ProductionStatus = "עוד לא התחלנו" | "בעבודה" | "בוצע";
-export type InfraCategory = "The Blocks" | "מרחב פיזי" | "ארגוני" | "שיווק" | "אחר";
+export type InfraCategory = "תשתית" | "המשק" | "שטח" | "שיווק ומיצוב" | "The Hub" | "הקהילה" | "אחר";
 export type TaskCategory = "תוכן" | "לוגיסטיקה" | "הנחייה" | "שיווק" | "פיננסי" | "אחר";
 export type TaskStatus = "לביצוע" | "בעבודה" | "הושלם";
 

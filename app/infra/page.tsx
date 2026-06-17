@@ -4,7 +4,7 @@ import { useStore, InfraProject, InfraCategory, ProductionStatus, ExpenseItem, I
 import Modal from "@/components/Modal";
 import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, X, CheckSquare } from "lucide-react";
 
-const CATEGORIES: InfraCategory[] = ["The Blocks", "מרחב פיזי", "ארגוני", "שיווק", "אחר"];
+const CATEGORIES: InfraCategory[] = ["תשתית", "המשק", "שטח", "שיווק ומיצוב", "The Hub", "הקהילה", "אחר"];
 const PRODUCTION_STATUSES: ProductionStatus[] = ["עוד לא התחלנו", "בעבודה", "בוצע"];
 const TASK_STATUSES: TaskStatus[] = ["לביצוע", "בעבודה", "הושלם"];
 const RESPONSIBLE = ["אורי", "ינון"];
@@ -16,11 +16,13 @@ const STATUS_COLORS: Record<ProductionStatus, string> = {
 };
 
 const CAT_COLORS: Record<InfraCategory, string> = {
-  "The Blocks": "bg-purple-100 text-purple-700",
-  "מרחב פיזי": "bg-amber-100 text-amber-700",
-  "ארגוני": "bg-teal-100 text-teal-700",
-  "שיווק": "bg-pink-100 text-pink-700",
-  "אחר": "bg-gray-100 text-gray-600",
+  "תשתית":       "bg-blue-100 text-blue-700",
+  "המשק":        "bg-amber-100 text-amber-700",
+  "שטח":         "bg-green-100 text-green-700",
+  "שיווק ומיצוב": "bg-pink-100 text-pink-700",
+  "The Hub":     "bg-purple-100 text-purple-700",
+  "הקהילה":      "bg-teal-100 text-teal-700",
+  "אחר":         "bg-gray-100 text-gray-600",
 };
 
 const TASK_STATUS_COLORS: Record<TaskStatus, string> = {

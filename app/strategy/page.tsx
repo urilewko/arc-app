@@ -6,13 +6,14 @@ import { supabase } from "@/lib/supabase";
 type OKR = { id: number; text: string; progress: number };
 type Principle = { id: number; title: string; description: string };
 type Focus = { id: number; title: string; description: string };
-type PeriodData = { okrs: OKR[]; principles: Principle[]; focuses: Focus[] };
+type PeriodData = { okrs: OKR[]; principles: Principle[]; focuses: Focus[]; uvp: string };
 
 function emptyPeriod(): PeriodData {
   return {
     okrs: [{ id: Date.now(), text: "Objective חדש", progress: 0 }],
     principles: [{ id: Date.now() + 1, title: "עקרון ראשון", description: "תאר כאן" }],
     focuses: [{ id: Date.now() + 2, title: "מיקוד ראשון", description: "תאר כאן" }],
+    uvp: "",
   };
 }
 
@@ -131,12 +132,12 @@ export default function StrategyPage() {
     if (allData[period]) return; // already loaded
     supabase
       .from("strategy_periods")
-      .select("okrs, principles, focuses")
+      .select("okrs, principles, focuses, uvp")
       .eq("period", period)
       .maybeSingle()
       .then(({ data: row }) => {
         if (row) {
-          setAllData(d => ({ ...d, [period]: row as PeriodData }));
+          setAllData(d => ({ ...d, [period]: { ...emptyPeriod(), ...row } as PeriodData }));
         }
       });
   }, [period]);
@@ -149,7 +150,7 @@ export default function StrategyPage() {
       const { data: { session } } = await supabase.auth.getSession();
       console.log("Auth session:", session?.user?.email ?? "NOT LOGGED IN");
       const { error } = await supabase.from("strategy_periods").upsert(
-        { period: p, okrs: d.okrs, principles: d.principles, focuses: d.focuses, updated_at: new Date().toISOString() },
+        { period: p, okrs: d.okrs, principles: d.principles, focuses: d.focuses, uvp: d.uvp ?? "", updated_at: new Date().toISOString() },
         { onConflict: "period" }
       );
       if (error) console.error("Strategy save error:", error.message, error.code);
@@ -166,10 +167,12 @@ export default function StrategyPage() {
   const okrs = data.okrs;
   const principles = data.principles;
   const focuses = data.focuses;
+  const uvp = data.uvp ?? "";
 
   const setOkrs = (fn: (o: OKR[]) => OKR[]) => setData({ okrs: fn(okrs) });
   const setPrinciples = (fn: (p: Principle[]) => Principle[]) => setData({ principles: fn(principles) });
   const setFocuses = (fn: (f: Focus[]) => Focus[]) => setData({ focuses: fn(focuses) });
+  const setUvp = (v: string) => setData({ uvp: v });
 
   const addOkr = () => {
     if (okrs.length >= 5) return;
@@ -261,6 +264,21 @@ export default function StrategyPage() {
             );
           })}
         </div>
+      </div>
+
+      {/* UVP */}
+      <div className="rounded-2xl p-6 shadow-sm border" style={{ background: "linear-gradient(135deg, #0f2d2a, #1a4a40)", borderColor: "rgba(174,198,207,0.2)" }}>
+        <div className="flex items-center gap-3 mb-4">
+          <span className="text-[10px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full" style={{ background: "rgba(174,198,207,0.15)", color: "#aec6cf" }}>UVP</span>
+          <h2 className="text-sm font-bold text-white/60">הצעת הערך הייחודית</h2>
+        </div>
+        <textarea
+          value={uvp}
+          onChange={e => setUvp(e.target.value)}
+          placeholder="מה עושה את ARC לבלתי ניתן להחלפה? מה אנחנו נותנים שאף אחד אחר לא נותן?"
+          rows={3}
+          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20 outline-none focus:border-[#aec6cf]/40 resize-none transition-colors leading-relaxed"
+        />
       </div>
 
       {/* Principles + Focuses side by side */}

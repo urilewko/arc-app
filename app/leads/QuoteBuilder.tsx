@@ -226,7 +226,18 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     isRecommended: false,
   });
 
-  const STORAGE_KEY = `arc-quote-${lead.id}`;
+  const HISTORY_KEY = `arc-quotes-v2-${lead.id}`;
+
+  interface QuoteVersion { id: string; label: string; createdAt: string; data: QuoteData }
+
+  const loadHistory = (): QuoteVersion[] => {
+    try { const s = localStorage.getItem(HISTORY_KEY); if (s) return JSON.parse(s); } catch {}
+    return [];
+  };
+  const saveHistory = (versions: QuoteVersion[]) => {
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(versions)); } catch {}
+  };
+
   const quoteNum = `ARC-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 900) + 100)}`;
 
   const defaultQuote = (): QuoteData => ({
@@ -255,18 +266,35 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     ],
   });
 
-  const [q, setQ] = useState<QuoteData>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return JSON.parse(saved) as QuoteData;
-    } catch {}
-    return defaultQuote();
+  const [versions, setVersions] = useState<QuoteVersion[]>(() => {
+    const hist = loadHistory();
+    if (hist.length > 0) return hist;
+    return [{ id: uid(), label: "הצעה #1", createdAt: todayStr(), data: defaultQuote() }];
   });
+  const [activeIdx, setActiveIdx] = useState(0);
 
-  // שמירה אוטומטית בכל שינוי
-  useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(q)); } catch {}
-  }, [q, STORAGE_KEY]);
+  const safeIdx = Math.min(activeIdx, versions.length - 1);
+  const q = versions[safeIdx]?.data ?? defaultQuote();
+  const setQ = (patch: QuoteData | ((prev: QuoteData) => QuoteData)) => {
+    setVersions(prev => prev.map((v, i) => {
+      if (i !== Math.min(activeIdx, prev.length - 1)) return v;
+      return { ...v, data: typeof patch === "function" ? patch(v.data) : patch };
+    }));
+  };
+
+  useEffect(() => { saveHistory(versions); }, [versions]);
+
+  const addVersion = () => {
+    const newV: QuoteVersion = { id: uid(), label: `הצעה #${versions.length + 1}`, createdAt: todayStr(), data: defaultQuote() };
+    setVersions(prev => [...prev, newV]);
+    setActiveIdx(versions.length);
+  };
+
+  const deleteVersion = (idx: number) => {
+    if (versions.length <= 1) return;
+    setVersions(prev => prev.filter((_, i) => i !== idx));
+    setActiveIdx(prev => (idx <= prev && prev > 0) ? prev - 1 : Math.min(prev, versions.length - 2));
+  };
 
   // ── package helpers ──
   const updatePkg = (pkgId: string, patch: Partial<QuotePackage>) =>
@@ -552,9 +580,9 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
           <span className="font-bold text-white">הצעת מחיר — {q.orgName}</span>
           <span className="text-white/30">|</span>
           <button
-            onClick={() => { localStorage.removeItem(STORAGE_KEY); setQ(defaultQuote()); }}
+            onClick={() => setQ(defaultQuote())}
             className="text-xs text-white/50 hover:text-white/80 transition-colors">
-            אפס הצעה
+            אפס
           </button>
         </div>
         <div className="flex items-center gap-2">
@@ -577,6 +605,40 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
             <Download size={14} /> PDF
           </button>
         </div>
+      </div>
+
+      {/* ── VERSION BAR ── */}
+      <div className="flex items-center gap-2 px-4 py-2 bg-white border-b border-gray-200 overflow-x-auto shrink-0">
+        {versions.map((v, idx) => (
+          <div key={v.id} className="flex items-center shrink-0">
+            <button
+              onClick={() => setActiveIdx(idx)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                idx === safeIdx
+                  ? "text-white shadow-sm"
+                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+              }`}
+              style={idx === safeIdx ? { background: BRAND_BG, color: BRAND_TEXT } : {}}>
+              {v.label}
+              <span className={`text-[10px] ${idx === safeIdx ? "opacity-60" : "text-gray-400"}`}>
+                {v.createdAt}
+              </span>
+            </button>
+            {versions.length > 1 && (
+              <button
+                onClick={() => deleteVersion(idx)}
+                className="mr-0.5 text-gray-300 hover:text-red-400 p-0.5 transition-colors"
+                title="מחק גרסה">
+                <Trash2 size={11} />
+              </button>
+            )}
+          </div>
+        ))}
+        <button
+          onClick={addVersion}
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs text-gray-400 border-2 border-dashed border-gray-200 hover:border-gray-400 hover:text-gray-600 transition-colors shrink-0">
+          <Plus size={11} /> הצעה חדשה
+        </button>
       </div>
 
       <div className="flex flex-1 overflow-hidden">

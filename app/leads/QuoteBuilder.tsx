@@ -32,6 +32,13 @@ interface BrandLink {
   url: string;
 }
 
+interface Workshop {
+  id: string;
+  title: string;
+  description: string;
+  notes: string;
+}
+
 interface QuoteData {
   orgName: string;
   contactName: string;
@@ -44,6 +51,7 @@ interface QuoteData {
   quoteNumber: string;     // מספר הצעה
   intro: string;
   includes: string;        // מה כלול
+  workshops: Workshop[];
   // single mode
   items: QuoteItem[];
   // packages mode
@@ -262,6 +270,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     quoteNumber: quoteNum,
     intro: `אנו שמחים להציג בפניכם הצעה לחוויה בלתי ניתנת להחלפה עבור צוות ${lead.orgName}.\nהצעה זו נבנתה בהתאמה אישית לצרכיכם ולמטרות שהגדרתם יחד.`,
     includes: "",
+    workshops: [],
     mode: "single",
     items: [{ id: uid(), description: lead.productType || "חוויה מותאמת", quantity: 1, unitPrice: lead.dealValue || 0 }],
     packages: [defaultPkg(), { ...defaultPkg(), id: uid(), name: "אפשרות ב׳" }],
@@ -442,6 +451,17 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
 
     ${q.intro ? `<p style="font-size:14px;line-height:1.85;color:#666;margin-bottom:40px;white-space:pre-line;font-family:${F};">${q.intro}</p>` : ""}
 
+    ${(q.workshops ?? []).length > 0 ? `
+    <div style="margin-bottom:40px;font-family:${F};">
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:16px;border-bottom:2px solid ${BRAND_BG};padding-bottom:6px;font-family:${F};">תוכנית הפעילות</div>
+      ${(q.workshops ?? []).map((ws, i) => `
+      <div style="margin-bottom:20px;padding:18px 22px;background:#faf8f5;border-radius:10px;border-right:4px solid ${BRAND_BG};font-family:${F};">
+        <div style="font-size:15px;font-weight:700;color:${BRAND_TEXT};margin-bottom:8px;font-family:${F};">${i + 1}. ${ws.title || "סדנה"}</div>
+        ${ws.description ? `<div style="font-size:13px;color:#555;line-height:1.8;white-space:pre-line;font-family:${F};">${ws.description}</div>` : ""}
+        ${ws.notes ? `<div style="margin-top:10px;font-size:12px;color:#999;font-style:italic;font-family:${F};">📌 ${ws.notes}</div>` : ""}
+      </div>`).join("")}
+    </div>` : ""}
+
     ${selectedBlock && selectedBlock.description ? `
     <div style="background:#faf8f5;border-right:4px solid ${BRAND_BG};padding:20px 24px;border-radius:0 10px 10px 0;margin-bottom:36px;font-family:${F};">
       <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_BG};margin-bottom:8px;font-family:${F};">⚡ על החוויה</div>
@@ -569,10 +589,11 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
   // RENDER
   // ──────────────────────────────────────────────────────────────────────────
   const SECTIONS = [
-    { id: "details", label: "פרטים" },
-    { id: "items",   label: q.mode === "packages" ? "אפשרויות" : "מחירון" },
-    { id: "block",   label: "Block" },
-    { id: "extra",   label: "הערות" },
+    { id: "details",   label: "פרטים" },
+    { id: "workshops", label: "סדנאות" },
+    { id: "items",     label: q.mode === "packages" ? "אפשרויות" : "מחירון" },
+    { id: "block",     label: "Block" },
+    { id: "extra",     label: "הערות" },
   ] as const;
 
   return (
@@ -737,6 +758,54 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
                   <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">מבוא</label>
                   <textarea className="w-full border rounded-lg px-3 py-2 text-sm resize-y" rows={4} style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
                     value={q.intro} onChange={(e) => setQ({ ...q, intro: e.target.value })} />
+                </div>
+              </>
+            )}
+
+            {/* ── WORKSHOPS ── */}
+            {activeSection === "workshops" && (
+              <>
+                <p className="text-xs text-gray-400">הוסף סדנאות/חוויות עם תיאור מפורט. יופיעו בהצעה לפני טבלת המחירים.</p>
+                <div className="space-y-4">
+                  {(q.workshops ?? []).map((ws, idx) => (
+                    <div key={ws.id} className="border border-gray-200 rounded-xl overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50">
+                        <span className="text-xs font-semibold text-gray-500">סדנה {idx + 1}</span>
+                        <button onClick={() => setQ({ ...q, workshops: q.workshops.filter(w => w.id !== ws.id) })}
+                          className="text-gray-300 hover:text-red-500 transition-colors">
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                      <div className="p-3 space-y-2">
+                        <div>
+                          <label className="block text-xs text-gray-400 mb-1">כותרת הסדנה</label>
+                          <input className="w-full border rounded-lg px-3 py-2 text-sm"
+                            placeholder="לדוגמה: סדנת גיבוש צוותים"
+                            value={ws.title}
+                            onChange={e => setQ({ ...q, workshops: q.workshops.map(w => w.id === ws.id ? { ...w, title: e.target.value } : w) })} />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-400 mb-1">תוכן ופירוט</label>
+                          <textarea className="w-full border rounded-lg px-3 py-2 text-sm resize-y" rows={4}
+                            placeholder={"תאר את תוכן הסדנה, מה יקרה, מה המטרות..."}
+                            value={ws.description}
+                            onChange={e => setQ({ ...q, workshops: q.workshops.map(w => w.id === ws.id ? { ...w, description: e.target.value } : w) })} />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-400 mb-1">הערות לסדנה זו</label>
+                          <textarea className="w-full border rounded-lg px-3 py-2 text-sm resize-y" rows={2}
+                            placeholder="משך זמן, ציוד נדרש, מיקום..."
+                            value={ws.notes}
+                            onChange={e => setQ({ ...q, workshops: q.workshops.map(w => w.id === ws.id ? { ...w, notes: e.target.value } : w) })} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => setQ({ ...q, workshops: [...(q.workshops ?? []), { id: uid(), title: "", description: "", notes: "" }] })}
+                    className="w-full border-2 border-dashed border-gray-200 rounded-xl py-2.5 text-sm text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-colors flex items-center justify-center gap-1.5">
+                    <Plus size={13} /> הוסף סדנה
+                  </button>
                 </div>
               </>
             )}
@@ -946,6 +1015,20 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
             <div style={{ padding: "44px 52px", direction: "rtl", fontFamily: FONT }}>
 
               {q.intro && <p style={{ fontSize: 13.5, lineHeight: 1.85, color: "#666", marginBottom: 36, whiteSpace: "pre-wrap", wordBreak: "break-word", overflowWrap: "break-word", fontFamily: FONT }}>{q.intro}</p>}
+
+              {/* Workshops */}
+              {(q.workshops ?? []).length > 0 && (
+                <div style={{ marginBottom: 36, fontFamily: FONT }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: BRAND_TEXT, marginBottom: 14, borderBottom: `2px solid ${BRAND_BG}`, paddingBottom: 5 }}>תוכנית הפעילות</div>
+                  {(q.workshops ?? []).map((ws, i) => (
+                    <div key={ws.id} style={{ marginBottom: 16, padding: "16px 20px", background: "#faf8f5", borderRadius: 10, borderRight: `4px solid ${BRAND_BG}` }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: BRAND_TEXT, marginBottom: 6 }}>{i + 1}. {ws.title || "סדנה"}</div>
+                      {ws.description && <div style={{ fontSize: 13, color: "#555", lineHeight: 1.8, whiteSpace: "pre-line" }}>{ws.description}</div>}
+                      {ws.notes && <div style={{ marginTop: 8, fontSize: 12, color: "#999", fontStyle: "italic" }}>📌 {ws.notes}</div>}
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Block info */}
               {selectedBlock && selectedBlock.description && (

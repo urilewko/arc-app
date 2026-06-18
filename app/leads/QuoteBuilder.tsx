@@ -364,7 +364,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
       const pkgSub = calcItems(pkg.items);
       const pkgVat = Math.round(pkgSub * 0.18);
       return `
-      <div style="flex:1;border:2px solid ${pkg.isRecommended ? BRAND_ACCENT : "#e5e0db"};border-radius:12px;overflow:hidden;font-family:${F};">
+      <div style="border:2px solid ${pkg.isRecommended ? BRAND_ACCENT : "#e5e0db"};border-radius:12px;overflow:hidden;font-family:${F};page-break-inside:avoid;">
         ${pkg.isRecommended
           ? `<div style="background:${BRAND_ACCENT};color:white;text-align:center;font-size:11px;font-weight:700;letter-spacing:1px;padding:6px;text-transform:uppercase;font-family:${F};">מומלץ</div>`
           : `<div style="height:29px;background:#f7f4f1;"></div>`}
@@ -482,7 +482,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
 
     ${q.mode === "single"
       ? itemsTableHTML(q.items)
-      : `<div style="display:flex;gap:14px;align-items:stretch;">${packagesHTML}</div>`
+      : `<div style="display:flex;flex-direction:column;gap:16px;">${packagesHTML}</div>`
     }
 
     ${q.includes ? `
@@ -1081,12 +1081,12 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
                   </div>
                 </>
               ) : (
-                <div className="flex gap-3">
+                <div className="flex flex-col gap-4">
                   {q.packages.map((pkg) => {
                     const pkgSub = calcItems(pkg.items);
                     const pkgTotal = pkgSub + Math.round(pkgSub * 0.18);
                     return (
-                      <div key={pkg.id} className="flex-1 rounded-xl overflow-hidden" style={{ border: `2px solid ${pkg.isRecommended ? BRAND_BG : "#e5e0db"}`, fontFamily: FONT }}>
+                      <div key={pkg.id} className="rounded-xl overflow-hidden" style={{ border: `2px solid ${pkg.isRecommended ? BRAND_BG : "#e5e0db"}`, fontFamily: FONT }}>
                         {pkg.isRecommended
                           ? <div className="text-center text-xs font-bold py-1.5 tracking-widest" style={{ background: BRAND_BG, color: BRAND_TEXT }}>מומלץ</div>
                           : <div style={{ height: 28, background: "#f7f4f1" }} />}

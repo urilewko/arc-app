@@ -96,6 +96,7 @@ export interface Contact {
   phone: string;
   email: string;
   notes: string;
+  category: string;
   createdAt: string;
 }
 
@@ -263,6 +264,8 @@ interface ARCStore {
   // Load all data from Supabase
   loadAll: () => Promise<void>;
 
+  contactCategories: string[];
+  addContactCategory: (cat: string) => void;
   addContact: (c: Omit<Contact, "id" | "createdAt">) => void;
   updateContact: (id: string, c: Partial<Contact>) => void;
   deleteContact: (id: string) => void;
@@ -305,6 +308,7 @@ interface ARCStore {
 
 export const useStore = create<ARCStore>()((set, get) => ({
   contacts: [],
+  contactCategories: [],
   leads: [],
   projects: [],
   infraProjects: [],
@@ -343,6 +347,13 @@ export const useStore = create<ARCStore>()((set, get) => ({
   },
 
   // ── Contacts ──
+  addContactCategory: (cat) => {
+    if (!cat.trim()) return;
+    set((s) => {
+      if (s.contactCategories.includes(cat.trim())) return s;
+      return { contactCategories: [...s.contactCategories, cat.trim()] };
+    });
+  },
   addContact: (c) => {
     const row: Contact = { ...c, id: uid(), createdAt: new Date().toISOString() };
     set((s) => ({ contacts: [...s.contacts, row] }));

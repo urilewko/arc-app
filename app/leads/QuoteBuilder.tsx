@@ -227,11 +227,21 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
   });
 
   const HISTORY_KEY = `arc-quotes-v2-${lead.id}`;
+  const LEGACY_KEY  = `arc-quote-${lead.id}`;
 
   interface QuoteVersion { id: string; label: string; createdAt: string; data: QuoteData }
 
   const loadHistory = (): QuoteVersion[] => {
-    try { const s = localStorage.getItem(HISTORY_KEY); if (s) return JSON.parse(s); } catch {}
+    try {
+      const s = localStorage.getItem(HISTORY_KEY);
+      if (s) return JSON.parse(s);
+      // migrate from old single-quote key
+      const legacy = localStorage.getItem(LEGACY_KEY);
+      if (legacy) {
+        const data = JSON.parse(legacy) as QuoteData;
+        return [{ id: uid(), label: "הצעה #1", createdAt: data.quoteDate || todayStr(), data }];
+      }
+    } catch {}
     return [];
   };
   const saveHistory = (versions: QuoteVersion[]) => {
@@ -287,7 +297,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
   const addVersion = () => {
     const newV: QuoteVersion = { id: uid(), label: `הצעה #${versions.length + 1}`, createdAt: todayStr(), data: defaultQuote() };
     setVersions(prev => [...prev, newV]);
-    setActiveIdx(versions.length);
+    // stay on current version — user clicks the new tab when ready
   };
 
   const deleteVersion = (idx: number) => {

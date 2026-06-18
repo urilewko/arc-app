@@ -61,8 +61,8 @@ export default function ContactsPage() {
     <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">אנשי קשר</h1>
-        <span className="text-sm text-gray-400">{contacts.length} אנשי קשר</span>
+        <h1 className="text-2xl font-bold">הקהילה שלנו</h1>
+        <span className="text-sm text-gray-400">{contacts.length} הקהילה שלנו</span>
       </div>
 
       {/* Quick-add bar */}
@@ -116,7 +116,7 @@ export default function ContactsPage() {
       {filtered.length === 0 && (
         <div className="text-center py-16 text-gray-400">
           <div className="text-4xl mb-3">👥</div>
-          <p>אין אנשי קשר עדיין. השתמש בשורת ההוספה המהירה למעלה.</p>
+          <p>אין הקהילה שלנו עדיין. השתמש בשורת ההוספה המהירה למעלה.</p>
         </div>
       )}
 

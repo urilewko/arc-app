@@ -212,7 +212,7 @@ function itemsTableHTML(items: QuoteItem[]): string {
 export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: () => void }) {
   const { blocks } = useStore();
   const [tab, setTab] = useState<"edit" | "preview">("edit");
-  const [activeSection, setActiveSection] = useState<"details" | "items" | "block" | "extra">("details");
+  const [activeSection, setActiveSection] = useState<"details" | "workshops" | "items" | "block" | "extra">("details");
   const [logoDataUrl, setLogoDataUrl] = useState<string>("/arc-logo.png");
 
   useEffect(() => {

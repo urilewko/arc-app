@@ -1,6 +1,7 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Lead, useStore } from "@/lib/store";
+import { supabase } from "@/lib/supabase";
 import { ChevronLeft, Plus, Trash2, Download, FileCode, Eye, Package, Zap, Link } from "lucide-react";
 
 // ─── Brand ───────────────────────────────────────────────────────────────────
@@ -234,27 +235,10 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     isRecommended: false,
   });
 
-  const HISTORY_KEY = `arc-quotes-v2-${lead.id}`;
-  const LEGACY_KEY  = `arc-quote-${lead.id}`;
-
   interface QuoteVersion { id: string; label: string; createdAt: string; data: QuoteData }
 
-  const loadHistory = (): QuoteVersion[] => {
-    try {
-      const s = localStorage.getItem(HISTORY_KEY);
-      if (s) return JSON.parse(s);
-      // migrate from old single-quote key
-      const legacy = localStorage.getItem(LEGACY_KEY);
-      if (legacy) {
-        const data = JSON.parse(legacy) as QuoteData;
-        return [{ id: uid(), label: "הצעה #1", createdAt: data.quoteDate || todayStr(), data }];
-      }
-    } catch {}
-    return [];
-  };
-  const saveHistory = (versions: QuoteVersion[]) => {
-    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(versions)); } catch {}
-  };
+  const LEGACY_KEY = `arc-quote-${lead.id}`;
+  const LEGACY_V2  = `arc-quotes-v2-${lead.id}`;
 
   const quoteNum = `ARC-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 900) + 100)}`;
 
@@ -285,34 +269,70 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     ],
   });
 
-  const [versions, setVersions] = useState<QuoteVersion[]>(() => {
-    const hist = loadHistory();
-    if (hist.length > 0) return hist;
-    return [{ id: uid(), label: "הצעה #1", createdAt: todayStr(), data: defaultQuote() }];
-  });
+  const [versions, setVersions] = useState<QuoteVersion[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load from Supabase on mount, migrate from localStorage if needed
+  useEffect(() => {
+    supabase.from("quotes").select("*").eq("lead_id", lead.id).order("created_at").then(({ data }) => {
+      if (data && data.length > 0) {
+        setVersions(data.map(r => ({ id: r.id, label: r.label, createdAt: r.created_at?.slice(0,10) ?? todayStr(), data: r.data as QuoteData })));
+      } else {
+        // migrate from localStorage
+        let migrated: QuoteVersion[] = [];
+        try {
+          const v2 = localStorage.getItem(LEGACY_V2);
+          if (v2) migrated = JSON.parse(v2);
+          else {
+            const v1 = localStorage.getItem(LEGACY_KEY);
+            if (v1) migrated = [{ id: uid(), label: "הצעה #1", createdAt: todayStr(), data: JSON.parse(v1) as QuoteData }];
+          }
+        } catch {}
+        if (migrated.length === 0) migrated = [{ id: uid(), label: "הצעה #1", createdAt: todayStr(), data: defaultQuote() }];
+        setVersions(migrated);
+        // push migrated data to Supabase
+        migrated.forEach(v => supabase.from("quotes").upsert({ id: v.id, lead_id: lead.id, label: v.label, data: v.data }).then(() => {}));
+      }
+      setLoading(false);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lead.id]);
 
   const safeIdx = Math.min(activeIdx, versions.length - 1);
   const q = versions[safeIdx]?.data ?? defaultQuote();
   const setQ = (patch: QuoteData | ((prev: QuoteData) => QuoteData)) => {
-    setVersions(prev => prev.map((v, i) => {
-      if (i !== Math.min(activeIdx, prev.length - 1)) return v;
-      return { ...v, data: typeof patch === "function" ? patch(v.data) : patch };
-    }));
+    setVersions(prev => {
+      const next = prev.map((v, i) => {
+        if (i !== Math.min(activeIdx, prev.length - 1)) return v;
+        return { ...v, data: typeof patch === "function" ? patch(v.data) : patch };
+      });
+      // debounced save of the changed version
+      const changed = next[Math.min(activeIdx, next.length - 1)];
+      if (changed) {
+        if (saveTimer.current) clearTimeout(saveTimer.current);
+        saveTimer.current = setTimeout(() => {
+          supabase.from("quotes").upsert({ id: changed.id, lead_id: lead.id, label: changed.label, data: changed.data }).then(() => {});
+        }, 800);
+      }
+      return next;
+    });
   };
-
-  useEffect(() => { saveHistory(versions); }, [versions]);
 
   const addVersion = () => {
     const newV: QuoteVersion = { id: uid(), label: `הצעה #${versions.length + 1}`, createdAt: todayStr(), data: defaultQuote() };
     setVersions(prev => [...prev, newV]);
+    supabase.from("quotes").insert({ id: newV.id, lead_id: lead.id, label: newV.label, data: newV.data }).then(() => {});
     // stay on current version — user clicks the new tab when ready
   };
 
   const deleteVersion = (idx: number) => {
     if (versions.length <= 1) return;
+    const toDelete = versions[idx];
     setVersions(prev => prev.filter((_, i) => i !== idx));
     setActiveIdx(prev => (idx <= prev && prev > 0) ? prev - 1 : Math.min(prev, versions.length - 2));
+    supabase.from("quotes").delete().eq("id", toDelete.id).then(() => {});
   };
 
   // ── package helpers ──
@@ -595,6 +615,12 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     { id: "block",     label: "Block" },
     { id: "extra",     label: "הערות" },
   ] as const;
+
+  if (loading) return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center text-gray-400 text-sm">
+      טוען הצעות מחיר...
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">

@@ -424,6 +424,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
   .header{padding:18px 44px 16px;}
   .body{padding:36px 44px;}
   .footer{padding:18px 44px;}
+  .thin-bar{display:none;}
   @media(max-width:760px){
     .page{margin:0;border-radius:0;box-shadow:none;}
     .header,.footer{padding:16px 20px 14px;}
@@ -432,14 +433,22 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
   @page{margin:0;size:A4 portrait;}
   @media print{
     html,body{background:#fff;margin:0;padding:0;}
-    .page{margin:0;box-shadow:none;max-width:100%;width:100%;border-radius:0;}
+    .page{margin:0;box-shadow:none;max-width:100%;width:100%;border-radius:0;padding-top:44px;padding-bottom:68px;}
     .body{padding:28px 44px !important;}
-    .header{padding:16px 44px 14px !important;}
-    .footer{padding:16px 44px !important;}
+    .header{padding:14px 44px !important;position:relative;z-index:2;margin-top:-44px;}
+    .footer{position:fixed;bottom:0;left:0;right:0;padding:14px 44px !important;z-index:1;}
+    .thin-bar{display:flex;position:fixed;top:0;left:0;right:0;height:44px;background:${BRAND_BG};z-index:1;align-items:center;padding:0 44px;justify-content:space-between;font-family:${F};}
   }
 </style>
 </head>
 <body>
+
+<!-- thin bar: hidden on screen, fixed on every print page -->
+<div class="thin-bar">
+  <div style="font-size:15px;font-weight:700;color:${BRAND_TEXT};letter-spacing:3px;font-family:${F};">ARC</div>
+  <div style="font-size:9px;color:${BRAND_TEXT};opacity:0.6;letter-spacing:2px;text-transform:uppercase;font-family:${F};">Irreplaceable Experiences</div>
+</div>
+
 <div class="page">
 
   <!-- HEADER -->

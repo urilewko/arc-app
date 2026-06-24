@@ -174,7 +174,6 @@ export function buildQuoteHTML(
   table.doc{width:100%;max-width:720px;margin:32px auto;background:#fff;box-shadow:0 4px 40px rgba(74,46,27,0.12);border-radius:2px;border-collapse:collapse;}
   @media(max-width:760px){table.doc{margin:0;border-radius:0;box-shadow:none;}}
   thead{display:none;}
-  @media print{thead{display:table-header-group;}}
   @page{margin:0 0 58px 0;size:A4 portrait;}
   @media print{
     html,body{background:#fff;margin:0;padding:0;zoom:0.88;}

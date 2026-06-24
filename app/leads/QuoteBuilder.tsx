@@ -422,11 +422,12 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
   html,body{font-family:${F};background:#e8e3de;color:${BRAND_TEXT};direction:rtl;}
   table.doc{width:100%;max-width:720px;margin:32px auto;background:#fff;box-shadow:0 4px 40px rgba(74,46,27,0.12);border-radius:2px;border-collapse:collapse;}
   @media(max-width:760px){table.doc{margin:0;border-radius:0;box-shadow:none;}}
-  @page{margin:0 0 70px 0;size:A4 portrait;}
+  @page{margin:0 0 58px 0;size:A4 portrait;}
   @media print{
     html,body{background:#fff;margin:0;padding:0;}
     table.doc{margin:0;box-shadow:none;max-width:100%;width:100%;border-radius:0;}
-    .print-footer{position:fixed;bottom:0;left:0;right:0;width:100%;background:${BRAND_BG};display:flex;justify-content:space-between;align-items:center;padding:14px 44px;font-family:${F};z-index:10;}
+    .print-footer{position:fixed;bottom:0;left:0;right:0;width:100%;background:${BRAND_BG};display:flex;justify-content:space-between;align-items:center;padding:12px 44px;font-family:${F};z-index:10;}
+    .sig-block{page-break-inside:avoid;page-break-before:avoid;}
   }
 </style>
 </head>
@@ -548,7 +549,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     </div>` : ""}
 
     <!-- SIGNATURE -->
-    <div style="margin-top:52px;padding-top:32px;border-top:1px solid #e8e3de;display:grid;grid-template-columns:1fr 1fr;gap:48px;font-family:${F};">
+    <div class="sig-block" style="margin-top:52px;padding-top:32px;border-top:1px solid #e8e3de;display:grid;grid-template-columns:1fr 1fr;gap:48px;font-family:${F};">
       <div>
         <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#bbb;margin-bottom:8px;font-family:${F};">חתימת הלקוח</div>
         <div style="height:90px;"></div>

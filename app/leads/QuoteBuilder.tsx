@@ -422,12 +422,11 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
   html,body{font-family:${F};background:#e8e3de;color:${BRAND_TEXT};direction:rtl;}
   table.doc{width:100%;max-width:720px;margin:32px auto;background:#fff;box-shadow:0 4px 40px rgba(74,46,27,0.12);border-radius:2px;border-collapse:collapse;}
   @media(max-width:760px){table.doc{margin:0;border-radius:0;box-shadow:none;}}
-  @page{margin:0;size:A4 portrait;}
+  @page{margin:0 0 70px 0;size:A4 portrait;}
   @media print{
     html,body{background:#fff;margin:0;padding:0;}
     table.doc{margin:0;box-shadow:none;max-width:100%;width:100%;border-radius:0;}
     .print-footer{position:fixed;bottom:0;left:0;right:0;width:100%;background:${BRAND_BG};display:flex;justify-content:space-between;align-items:center;padding:14px 44px;font-family:${F};z-index:10;}
-    .content-pad{padding-bottom:68px;}
   }
 </style>
 </head>

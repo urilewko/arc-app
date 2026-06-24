@@ -424,7 +424,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
   @media(max-width:760px){table.doc{margin:0;border-radius:0;box-shadow:none;}}
   @page{margin:0 0 58px 0;size:A4 portrait;}
   @media print{
-    html,body{background:#fff;margin:0;padding:0;}
+    html,body{background:#fff;margin:0;padding:0;zoom:0.88;}
     table.doc{margin:0;box-shadow:none;max-width:100%;width:100%;border-radius:0;}
     .print-footer{position:fixed;bottom:0;left:0;right:0;width:100%;background:${BRAND_BG};display:flex;justify-content:space-between;align-items:center;padding:12px 44px;font-family:${F};z-index:10;}
     .sig-block{page-break-inside:avoid;page-break-before:avoid;}

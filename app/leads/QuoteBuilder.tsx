@@ -431,11 +431,11 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
   }
   @page{margin:0;size:A4 portrait;}
   @media print{
-    html,body{background:${BRAND_BG};margin:0;padding:0;}
-    .page{margin:0;box-shadow:none;max-width:100%;width:100%;border-radius:0;min-height:100vh;display:flex;flex-direction:column;}
-    .body{flex:1;padding:28px 44px !important;}
+    html,body{background:#fff;margin:0;padding:0;}
+    .page{margin:0;box-shadow:none;max-width:100%;width:100%;border-radius:0;}
+    .body{padding:28px 44px !important;}
     .header{padding:16px 44px 14px !important;}
-    .footer{padding:16px 44px !important;margin-top:auto;}
+    .footer{padding:16px 44px !important;}
   }
 </style>
 </head>

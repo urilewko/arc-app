@@ -615,6 +615,16 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     URL.revokeObjectURL(url);
   };
 
+  const [copied, setCopied] = useState(false);
+  const handleCopyLink = async () => {
+    const quoteId = versions[safeIdx]?.id;
+    if (!quoteId) return;
+    const base = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
+    await navigator.clipboard.writeText(`${base}/quote/${quoteId}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   // ──────────────────────────────────────────────────────────────────────────
   // RENDER
   // ──────────────────────────────────────────────────────────────────────────
@@ -662,9 +672,9 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
               <Eye size={13} /> תצוגה
             </button>
           </div>
-          <button onClick={handleDownloadHTML}
+          <button onClick={handleCopyLink}
             className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white text-sm px-3 py-2 rounded-lg transition-colors">
-            <FileCode size={14} /> HTML
+            <Link size={14} /> {copied ? "הועתק!" : "שלח הצעה"}
           </button>
           <button onClick={handlePrint}
             className="flex items-center gap-2 bg-white hover:bg-white/90 text-sm px-4 py-2 rounded-lg font-semibold transition-colors"

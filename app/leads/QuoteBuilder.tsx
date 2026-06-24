@@ -426,6 +426,8 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
   @media print{
     html,body{background:#fff;margin:0;padding:0;}
     table.doc{margin:0;box-shadow:none;max-width:100%;width:100%;border-radius:0;}
+    .print-footer{position:fixed;bottom:0;left:0;right:0;width:100%;background:${BRAND_BG};display:flex;justify-content:space-between;align-items:center;padding:14px 44px;font-family:${F};z-index:10;}
+    .content-pad{padding-bottom:68px;}
   }
 </style>
 </head>
@@ -442,22 +444,6 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     </td></tr>
   </thead>
 
-  <!-- FOOTER — repeats on every page via tfoot -->
-  <tfoot>
-    <tr><td style="padding:0;">
-      <div style="background:${BRAND_BG};display:flex;justify-content:space-between;align-items:center;direction:rtl;padding:16px 44px;font-family:${F};">
-        <div>
-          <div style="font-size:17px;font-weight:700;color:${BRAND_TEXT};letter-spacing:3px;font-family:${F};">ARC</div>
-          <div style="font-size:10px;color:${BRAND_MUTED};letter-spacing:2px;text-transform:uppercase;margin-top:2px;font-family:${F};">Irreplaceable Experiences</div>
-        </div>
-        <div style="text-align:left;font-size:11px;color:${BRAND_MUTED};line-height:1.9;font-family:${F};">
-          <div style="font-weight:600;color:${BRAND_TEXT};">אורי לבקוביץ</div>
-          <div>urilewko@arcexpe.com</div>
-          <div>052-610-8102</div>
-        </div>
-      </div>
-    </td></tr>
-  </tfoot>
 
   <!-- CONTENT -->
   <tbody><tr><td style="padding:0;">
@@ -487,7 +473,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     </div>
 
   <!-- BODY -->
-  <div style="padding:36px 44px;direction:rtl;font-family:${F};">
+  <div class="content-pad" style="padding:36px 44px;direction:rtl;font-family:${F};">
 
     ${q.intro ? `<p style="font-size:14px;line-height:1.85;color:#666;margin-bottom:40px;white-space:pre-line;font-family:${F};">${q.intro}</p>` : ""}
 
@@ -588,6 +574,19 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
 
   </td></tr></tbody>
 </table>
+
+<!-- FOOTER: fixed in print (every page bottom), in-flow on screen -->
+<div class="print-footer" style="background:${BRAND_BG};display:flex;justify-content:space-between;align-items:center;direction:rtl;padding:16px 44px;font-family:${F};">
+  <div>
+    <div style="font-size:17px;font-weight:700;color:${BRAND_TEXT};letter-spacing:3px;font-family:${F};">ARC</div>
+    <div style="font-size:10px;color:${BRAND_MUTED};letter-spacing:2px;text-transform:uppercase;margin-top:2px;font-family:${F};">Irreplaceable Experiences</div>
+  </div>
+  <div style="text-align:left;font-size:11px;color:${BRAND_MUTED};line-height:1.9;font-family:${F};">
+    <div style="font-weight:600;color:${BRAND_TEXT};">אורי לבקוביץ</div>
+    <div>urilewko@arcexpe.com</div>
+    <div>052-610-8102</div>
+  </div>
+</div>
 </body>
 </html>`;
   };

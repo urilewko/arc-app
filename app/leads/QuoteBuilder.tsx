@@ -419,64 +419,75 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
-  html,body{font-family:${F};background:#e8e3de;color:${BRAND_TEXT};direction:rtl;min-height:100%;}
-  .page{max-width:720px;margin:32px auto;background:#fff;box-shadow:0 4px 40px rgba(74,46,27,0.12);border-radius:2px;}
-  .header{padding:18px 44px 16px;}
-  .body{padding:36px 44px;}
-  .footer{padding:18px 44px;}
-  .thin-bar{display:none;}
-  @media(max-width:760px){
-    .page{margin:0;border-radius:0;box-shadow:none;}
-    .header,.footer{padding:16px 20px 14px;}
-    .body{padding:24px 20px;}
-  }
+  html,body{font-family:${F};background:#e8e3de;color:${BRAND_TEXT};direction:rtl;}
+  table.doc{width:100%;max-width:720px;margin:32px auto;background:#fff;box-shadow:0 4px 40px rgba(74,46,27,0.12);border-radius:2px;border-collapse:collapse;}
+  @media(max-width:760px){table.doc{margin:0;border-radius:0;box-shadow:none;}}
   @page{margin:0;size:A4 portrait;}
   @media print{
     html,body{background:#fff;margin:0;padding:0;}
-    .page{margin:0;box-shadow:none;max-width:100%;width:100%;border-radius:0;padding-top:44px;padding-bottom:68px;}
-    .body{padding:28px 44px !important;}
-    .header{padding:14px 44px !important;position:relative;z-index:2;margin-top:-44px;}
-    .footer{position:fixed;bottom:0;left:0;right:0;padding:14px 44px !important;z-index:1;}
-    .thin-bar{display:flex;position:fixed;top:0;left:0;right:0;height:44px;background:${BRAND_BG};z-index:1;align-items:center;padding:0 44px;justify-content:space-between;font-family:${F};}
+    table.doc{margin:0;box-shadow:none;max-width:100%;width:100%;border-radius:0;}
   }
 </style>
 </head>
 <body>
+<table class="doc">
 
-<!-- thin bar: hidden on screen, fixed on every print page -->
-<div class="thin-bar">
-  <div style="font-size:15px;font-weight:700;color:${BRAND_TEXT};letter-spacing:3px;font-family:${F};">ARC</div>
-  <div style="font-size:9px;color:${BRAND_TEXT};opacity:0.6;letter-spacing:2px;text-transform:uppercase;font-family:${F};">Irreplaceable Experiences</div>
-</div>
+  <!-- THIN HEADER — repeats on every page via thead -->
+  <thead>
+    <tr><td style="padding:0;">
+      <div style="background:${BRAND_BG};height:44px;display:flex;align-items:center;padding:0 44px;justify-content:space-between;direction:rtl;font-family:${F};">
+        <div style="font-size:15px;font-weight:700;color:${BRAND_TEXT};letter-spacing:3px;font-family:${F};">ARC</div>
+        <div style="font-size:9px;color:${BRAND_TEXT};opacity:0.6;letter-spacing:2px;text-transform:uppercase;font-family:${F};">Irreplaceable Experiences</div>
+      </div>
+    </td></tr>
+  </thead>
 
-<div class="page">
+  <!-- FOOTER — repeats on every page via tfoot -->
+  <tfoot>
+    <tr><td style="padding:0;">
+      <div style="background:${BRAND_BG};display:flex;justify-content:space-between;align-items:center;direction:rtl;padding:16px 44px;font-family:${F};">
+        <div>
+          <div style="font-size:17px;font-weight:700;color:${BRAND_TEXT};letter-spacing:3px;font-family:${F};">ARC</div>
+          <div style="font-size:10px;color:${BRAND_MUTED};letter-spacing:2px;text-transform:uppercase;margin-top:2px;font-family:${F};">Irreplaceable Experiences</div>
+        </div>
+        <div style="text-align:left;font-size:11px;color:${BRAND_MUTED};line-height:1.9;font-family:${F};">
+          <div style="font-weight:600;color:${BRAND_TEXT};">אורי לבקוביץ</div>
+          <div>urilewko@arcexpe.com</div>
+          <div>052-610-8102</div>
+        </div>
+      </div>
+    </td></tr>
+  </tfoot>
 
-  <!-- HEADER -->
-  <div class="header" style="background:${BRAND_BG};direction:rtl;font-family:${F};">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-      <div>${buildLogoTag(logoDataUrl)}</div>
-      <div style="text-align:left;font-family:${F};">
-        <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_TEXT};opacity:0.6;margin-bottom:2px;">הצעת מחיר</div>
+  <!-- CONTENT -->
+  <tbody><tr><td style="padding:0;">
+
+    <!-- THICK HEADER (page 1) — sits right after the thin thead bar -->
+    <div style="background:${BRAND_BG};padding:16px 44px 20px;direction:rtl;font-family:${F};">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div>${buildLogoTag(logoDataUrl)}</div>
+        <div style="text-align:left;font-family:${F};">
+          <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_TEXT};opacity:0.6;">הצעת מחיר</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;">
+        <div>
+          <div style="font-size:26px;font-weight:700;color:${BRAND_TEXT};font-family:${F};">${q.orgName || "שם הארגון"}</div>
+          ${q.contactName ? `<div style="font-size:13px;color:${BRAND_MUTED};margin-top:4px;font-family:${F};">${q.contactName}</div>` : ""}
+          ${q.productType ? `<div style="font-size:11px;color:${BRAND_MUTED};letter-spacing:1px;text-transform:uppercase;margin-top:6px;font-family:${F};">${q.productType}</div>` : ""}
+        </div>
+        <div style="text-align:left;font-size:12px;color:${BRAND_MUTED};line-height:2;font-family:${F};">
+          <div><strong style="color:${BRAND_TEXT};">תאריך הצעה:</strong> ${formatDate(q.quoteDate)}</div>
+          <div><strong style="color:${BRAND_TEXT};">תוקף עד:</strong> ${formatDate(q.validUntil)}</div>
+          ${q.eventDate ? `<div><strong style="color:${BRAND_TEXT};">תאריך אירוע:</strong> ${formatDate(q.eventDate)}</div>` : ""}
+          ${q.participants ? `<div><strong style="color:${BRAND_TEXT};">משתתפים:</strong> ${q.participants}</div>` : ""}
+          ${q.location ? `<div><strong style="color:${BRAND_TEXT};">מיקום:</strong> ${q.location}</div>` : ""}
+        </div>
       </div>
     </div>
-    <div style="display:flex;justify-content:space-between;align-items:flex-end;">
-      <div>
-        <div style="font-size:26px;font-weight:700;color:${BRAND_TEXT};font-family:${F};">${q.orgName || "שם הארגון"}</div>
-        ${q.contactName ? `<div style="font-size:13px;color:${BRAND_MUTED};margin-top:4px;font-family:${F};">${q.contactName}</div>` : ""}
-        ${q.productType ? `<div style="font-size:11px;color:${BRAND_MUTED};letter-spacing:1px;text-transform:uppercase;margin-top:6px;font-family:${F};">${q.productType}</div>` : ""}
-      </div>
-      <div style="text-align:left;font-size:12px;color:${BRAND_MUTED};line-height:2;font-family:${F};">
-        <div><strong style="color:${BRAND_TEXT};">תאריך הצעה:</strong> ${formatDate(q.quoteDate)}</div>
-        <div><strong style="color:${BRAND_TEXT};">תוקף עד:</strong> ${formatDate(q.validUntil)}</div>
-        ${q.eventDate ? `<div><strong style="color:${BRAND_TEXT};">תאריך אירוע:</strong> ${formatDate(q.eventDate)}</div>` : ""}
-        ${q.participants ? `<div><strong style="color:${BRAND_TEXT};">משתתפים:</strong> ${q.participants}</div>` : ""}
-        ${q.location ? `<div><strong style="color:${BRAND_TEXT};">מיקום:</strong> ${q.location}</div>` : ""}
-      </div>
-    </div>
-  </div>
 
   <!-- BODY -->
-  <div class="body" style="direction:rtl;font-family:${F};">
+  <div style="padding:36px 44px;direction:rtl;font-family:${F};">
 
     ${q.intro ? `<p style="font-size:14px;line-height:1.85;color:#666;margin-bottom:40px;white-space:pre-line;font-family:${F};">${q.intro}</p>` : ""}
 
@@ -575,20 +586,8 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
 
   </div>
 
-  <!-- FOOTER -->
-  <div class="footer" style="background:${BRAND_BG};display:flex;justify-content:space-between;align-items:center;direction:rtl;font-family:${F};">
-    <div>
-      <div style="font-size:17px;font-weight:700;color:${BRAND_TEXT};letter-spacing:3px;font-family:${F};">ARC</div>
-      <div style="font-size:10px;color:${BRAND_MUTED};letter-spacing:2px;text-transform:uppercase;margin-top:2px;font-family:${F};">Irreplaceable Experiences</div>
-    </div>
-    <div style="text-align:left;font-size:11px;color:${BRAND_MUTED};line-height:1.9;font-family:${F};">
-      <div style="font-weight:600;color:${BRAND_TEXT};">אורי לבקוביץ</div>
-      <div>urilewko@arcexpe.com</div>
-      <div>052-610-8102</div>
-    </div>
-  </div>
-
-</div>
+  </td></tr></tbody>
+</table>
 </body>
 </html>`;
   };

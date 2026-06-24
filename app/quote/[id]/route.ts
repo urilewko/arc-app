@@ -3,8 +3,9 @@ import { buildQuoteHTML, QuoteData, SelectedBlock } from "@/lib/buildQuoteHTML";
 
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -13,7 +14,7 @@ export async function GET(
   const { data: quote, error } = await supabase
     .from("quotes")
     .select("*")
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   if (error || !quote) {

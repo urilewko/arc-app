@@ -42,7 +42,8 @@ export async function GET(
     }
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://arc-app-iota.vercel.app";
+  const host = new URL(_req.url).origin;
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || host;
   const html = buildQuoteHTML(q, {
     logoUrl: `${baseUrl}/arc-logo.png`,
     selectedBlock,

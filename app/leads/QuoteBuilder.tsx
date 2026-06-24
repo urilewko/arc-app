@@ -428,6 +428,9 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     table.doc{margin:0;box-shadow:none;max-width:100%;width:100%;border-radius:0;}
     .print-footer{position:fixed;bottom:0;left:0;right:0;width:100%;background:${BRAND_BG};display:flex;justify-content:space-between;align-items:center;padding:12px 44px;font-family:${F};z-index:10;}
     .sig-block{page-break-inside:avoid;page-break-before:avoid;}
+    .compact-header{padding:10px 44px 14px !important;}
+    .compact-section{padding:16px 44px !important;}
+    .compact-body{padding:16px 44px 20px !important;}
   }
 </style>
 </head>
@@ -449,7 +452,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
   <tbody><tr><td style="padding:0;">
 
     <!-- THICK HEADER (page 1) — sits right after the thin thead bar -->
-    <div style="background:${BRAND_BG};padding:16px 44px 20px;direction:rtl;font-family:${F};">
+    <div class="compact-header" style="background:${BRAND_BG};padding:16px 44px 20px;direction:rtl;font-family:${F};">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <div>${buildLogoTag(logoDataUrl)}</div>
         <div style="text-align:left;font-family:${F};">
@@ -473,7 +476,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     </div>
 
   <!-- BODY -->
-  <div class="content-pad" style="padding:36px 44px;direction:rtl;font-family:${F};">
+  <div class="compact-body content-pad" style="padding:36px 44px;direction:rtl;font-family:${F};">
 
     ${q.intro ? `<p style="font-size:14px;line-height:1.85;color:#666;margin-bottom:40px;white-space:pre-line;font-family:${F};">${q.intro}</p>` : ""}
 

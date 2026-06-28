@@ -83,8 +83,6 @@ export default function FinancePage() {
   const paidRecords = incomeRecords.filter((r) => r.paymentStatus === "שולם במלואו");
   const uriIncome   = paidRecords.reduce((s, r) => s + (r.person === "אורי" ? r.amount : r.person === "שניהם" ? r.amount / 2 : 0), 0);
   const yinonIncome = paidRecords.reduce((s, r) => s + (r.person === "ינון" ? r.amount : r.person === "שניהם" ? r.amount / 2 : 0), 0);
-  const balanceDiff = uriIncome - yinonIncome; // positive = Yinon owes Uri, negative = Uri owes Yinon
-  const balanceAmount = Math.abs(balanceDiff) / 2;
 
   // ── Expense aggregation from all sources ──────────────────────
   const expFromDebriefs   = useMemo(() => debriefs.filter((d) => inPeriod(d.eventDate || d.createdAt)).flatMap((d) => (d.expenses || []).map((e) => ({ ...e, source: "תחקיר", sourceName: d.orgName, date: d.eventDate || "" }))),
@@ -96,6 +94,15 @@ export default function FinancePage() {
 
   const allExpenses = [...expFromDebriefs, ...expFromInfra, ...expFromBlocks, ...expFromGeneral];
   const totalExpenses = allExpenses.reduce((s, e) => s + (e.amount || 0), 0);
+
+  // ── Partner balance including expenses ────────────────────────
+  const uriExpenses   = allExpenses.reduce((s, e) => s + (e.paidBy === "אורי"  ? (e.amount || 0) : 0), 0);
+  const yinonExpenses = allExpenses.reduce((s, e) => s + (e.paidBy === "ינון"  ? (e.amount || 0) : 0), 0);
+  // net position per person (income brought in minus expenses paid out)
+  const uriNet   = uriIncome   - uriExpenses;
+  const yinonNet = yinonIncome - yinonExpenses;
+  const netDiff  = uriNet - yinonNet; // positive = Yinon owes Uri, negative = Uri owes Yinon
+  const transferAmount = Math.abs(netDiff) / 2;
 
   // Group expenses by source type
   const expenseGroups = [
@@ -197,28 +204,37 @@ export default function FinancePage() {
 
           {/* Partner balance */}
           <div className="bg-white rounded-xl shadow-sm p-5 mb-6 border border-[#aec6cf]/40">
-            <div className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wide">מאזן שותפות — 50/50</div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className="text-xs text-gray-400 mb-1">אורי</div>
-                <div className="text-xl font-bold text-[#4a2e1b]">₪{Math.round(uriIncome).toLocaleString()}</div>
+            <div className="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wide">מאזן שותפות — 50/50</div>
+            <div className="grid grid-cols-3 gap-6 mb-4">
+              {/* Uri column */}
+              <div className="space-y-2">
+                <div className="text-sm font-bold text-[#4a2e1b] text-center">אורי</div>
+                <div className="flex justify-between text-xs text-gray-500"><span>הכנסות</span><span className="text-green-600 font-medium">₪{Math.round(uriIncome).toLocaleString()}</span></div>
+                <div className="flex justify-between text-xs text-gray-500"><span>הוצאות ששילם</span><span className="text-red-500 font-medium">₪{Math.round(uriExpenses).toLocaleString()}</span></div>
+                <div className="border-t pt-1 flex justify-between text-sm font-bold text-[#4a2e1b]"><span>נטו</span><span>₪{Math.round(uriNet).toLocaleString()}</span></div>
               </div>
-              <div className="text-center flex flex-col items-center justify-center">
-                {balanceAmount < 100 ? (
-                  <div className="text-green-600 font-semibold text-sm">✓ מאוזן</div>
+
+              {/* Transfer */}
+              <div className="flex flex-col items-center justify-center text-center">
+                {transferAmount < 100 ? (
+                  <div className="text-green-600 font-bold text-sm">✓ מאוזן</div>
                 ) : (
                   <>
                     <div className="text-xs text-gray-400 mb-1">להעברה</div>
-                    <div className="text-xl font-bold text-purple-600">₪{Math.round(balanceAmount).toLocaleString()}</div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {balanceDiff > 0 ? "ינון → אורי" : "אורי → ינון"}
+                    <div className="text-2xl font-bold text-purple-600">₪{Math.round(transferAmount).toLocaleString()}</div>
+                    <div className="text-xs text-gray-500 mt-1 font-medium">
+                      {netDiff > 0 ? "ינון → אורי" : "אורי → ינון"}
                     </div>
                   </>
                 )}
               </div>
-              <div className="text-center">
-                <div className="text-xs text-gray-400 mb-1">ינון</div>
-                <div className="text-xl font-bold text-[#4a2e1b]">₪{Math.round(yinonIncome).toLocaleString()}</div>
+
+              {/* Yinon column */}
+              <div className="space-y-2">
+                <div className="text-sm font-bold text-[#4a2e1b] text-center">ינון</div>
+                <div className="flex justify-between text-xs text-gray-500"><span>הכנסות</span><span className="text-green-600 font-medium">₪{Math.round(yinonIncome).toLocaleString()}</span></div>
+                <div className="flex justify-between text-xs text-gray-500"><span>הוצאות ששילם</span><span className="text-red-500 font-medium">₪{Math.round(yinonExpenses).toLocaleString()}</span></div>
+                <div className="border-t pt-1 flex justify-between text-sm font-bold text-[#4a2e1b]"><span>נטו</span><span>₪{Math.round(yinonNet).toLocaleString()}</span></div>
               </div>
             </div>
           </div>

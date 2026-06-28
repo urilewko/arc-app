@@ -1,8 +1,8 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useStore } from "@/lib/store";
 import Link from "next/link";
-import { TrendingUp, FolderOpen, ChevronRight, ChevronLeft, Users, BookOpen, AlertCircle, ExternalLink } from "lucide-react";
+import { TrendingUp, FolderOpen, ChevronRight, ChevronLeft, Users, BookOpen, AlertCircle, ExternalLink, CalendarDays, RefreshCw } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from "recharts";
@@ -81,6 +81,31 @@ export default function Dashboard() {
   const { leads, projects, debriefs, blocks, collaborators, financeRecords, infraProjects } = useStore();
   const [calView, setCalView] = useState<CalView>("month");
   const [cursor, setCursor] = useState(new Date());
+  const [gcalConnected, setGcalConnected] = useState<boolean | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState("");
+
+  useEffect(() => {
+    fetch("/api/calendar/sync").then(r => r.json()).then(d => setGcalConnected(d.connected)).catch(() => setGcalConnected(false));
+  }, []);
+
+  const connectGoogle = useCallback(() => {
+    window.open("/api/auth/google", "_blank", "width=500,height=600");
+    const timer = setInterval(() => {
+      fetch("/api/calendar/sync").then(r => r.json()).then(d => {
+        if (d.connected) { setGcalConnected(true); clearInterval(timer); }
+      });
+    }, 2000);
+    setTimeout(() => clearInterval(timer), 60000);
+  }, []);
+
+  const syncNow = useCallback(async () => {
+    setSyncing(true); setSyncMsg("");
+    const res = await fetch("/api/calendar/sync", { method: "POST" });
+    const data = await res.json();
+    setSyncMsg(data.error ? `שגיאה: ${data.error}` : `✓ סונכרנו ${data.added} אירועים`);
+    setSyncing(false);
+  }, []);
   const [financePeriod, setFinancePeriod] = useState<FinancePeriod>("h2");
   const [financeYear, setFinanceYear] = useState<number>(2026);
 
@@ -259,14 +284,31 @@ export default function Dashboard() {
           <h1 className="text-2xl font-black text-white">דאשבורד</h1>
           <p className="text-white/30 text-xs mt-0.5">{format(new Date(), "EEEE, d MMMM yyyy", { locale: he })}</p>
         </div>
-        {urgentLeads.length > 0 && (
-          <Link href="/leads">
-            <div className="flex items-center gap-2 text-sm px-4 py-2 rounded-xl border border-orange-500/40 text-orange-400 cursor-pointer hover:bg-orange-500/10 transition-colors" style={{ background: "rgba(249,115,22,0.1)" }}>
-              <AlertCircle size={15} />
-              {urgentLeads.length} לידים דחופים
-            </div>
-          </Link>
-        )}
+        <div className="flex items-center gap-2">
+          {urgentLeads.length > 0 && (
+            <Link href="/leads">
+              <div className="flex items-center gap-2 text-sm px-4 py-2 rounded-xl border border-orange-500/40 text-orange-400 cursor-pointer hover:bg-orange-500/10 transition-colors" style={{ background: "rgba(249,115,22,0.1)" }}>
+                <AlertCircle size={15} />
+                {urgentLeads.length} לידים דחופים
+              </div>
+            </Link>
+          )}
+          {/* Google Calendar sync */}
+          {gcalConnected === false && (
+            <button onClick={connectGoogle}
+              className="flex items-center gap-2 text-sm px-4 py-2 rounded-xl border border-white/10 text-white/50 hover:text-white hover:border-white/30 transition-colors">
+              <CalendarDays size={15} /> חבר Google Calendar
+            </button>
+          )}
+          {gcalConnected === true && (
+            <button onClick={syncNow} disabled={syncing}
+              className="flex items-center gap-2 text-sm px-4 py-2 rounded-xl border border-green-500/30 text-green-400 hover:bg-green-500/10 transition-colors disabled:opacity-50">
+              <RefreshCw size={15} className={syncing ? "animate-spin" : ""} />
+              {syncing ? "מסנכרן..." : "סנכרן יומן"}
+            </button>
+          )}
+          {syncMsg && <span className="text-xs text-white/40">{syncMsg}</span>}
+        </div>
       </div>
 
       {/* Stat cards */}

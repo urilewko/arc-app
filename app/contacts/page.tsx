@@ -102,7 +102,9 @@ function CategorySelect({
 const emptyForm = { orgName: "", contactName: "", role: "", phone: "", email: "", notes: "", category: "" };
 
 export default function ContactsPage() {
-  const { contacts, addContact, updateContact, deleteContact, contactCategories, addContactCategory } = useStore();
+  const { contacts, addContact, updateContact, deleteContact, addContactCategory } = useStore();
+  // derive categories from contacts already in Supabase — no separate storage needed
+  const contactCategories = [...new Set(contacts.map(c => c.category).filter(Boolean))] as string[];
 
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("");

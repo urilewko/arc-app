@@ -215,6 +215,7 @@ export interface FinanceRecord {
   notes: string;
   recordType: FinanceRecordType;
   expenseCategory?: string;
+  person?: "אורי" | "ינון" | "שניהם";
   createdAt: string;
 }
 

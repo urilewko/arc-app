@@ -25,12 +25,15 @@ const STATUS_COLORS: Record<PaymentStatus, string> = {
   "שולם במלואו":   "bg-green-100 text-green-700",
 };
 
+const PERSONS = ["אורי", "ינון", "שניהם"] as const;
+
 const emptyIncome = {
   projectId: "", orgName: "", amount: 0,
   paymentStatus: "ממתין" as PaymentStatus,
   invoiceDate: "", paidDate: "", notes: "",
   recordType: "income" as FinanceRecordType,
   expenseCategory: "",
+  person: "שניהם" as "אורי" | "ינון" | "שניהם",
 };
 
 const emptyExpense = {
@@ -39,6 +42,7 @@ const emptyExpense = {
   invoiceDate: "", paidDate: "", notes: "",
   recordType: "expense" as FinanceRecordType,
   expenseCategory: "אחר",
+  person: "שניהם" as "אורי" | "ינון" | "שניהם",
 };
 
 type FinanceTab = "income" | "expenses";
@@ -75,6 +79,13 @@ export default function FinancePage() {
   const totalPaid    = incomeRecords.filter((r) => r.paymentStatus === "שולם במלואו").reduce((s, r) => s + r.amount, 0);
   const totalPending = incomeRecords.filter((r) => r.paymentStatus !== "שולם במלואו").reduce((s, r) => s + r.amount, 0);
 
+  // ── Partner balance (50/50) ────────────────────────────────────
+  const paidRecords = incomeRecords.filter((r) => r.paymentStatus === "שולם במלואו");
+  const uriIncome   = paidRecords.reduce((s, r) => s + (r.person === "אורי" ? r.amount : r.person === "שניהם" ? r.amount / 2 : 0), 0);
+  const yinonIncome = paidRecords.reduce((s, r) => s + (r.person === "ינון" ? r.amount : r.person === "שניהם" ? r.amount / 2 : 0), 0);
+  const balanceDiff = uriIncome - yinonIncome; // positive = Yinon owes Uri, negative = Uri owes Yinon
+  const balanceAmount = Math.abs(balanceDiff) / 2;
+
   // ── Expense aggregation from all sources ──────────────────────
   const expFromDebriefs   = useMemo(() => debriefs.filter((d) => inPeriod(d.eventDate || d.createdAt)).flatMap((d) => (d.expenses || []).map((e) => ({ ...e, source: "תחקיר", sourceName: d.orgName, date: d.eventDate || "" }))),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -103,7 +114,7 @@ export default function FinancePage() {
 
   const openNewIncome  = () => { setEditing(null); setForm(emptyIncome);  setOpen(true); };
   const openNewExpense = () => { setEditing(null); setForm(emptyExpense); setOpen(true); };
-  const openEdit = (r: FinanceRecord) => { setEditing(r); setForm({ ...r, recordType: r.recordType || "income", expenseCategory: r.expenseCategory || "" }); setOpen(true); };
+  const openEdit = (r: FinanceRecord) => { setEditing(r); setForm({ ...r, recordType: r.recordType || "income", expenseCategory: r.expenseCategory || "", person: r.person || "שניהם" }); setOpen(true); };
 
   const save = () => {
     if (!form.orgName || !form.amount) return;
@@ -173,7 +184,7 @@ export default function FinancePage() {
       {/* ── TAB: הכנסות ── */}
       {tab === "income" && (
         <>
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="bg-white rounded-xl shadow-sm p-5 border-r-4 border-green-400">
               <div className="text-sm text-gray-500 mb-1">שולם במלואו</div>
               <div className="text-2xl font-bold text-green-600">₪{totalPaid.toLocaleString()}</div>
@@ -181,6 +192,34 @@ export default function FinancePage() {
             <div className="bg-white rounded-xl shadow-sm p-5 border-r-4 border-orange-400">
               <div className="text-sm text-gray-500 mb-1">ממתין לתשלום</div>
               <div className="text-2xl font-bold text-orange-500">₪{totalPending.toLocaleString()}</div>
+            </div>
+          </div>
+
+          {/* Partner balance */}
+          <div className="bg-white rounded-xl shadow-sm p-5 mb-6 border border-[#aec6cf]/40">
+            <div className="text-sm font-semibold text-gray-500 mb-3 uppercase tracking-wide">מאזן שותפות — 50/50</div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="text-xs text-gray-400 mb-1">אורי</div>
+                <div className="text-xl font-bold text-[#4a2e1b]">₪{Math.round(uriIncome).toLocaleString()}</div>
+              </div>
+              <div className="text-center flex flex-col items-center justify-center">
+                {balanceAmount < 100 ? (
+                  <div className="text-green-600 font-semibold text-sm">✓ מאוזן</div>
+                ) : (
+                  <>
+                    <div className="text-xs text-gray-400 mb-1">להעברה</div>
+                    <div className="text-xl font-bold text-purple-600">₪{Math.round(balanceAmount).toLocaleString()}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {balanceDiff > 0 ? "ינון → אורי" : "אורי → ינון"}
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="text-center">
+                <div className="text-xs text-gray-400 mb-1">ינון</div>
+                <div className="text-xl font-bold text-[#4a2e1b]">₪{Math.round(yinonIncome).toLocaleString()}</div>
+              </div>
             </div>
           </div>
 
@@ -209,6 +248,9 @@ export default function FinancePage() {
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[r.paymentStatus]}`}>
                         {r.paymentStatus}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-500">
+                      {r.person && <span className="px-2 py-0.5 rounded-full bg-[#aec6cf]/20 text-[#4a2e1b] font-medium">{r.person}</span>}
                     </td>
                     <td className="px-4 py-3 text-gray-500">{r.invoiceDate}</td>
                     <td className="px-4 py-3 text-gray-500">{r.paidDate || "—"}</td>
@@ -343,6 +385,22 @@ export default function FinancePage() {
                   <label className="block text-sm font-medium mb-1">סכום (₪) *</label>
                   <input type="number" className="w-full border rounded-lg px-3 py-2 text-sm" value={form.amount}
                     onChange={(e) => setForm({ ...form, amount: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">שייך ל</label>
+                  <div className="flex gap-2">
+                    {PERSONS.map((p) => (
+                      <button key={p} type="button"
+                        onClick={() => setForm({ ...form, person: p })}
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                          form.person === p
+                            ? "bg-[#4a2e1b] text-white border-[#4a2e1b]"
+                            : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
+                        }`}>
+                        {p}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">סטטוס תשלום</label>

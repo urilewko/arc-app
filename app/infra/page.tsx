@@ -1,13 +1,23 @@
 "use client";
 import { useState } from "react";
-import { useStore, InfraProject, InfraCategory, ProductionStatus, ExpenseItem, InfraTask, TaskStatus } from "@/lib/store";
+import { useStore, InfraProject, InfraCategory, ProductionStatus, ExpenseItem, InfraTask, TaskStatus, TaskCategory } from "@/lib/store";
 import Modal from "@/components/Modal";
 import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, X, CheckSquare } from "lucide-react";
 
 const CATEGORIES: InfraCategory[] = ["תשתית", "המשק", "שטח", "שיווק ומיצוב", "The Hub", "הקהילה", "אחר"];
 const PRODUCTION_STATUSES: ProductionStatus[] = ["עוד לא התחלנו", "בעבודה", "בוצע"];
 const TASK_STATUSES: TaskStatus[] = ["לביצוע", "בעבודה", "הושלם"];
+const TASK_CATEGORIES: TaskCategory[] = ["תוכן", "לוגיסטיקה", "הנחייה", "שיווק", "פיננסי", "אחר"];
 const RESPONSIBLE = ["אורי", "ינון"];
+
+const TASK_CAT_COLORS: Record<TaskCategory, string> = {
+  "תוכן":      "bg-purple-50 text-purple-600 border border-purple-200",
+  "לוגיסטיקה": "bg-blue-50 text-blue-600 border border-blue-200",
+  "הנחייה":    "bg-teal-50 text-teal-600 border border-teal-200",
+  "שיווק":     "bg-pink-50 text-pink-600 border border-pink-200",
+  "פיננסי":    "bg-green-50 text-green-600 border border-green-200",
+  "אחר":       "bg-gray-50 text-gray-500 border border-gray-200",
+};
 
 const STATUS_COLORS: Record<ProductionStatus, string> = {
   "עוד לא התחלנו": "bg-gray-100 text-gray-600",
@@ -50,6 +60,7 @@ const emptyTask: Omit<InfraTask, "id"> = {
   responsible: "",
   dueDate: "",
   notes: "",
+  category: "אחר",
 };
 
 export default function InfraPage() {
@@ -63,6 +74,7 @@ export default function InfraPage() {
   const [expandedSection, setExpandedSection] = useState<Record<string, "tasks" | "expenses" | null>>({});
   const [taskModal, setTaskModal] = useState<string | null>(null);
   const [taskForm, setTaskForm] = useState(emptyTask);
+  const [taskCatFilter, setTaskCatFilter] = useState<TaskCategory | "הכל">("הכל");
 
   const openNew = () => { setEditing(null); setForm(emptyProject); setOpen(true); };
   const openEdit = (p: InfraProject) => { setEditing(p); setForm({ ...p, expenses: p.expenses || [], tasks: p.tasks || [] }); setOpen(true); };
@@ -192,18 +204,31 @@ export default function InfraPage() {
               {/* Tasks panel */}
               {section === "tasks" && (
                 <div className="border-t border-gray-100 bg-gray-50/50 px-5 py-4">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                     <span className="text-sm font-semibold text-gray-600">משימות הפרויקט</span>
                     <button onClick={() => { setTaskForm(emptyTask); setTaskModal(p.id); }}
                       className="flex items-center gap-1 text-xs text-blue-600 border border-blue-200 rounded-lg px-2.5 py-1 hover:bg-blue-50">
                       <Plus size={12} /> משימה חדשה
                     </button>
                   </div>
+                  {tasks.length > 0 && (
+                    <div className="flex gap-1.5 mb-3 flex-wrap">
+                      {(["הכל", ...TASK_CATEGORIES] as const).map((c) => (
+                        <button key={c} onClick={() => setTaskCatFilter(c)}
+                          className={`text-[11px] px-2 py-1 rounded-full font-medium transition-colors ${
+                            taskCatFilter === c ? "bg-[#4a2e1b] text-white" : "bg-white text-gray-500 border border-gray-200 hover:border-gray-400"}`}>
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   {tasks.length === 0 && (
                     <p className="text-xs text-gray-400 text-center py-4">אין משימות. לחץ "משימה חדשה" להוסיף.</p>
                   )}
                   <div className="space-y-2">
-                    {tasks.map((task) => (
+                    {tasks
+                      .filter((task) => taskCatFilter === "הכל" || task.category === taskCatFilter)
+                      .map((task) => (
                       <div key={task.id} className="flex items-center gap-3 bg-white rounded-lg px-3 py-2.5 border border-gray-100 group">
                         <button
                           onClick={() => updateInfraTask(p.id, task.id, { status: task.status === "הושלם" ? "לביצוע" : "הושלם" })}
@@ -214,6 +239,7 @@ export default function InfraPage() {
                         <span className={`flex-1 text-sm ${task.status === "הושלם" ? "line-through text-gray-400" : "text-gray-800"}`}>
                           {task.title}
                         </span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full shrink-0 ${TASK_CAT_COLORS[task.category || "אחר"]}`}>{task.category || "אחר"}</span>
                         {task.responsible && (
                           <span className={`text-[10px] font-semibold rounded-full px-2 py-0.5 shrink-0 ${task.responsible === "אורי" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>
                             {task.responsible}
@@ -343,6 +369,13 @@ export default function InfraPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
+                <label className="block text-sm font-medium mb-1">קטגוריה</label>
+                <select className="w-full border rounded-lg px-3 py-2 text-sm" value={taskForm.category}
+                  onChange={(e) => setTaskForm({ ...taskForm, category: e.target.value as TaskCategory })}>
+                  {TASK_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
                 <label className="block text-sm font-medium mb-1">אחראי</label>
                 <select className="w-full border rounded-lg px-3 py-2 text-sm" value={taskForm.responsible}
                   onChange={(e) => setTaskForm({ ...taskForm, responsible: e.target.value })}>
@@ -350,11 +383,11 @@ export default function InfraPage() {
                   {RESPONSIBLE.map((r) => <option key={r}>{r}</option>)}
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">תאריך יעד</label>
-                <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm" value={taskForm.dueDate}
-                  onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })} />
-              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">תאריך יעד</label>
+              <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm" value={taskForm.dueDate}
+                onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })} />
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">הערות</label>

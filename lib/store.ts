@@ -140,6 +140,7 @@ export interface InfraTask {
   responsible: string;
   dueDate: string;
   notes: string;
+  category: TaskCategory;
 }
 
 export interface InfraProject {

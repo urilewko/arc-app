@@ -75,6 +75,8 @@ export default function InfraPage() {
   const [taskModal, setTaskModal] = useState<string | null>(null);
   const [taskForm, setTaskForm] = useState(emptyTask);
   const [taskCatFilter, setTaskCatFilter] = useState<TaskCategory | "הכל">("הכל");
+  const [editTaskModal, setEditTaskModal] = useState<{ projectId: string; task: InfraTask } | null>(null);
+  const [editTaskForm, setEditTaskForm] = useState(emptyTask);
 
   const openNew = () => { setEditing(null); setForm(emptyProject); setOpen(true); };
   const openEdit = (p: InfraProject) => { setEditing(p); setForm({ ...p, expenses: p.expenses || [], tasks: p.tasks || [] }); setOpen(true); };
@@ -121,6 +123,16 @@ export default function InfraPage() {
     addInfraTask(projectId, taskForm);
     setTaskForm(emptyTask);
     setTaskModal(null);
+  };
+
+  const openEditTask = (projectId: string, task: InfraTask) => {
+    setEditTaskForm({ title: task.title, category: task.category || "אחר", status: task.status, responsible: task.responsible, dueDate: task.dueDate, notes: task.notes });
+    setEditTaskModal({ projectId, task });
+  };
+  const saveEditTask = () => {
+    if (!editTaskModal || !editTaskForm.title) return;
+    updateInfraTask(editTaskModal.projectId, editTaskModal.task.id, editTaskForm);
+    setEditTaskModal(null);
   };
 
   return (
@@ -249,6 +261,10 @@ export default function InfraPage() {
                           <span className="text-[10px] text-gray-400 shrink-0">{task.dueDate}</span>
                         )}
                         <span className={`text-[10px] px-2 py-0.5 rounded-full shrink-0 ${TASK_STATUS_COLORS[task.status]}`}>{task.status}</span>
+                        <button onClick={() => openEditTask(p.id, task)}
+                          className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-gray-600 shrink-0 transition-opacity">
+                          <Pencil size={13} />
+                        </button>
                         <button onClick={() => deleteInfraTask(p.id, task.id)}
                           className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 shrink-0 transition-opacity">
                           <X size={13} />
@@ -398,6 +414,61 @@ export default function InfraPage() {
               <button onClick={() => saveTask(taskModal)}
                 className="flex-1 bg-[#4a2e1b] text-white py-2 rounded-lg text-sm hover:bg-[#3a2415]">הוסף משימה</button>
               <button onClick={() => setTaskModal(null)}
+                className="flex-1 border py-2 rounded-lg text-sm hover:bg-gray-50">ביטול</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Edit task modal */}
+      {editTaskModal && (
+        <Modal title="עריכת משימה" onClose={() => setEditTaskModal(null)}>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium mb-1">כותרת משימה *</label>
+              <input className="w-full border rounded-lg px-3 py-2 text-sm" value={editTaskForm.title}
+                onChange={(e) => setEditTaskForm({ ...editTaskForm, title: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">קטגוריה</label>
+                <select className="w-full border rounded-lg px-3 py-2 text-sm" value={editTaskForm.category}
+                  onChange={(e) => setEditTaskForm({ ...editTaskForm, category: e.target.value as TaskCategory })}>
+                  {TASK_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">סטטוס</label>
+                <select className="w-full border rounded-lg px-3 py-2 text-sm" value={editTaskForm.status}
+                  onChange={(e) => setEditTaskForm({ ...editTaskForm, status: e.target.value as TaskStatus })}>
+                  {TASK_STATUSES.map((s) => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">אחראי</label>
+                <select className="w-full border rounded-lg px-3 py-2 text-sm" value={editTaskForm.responsible}
+                  onChange={(e) => setEditTaskForm({ ...editTaskForm, responsible: e.target.value })}>
+                  <option value="">בחר...</option>
+                  {RESPONSIBLE.map((r) => <option key={r}>{r}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">תאריך יעד</label>
+                <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm" value={editTaskForm.dueDate}
+                  onChange={(e) => setEditTaskForm({ ...editTaskForm, dueDate: e.target.value })} />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">הערות</label>
+              <textarea className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} value={editTaskForm.notes}
+                onChange={(e) => setEditTaskForm({ ...editTaskForm, notes: e.target.value })} />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button onClick={saveEditTask}
+                className="flex-1 bg-[#4a2e1b] text-white py-2 rounded-lg text-sm hover:bg-[#3a2415]">שמור</button>
+              <button onClick={() => setEditTaskModal(null)}
                 className="flex-1 border py-2 rounded-lg text-sm hover:bg-gray-50">ביטול</button>
             </div>
           </div>

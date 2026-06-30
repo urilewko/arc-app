@@ -7,7 +7,7 @@ import {
 import Modal from "@/components/Modal";
 import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, CheckSquare, ExternalLink } from "lucide-react";
 
-const PRODUCT_TYPES: ProductType[] = ["ריטריט", "סדנה חד פעמית", "Offsite", "קורס"];
+const PRODUCT_TYPES: ProductType[] = ["ריטריט", "סדנה חד פעמית", "Offsite", "קורס", "אירוע"];
 const PRODUCTION_STATUSES: ProductionStatus[] = ["עוד לא התחלנו", "בעבודה", "בוצע"];
 const TASK_CATEGORIES: TaskCategory[] = ["תוכן", "לוגיסטיקה", "הנחייה", "שיווק", "פיננסי", "אחר"];
 const TASK_STATUSES: TaskStatus[] = ["לביצוע", "בעבודה", "הושלם"];
@@ -18,6 +18,7 @@ const PRODUCT_COLORS: Record<ProductType, string> = {
   "סדנה חד פעמית": "bg-blue-100 text-blue-700",
   "Offsite":       "bg-teal-100 text-teal-700",
   "קורס":          "bg-orange-100 text-orange-700",
+  "אירוע":         "bg-pink-100 text-pink-700",
 };
 
 const STATUS_COLORS: Record<ProductionStatus, string> = {

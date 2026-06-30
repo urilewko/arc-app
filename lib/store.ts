@@ -11,7 +11,7 @@ export type LeadStatus =
   | "נסגר"
   | "נפל";
 
-export type ProductType = "ריטריט" | "סדנה חד פעמית" | "Offsite" | "קורס";
+export type ProductType = "ריטריט" | "סדנה חד פעמית" | "Offsite" | "קורס" | "אירוע";
 export type ProductionStatus = "עוד לא התחלנו" | "בעבודה" | "בוצע";
 export type InfraCategory = "תשתית" | "המשק" | "שטח" | "שיווק ומיצוב" | "The Hub" | "הקהילה" | "אחר";
 export type TaskCategory = "תוכן" | "לוגיסטיקה" | "הנחייה" | "שיווק" | "פיננסי" | "אחר";

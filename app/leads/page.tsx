@@ -11,7 +11,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-const PRODUCT_TYPES = ["ריטריט", "סדנה חד פעמית", "Offsite", "קורס"];
+const PRODUCT_TYPES = ["ריטריט", "סדנה חד פעמית", "Offsite", "קורס", "אירוע"];
 
 const STATUSES: LeadStatus[] = [
   "שיחה ראשונית",

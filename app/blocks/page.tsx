@@ -4,7 +4,7 @@ import { useStore, Block, BlockStatus, BlockContentItem, BlockMarketingLink, Exp
 import { Plus, Pencil, Trash2, Zap, ArrowRight, X, Link2, Eye, Edit3, Check } from "lucide-react";
 
 const BLOCK_STATUSES: BlockStatus[] = ["רעיון", "בפיתוח", "מוכן", "בוצע בשטח"];
-const PRODUCT_TYPES: ProductType[] = ["ריטריט", "סדנה חד פעמית", "Offsite", "קורס"];
+const PRODUCT_TYPES: ProductType[] = ["ריטריט", "סדנה חד פעמית", "Offsite", "קורס", "אירוע"];
 
 // ── Visual config ──────────────────────────────────────────────────
 const STATUS_GRADIENT: Record<BlockStatus, string> = {

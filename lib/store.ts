@@ -402,12 +402,27 @@ export const useStore = create<ARCStore>()((set, get) => ({
       notes: lead.notes,
       createdAt: new Date().toISOString(),
     };
+    const newFinanceRecord: FinanceRecord | null = newProject ? {
+      id: uid(),
+      projectId: newProject.id,
+      orgName: newProject.orgName,
+      amount: newProject.price || 0,
+      paymentStatus: "ממתין",
+      invoiceDate: "",
+      paidDate: "",
+      notes: "",
+      recordType: "income",
+      person: "שניהם",
+      createdAt: new Date().toISOString(),
+    } : null;
     set((s) => ({
       leads: s.leads.map((x) => x.id === id ? { ...x, status: "נסגר" } : x),
       projects: newProject ? [...s.projects, newProject] : s.projects,
+      financeRecords: newFinanceRecord ? [...s.financeRecords, newFinanceRecord] : s.financeRecords,
     }));
     dbUpdate("leads", id, { status: "נסגר" });
     if (newProject) dbInsert("projects", newProject as unknown as Rec);
+    if (newFinanceRecord) dbInsert("finance_records", newFinanceRecord as unknown as Rec);
   },
 
   // ── Projects ──

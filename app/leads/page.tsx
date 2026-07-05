@@ -66,6 +66,15 @@ const NEXT_ACTIONS = [
 
 const RESPONSIBLE = ["אורי", "ינון"];
 
+const TRUST_LEVELS = ["חם", "בינוני", "קר"] as const;
+type TrustLevel = typeof TRUST_LEVELS[number];
+
+const TRUST_COLORS: Record<TrustLevel, { border: string; dot: string; label: string }> = {
+  "חם":    { border: "border-l-4 border-l-green-400",  dot: "bg-green-400",  label: "text-green-700 bg-green-50" },
+  "בינוני":{ border: "border-l-4 border-l-yellow-400", dot: "bg-yellow-400", label: "text-yellow-700 bg-yellow-50" },
+  "קר":    { border: "border-l-4 border-l-blue-300",   dot: "bg-blue-300",   label: "text-blue-600 bg-blue-50" },
+};
+
 const empty = {
   contactId: "",
   orgName: "",
@@ -78,6 +87,7 @@ const empty = {
   dueDate: "",
   activityDate: "",
   notes: "",
+  trustLevel: undefined as "חם" | "בינוני" | "קר" | undefined,
 };
 
 function DroppableColumn({ id, children }: { id: string; children: React.ReactNode }) {
@@ -115,8 +125,10 @@ function LeadCard({ lead, onEdit, onDelete, onClose, onQuote, dragHandleProps }:
     : null;
   const isUrgent = daysUntilDue !== null && daysUntilDue <= 3;
 
+  const trust = lead.trustLevel ? TRUST_COLORS[lead.trustLevel] : null;
+
   return (
-    <div className={`bg-white rounded-xl border shadow-sm hover:shadow-md transition-shadow ${isUrgent ? "border-orange-300" : "border-gray-200"}`}>
+    <div className={`bg-white rounded-xl border shadow-sm hover:shadow-md transition-shadow overflow-hidden ${isUrgent ? "border-orange-300" : "border-gray-200"} ${trust ? trust.border : ""}`}>
       {/* Header */}
       <div className="flex items-start justify-between p-3 pb-2">
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -129,6 +141,9 @@ function LeadCard({ lead, onEdit, onDelete, onClose, onQuote, dragHandleProps }:
             </div>
           )}
           <span className="font-bold text-sm leading-tight">{lead.orgName}</span>
+          {trust && (
+            <span className={`text-[9px] font-bold rounded-full px-1.5 py-0.5 shrink-0 ${trust.label}`}>{lead.trustLevel}</span>
+          )}
         </div>
         <div className="flex gap-1 shrink-0 mr-1">
           {lead.status !== "נסגר" && lead.status !== "נפל" && (
@@ -225,7 +240,14 @@ export default function LeadsPage() {
   const activeLead = activeId ? leads.find((l) => l.id === activeId) : null;
 
   const openNew = () => { setEditing(null); setForm(empty); setOpen(true); };
-  const openEdit = (l: Lead) => { setEditing(l); setForm({ ...l }); setOpen(true); };
+  const openEdit = (l: Lead) => {
+    setEditing(l);
+    setForm({ contactId: l.contactId, orgName: l.orgName, status: l.status, source: l.source,
+      productType: l.productType, dealValue: l.dealValue, nextAction: l.nextAction,
+      responsible: l.responsible, dueDate: l.dueDate, activityDate: l.activityDate,
+      notes: l.notes, trustLevel: l.trustLevel });
+    setOpen(true);
+  };
 
   const save = () => {
     if (!form.orgName) return;
@@ -473,6 +495,24 @@ export default function LeadsPage() {
               <label className="block text-sm font-medium mb-1">תאריך פעילות (מתי הפעילות תתקיים)</label>
               <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm" value={form.activityDate}
                 onChange={(e) => setForm({ ...form, activityDate: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">רמת קרבה / אמון</label>
+              <div className="flex gap-2">
+                {TRUST_LEVELS.map(t => (
+                  <button key={t} type="button"
+                    onClick={() => setForm({ ...form, trustLevel: form.trustLevel === t ? undefined : t })}
+                    className={`flex-1 py-1.5 rounded-lg text-sm font-medium border transition-all
+                      ${form.trustLevel === t
+                        ? t === "חם" ? "bg-green-100 border-green-400 text-green-700"
+                          : t === "בינוני" ? "bg-yellow-100 border-yellow-400 text-yellow-700"
+                          : "bg-blue-100 border-blue-300 text-blue-600"
+                        : "bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100"
+                      }`}>
+                    {t === "חם" ? "🔥 חם" : t === "בינוני" ? "🌤 בינוני" : "❄️ קר"}
+                  </button>
+                ))}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">הערות</label>

@@ -113,6 +113,7 @@ export interface Lead {
   dueDate: string;
   activityDate: string;
   notes: string;
+  trustLevel?: "חם" | "בינוני" | "קר";
   createdAt: string;
 }
 

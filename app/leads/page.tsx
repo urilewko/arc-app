@@ -15,7 +15,8 @@ const PRODUCT_TYPES = ["ריטריט", "סדנה חד פעמית", "Offsite", "�
 
 const STATUSES: LeadStatus[] = [
   "שיחה ראשונית",
-  "הצעת מחיר",
+  "מחכים להצעת ערך",
+  "מחכים להצעת מחיר",
   "פגישה",
   "משא ומתן",
   "ping",
@@ -25,7 +26,8 @@ const STATUSES: LeadStatus[] = [
 
 const PIPELINE_STATUSES: LeadStatus[] = [
   "שיחה ראשונית",
-  "הצעת מחיר",
+  "מחכים להצעת ערך",
+  "מחכים להצעת מחיר",
   "פגישה",
   "משא ומתן",
   "ping",
@@ -33,7 +35,8 @@ const PIPELINE_STATUSES: LeadStatus[] = [
 
 const STATUS_COLORS: Record<LeadStatus, string> = {
   "שיחה ראשונית": "bg-blue-100 text-blue-700 border-blue-200",
-  "הצעת מחיר": "bg-purple-100 text-purple-700 border-purple-200",
+  "מחכים להצעת ערך": "bg-cyan-100 text-cyan-700 border-cyan-200",
+  "מחכים להצעת מחיר": "bg-purple-100 text-purple-700 border-purple-200",
   "פגישה": "bg-yellow-100 text-yellow-700 border-yellow-200",
   "משא ומתן": "bg-orange-100 text-orange-700 border-orange-200",
   ping: "bg-gray-100 text-gray-600 border-gray-200",
@@ -43,7 +46,8 @@ const STATUS_COLORS: Record<LeadStatus, string> = {
 
 const STATUS_HEADER_COLORS: Record<LeadStatus, string> = {
   "שיחה ראשונית": "bg-blue-50 border-blue-200",
-  "הצעת מחיר": "bg-purple-50 border-purple-200",
+  "מחכים להצעת ערך": "bg-cyan-50 border-cyan-200",
+  "מחכים להצעת מחיר": "bg-purple-50 border-purple-200",
   "פגישה": "bg-yellow-50 border-yellow-200",
   "משא ומתן": "bg-orange-50 border-orange-200",
   ping: "bg-gray-50 border-gray-200",
@@ -231,7 +235,7 @@ export default function LeadsPage() {
     }
     // Dropped on another card — move to that card's column
     const targetLead = leads.find((l) => l.id === overId);
-    if (targetLead && targetLead.status !== leads.find((l) => l.id === active.id)?.status) {
+    if (targetLead) {
       if (targetLead.status === "נסגר") closeLead(active.id as string);
       else updateLead(active.id as string, { status: targetLead.status });
     }
@@ -308,7 +312,7 @@ export default function LeadsPage() {
         <DndContext sensors={sensors} collisionDetection={closestCorners}
           onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="pb-4">
-            <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(7, minmax(0, 1fr))" }}>
+            <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(8, minmax(0, 1fr))" }}>
               {[...PIPELINE_STATUSES, "נסגר" as LeadStatus, "נפל" as LeadStatus].map((status) => {
                 const statusLeads = leads.filter((l) => l.status === status);
                 const totalValue = statusLeads.reduce((s, l) => s + (l.dealValue || 0), 0);

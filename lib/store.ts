@@ -4,7 +4,8 @@ import { supabase, toSnake, toCamel } from "./supabase";
 
 export type LeadStatus =
   | "שיחה ראשונית"
-  | "הצעת מחיר"
+  | "מחכים להצעת ערך"
+  | "מחכים להצעת מחיר"
   | "פגישה"
   | "משא ומתן"
   | "ping"

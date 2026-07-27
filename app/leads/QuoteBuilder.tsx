@@ -1232,10 +1232,10 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
             {/* Footer */}
             <div style={{ background: BRAND_BG, padding: "22px 52px", display: "flex", justifyContent: "space-between", alignItems: "center", direction: "rtl", fontFamily: FONT }}>
               <div>
-                <div style={{ fontSize: 17, fontWeight: 700, color: BRAND_TEXT, letterSpacing: 3 }}>ARC</div>
-                <div style={{ fontSize: 10, color: BRAND_MUTED, letterSpacing: 2, textTransform: "uppercase", marginTop: 2 }}>Irreplaceable Experiences</div>
+                <div style={{ fontSize: 17, fontWeight: 700, color: BRAND_ON_BG, letterSpacing: 3 }}>ARC</div>
+                <div style={{ fontSize: 10, color: BRAND_ON_BG, opacity: 0.7, letterSpacing: 2, textTransform: "uppercase", marginTop: 2 }}>Irreplaceable Experiences</div>
               </div>
-              <div style={{ textAlign: "left", fontSize: 11, color: BRAND_TEXT, lineHeight: 1.9, opacity: 0.8 }}>
+              <div style={{ textAlign: "left", fontSize: 11, color: BRAND_ON_BG, lineHeight: 1.9, opacity: 0.8 }}>
                 <div style={{ fontWeight: 600 }}>אורי לבקוביץ</div>
                 <div>urilewko@arcexpe.com</div>
                 <div>052-610-8102</div>

@@ -1,8 +1,9 @@
 // ─── Brand ────────────────────────────────────────────────────────────────────
-export const BRAND_BG     = "#aec6cf";
-export const BRAND_ACCENT = "#aec6cf";
-export const BRAND_TEXT   = "#4a2e1b";
-export const BRAND_MUTED  = "#4a2e1b";
+export const BRAND_BG     = "#2e5775";
+export const BRAND_ACCENT = "#2e5775";
+export const BRAND_TEXT   = "#987859";
+export const BRAND_MUTED  = "#987859";
+export const BRAND_PAPER  = "#e7ded2";
 export const FONT         = "'Heebo', 'Arial Hebrew', Arial, sans-serif";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -138,12 +139,12 @@ export function buildQuoteHTML(
     <div style="border:2px solid ${pkg.isRecommended ? BRAND_ACCENT : "#e5e0db"};border-radius:12px;overflow:hidden;font-family:${F};page-break-inside:avoid;">
       ${pkg.isRecommended
         ? `<div style="background:${BRAND_ACCENT};color:white;text-align:center;font-size:11px;font-weight:700;letter-spacing:1px;padding:6px;text-transform:uppercase;font-family:${F};">מומלץ</div>`
-        : `<div style="height:29px;background:#f7f4f1;"></div>`}
+        : `<div style="height:29px;background:#d4c9bc;"></div>`}
       <div style="padding:20px 18px;">
         <div style="font-size:16px;font-weight:700;color:${BRAND_TEXT};margin-bottom:6px;font-family:${F};">${pkg.name}</div>
         ${pkg.description ? `<div style="font-size:12px;color:#888;margin-bottom:14px;font-family:${F};">${pkg.description}</div>` : ""}
         ${pkg.items.map((it) => `
-          <div style="display:flex;justify-content:space-between;font-size:12px;color:#666;padding:5px 0;border-bottom:1px solid #f0ece8;font-family:${F};">
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:${BRAND_TEXT};padding:5px 0;border-bottom:1px solid #f0ece8;font-family:${F};">
             <span>${it.description || "—"}${it.quantity > 1 ? ` ×${it.quantity}` : ""}</span>
             <span style="font-weight:600;">${fmt(it.quantity * it.unitPrice)}</span>
           </div>`).join("")}
@@ -170,13 +171,13 @@ export function buildQuoteHTML(
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
-  html,body{font-family:${F};background:#e8e3de;color:${BRAND_TEXT};direction:rtl;}
-  table.doc{width:100%;max-width:720px;margin:32px auto;background:#fff;box-shadow:0 4px 40px rgba(74,46,27,0.12);border-radius:2px;border-collapse:collapse;}
+  html,body{font-family:${F};background:${BRAND_PAPER};color:${BRAND_TEXT};direction:rtl;}
+  table.doc{width:100%;max-width:720px;margin:32px auto;background:${BRAND_PAPER};box-shadow:0 4px 40px rgba(46,87,117,0.12);border-radius:2px;border-collapse:collapse;}
   @media(max-width:760px){table.doc{margin:0;border-radius:0;box-shadow:none;}}
   thead{display:none;}
   @page{margin:0 0 58px 0;size:A4 portrait;}
   @media print{
-    html,body{background:#fff;margin:0;padding:0;zoom:0.88;}
+    html,body{background:${BRAND_PAPER};margin:0;padding:0;zoom:0.88;}
     table.doc{margin:0;box-shadow:none;max-width:100%;width:100%;border-radius:0;}
     .print-footer{position:fixed;bottom:0;left:0;right:0;width:100%;background:${BRAND_BG};display:flex;justify-content:space-between;align-items:center;padding:12px 44px;font-family:${F};z-index:10;}
     .sig-block{page-break-inside:avoid;page-break-before:avoid;}
@@ -221,25 +222,25 @@ export function buildQuoteHTML(
 
   <div class="compact-body" style="padding:36px 44px;direction:rtl;font-family:${F};">
 
-    ${q.intro ? `<p style="font-size:14px;line-height:1.85;color:#666;margin-bottom:40px;white-space:pre-line;font-family:${F};">${q.intro}</p>` : ""}
+    ${q.intro ? `<p style="font-size:14px;line-height:1.85;color:${BRAND_TEXT};margin-bottom:40px;white-space:pre-line;font-family:${F};">${q.intro}</p>` : ""}
 
     ${(q.workshops ?? []).length > 0 ? `
     <div style="margin-bottom:40px;font-family:${F};">
       <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:16px;border-bottom:2px solid ${BRAND_BG};padding-bottom:6px;font-family:${F};">תוכנית הפעילות</div>
       ${(q.workshops ?? []).map((ws, i) => `
-      <div style="margin-bottom:20px;padding:18px 22px;background:#faf8f5;border-radius:10px;border-right:4px solid ${BRAND_BG};font-family:${F};">
+      <div style="margin-bottom:20px;padding:18px 22px;background:#d4c9bc;border-radius:10px;border-right:4px solid ${BRAND_BG};font-family:${F};">
         <div style="font-size:15px;font-weight:700;color:${BRAND_TEXT};margin-bottom:8px;font-family:${F};">${i + 1}. ${ws.title || "סדנה"}</div>
-        ${ws.description ? `<div style="font-size:13px;color:#555;line-height:1.8;white-space:pre-line;font-family:${F};">${ws.description}</div>` : ""}
+        ${ws.description ? `<div style="font-size:13px;color:${BRAND_TEXT};line-height:1.8;white-space:pre-line;font-family:${F};">${ws.description}</div>` : ""}
         ${ws.notes ? `<div style="margin-top:10px;font-size:12px;color:#999;font-style:italic;font-family:${F};">📌 ${ws.notes}</div>` : ""}
       </div>`).join("")}
     </div>` : ""}
 
     ${selectedBlock?.description ? `
-    <div style="background:#faf8f5;border-right:4px solid ${BRAND_BG};padding:20px 24px;border-radius:0 10px 10px 0;margin-bottom:36px;font-family:${F};">
+    <div style="background:#d4c9bc;border-right:4px solid ${BRAND_BG};padding:20px 24px;border-radius:0 10px 10px 0;margin-bottom:36px;font-family:${F};">
       <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_BG};margin-bottom:8px;font-family:${F};">⚡ על החוויה</div>
       <div style="font-size:15px;font-weight:700;color:${BRAND_TEXT};margin-bottom:6px;font-family:${F};">${selectedBlock.name}</div>
       ${selectedBlock.tagline ? `<div style="font-size:13px;color:#999;font-style:italic;margin-bottom:10px;font-family:${F};">"${selectedBlock.tagline}"</div>` : ""}
-      <div style="font-size:13px;color:#666;line-height:1.75;font-family:${F};">${selectedBlock.description}</div>
+      <div style="font-size:13px;color:${BRAND_TEXT};line-height:1.75;font-family:${F};">${selectedBlock.description}</div>
       ${selectedBlock.duration || selectedBlock.groupSize ? `
       <div style="display:flex;gap:20px;margin-top:12px;font-size:12px;color:#999;font-family:${F};">
         ${selectedBlock.duration ? `<span>⏱ ${selectedBlock.duration}</span>` : ""}
@@ -259,24 +260,24 @@ export function buildQuoteHTML(
     ${q.includes ? `
     <div style="margin-top:36px;">
       <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:12px;border-bottom:2px solid ${BRAND_BG};padding-bottom:6px;font-family:${F};">מה כלול</div>
-      <div style="font-size:13px;color:#555;line-height:1.8;white-space:pre-line;font-family:${F};">${q.includes}</div>
+      <div style="font-size:13px;color:${BRAND_TEXT};line-height:1.8;white-space:pre-line;font-family:${F};">${q.includes}</div>
     </div>` : ""}
 
     ${q.notes ? `
-    <div style="background:#faf8f5;border-right:3px solid ${BRAND_BG};padding:16px 20px;margin-top:36px;font-size:13px;color:#666;line-height:1.75;white-space:pre-line;border-radius:0 8px 8px 0;font-family:${F};">
+    <div style="background:#d4c9bc;border-right:3px solid ${BRAND_BG};padding:16px 20px;margin-top:36px;font-size:13px;color:${BRAND_TEXT};line-height:1.75;white-space:pre-line;border-radius:0 8px 8px 0;font-family:${F};">
       <strong style="color:${BRAND_TEXT};">הערות:</strong><br/>${q.notes}
     </div>` : ""}
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:28px;font-family:${F};">
       ${q.paymentTerms ? `
-      <div style="background:#f7f5f2;border-radius:8px;padding:14px 16px;">
+      <div style="background:#d4c9bc;border-radius:8px;padding:14px 16px;">
         <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:6px;font-family:${F};">תנאי תשלום</div>
-        <div style="font-size:12px;color:#666;line-height:1.7;font-family:${F};">${q.paymentTerms}</div>
+        <div style="font-size:12px;color:${BRAND_TEXT};line-height:1.7;font-family:${F};">${q.paymentTerms}</div>
       </div>` : ""}
       ${q.cancellationPolicy ? `
-      <div style="background:#f7f5f2;border-radius:8px;padding:14px 16px;">
+      <div style="background:#d4c9bc;border-radius:8px;padding:14px 16px;">
         <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:6px;font-family:${F};">מדיניות ביטול</div>
-        <div style="font-size:12px;color:#666;line-height:1.7;font-family:${F};">${q.cancellationPolicy}</div>
+        <div style="font-size:12px;color:${BRAND_TEXT};line-height:1.7;font-family:${F};">${q.cancellationPolicy}</div>
       </div>` : ""}
     </div>
 
@@ -286,7 +287,7 @@ export function buildQuoteHTML(
       <div style="display:flex;flex-wrap:wrap;gap:10px;">
         ${activeLinks.map((l) => `
         <a href="${l.url}" target="_blank"
-           style="display:inline-flex;align-items:center;gap:6px;background:#faf8f5;border:1px solid ${BRAND_BG};border-radius:8px;padding:8px 14px;font-size:13px;color:${BRAND_TEXT};text-decoration:none;font-weight:600;font-family:${F};">
+           style="display:inline-flex;align-items:center;gap:6px;background:#d4c9bc;border:1px solid ${BRAND_BG};border-radius:8px;padding:8px 14px;font-size:13px;color:${BRAND_TEXT};text-decoration:none;font-weight:600;font-family:${F};">
           🔗 ${l.label || l.url}
         </a>`).join("")}
       </div>

@@ -180,10 +180,10 @@ function itemsTableHTML(items: QuoteItem[]): string {
     <table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-family:${F};">
       <thead>
         <tr>
-          <th style="text-align:right;font-size:11px;font-weight:600;color:#999;padding:8px 12px;border-bottom:2px solid ${BRAND_ACCENT};width:50%;font-family:${F};">תיאור</th>
-          <th style="text-align:center;font-size:11px;font-weight:600;color:#999;padding:8px 12px;border-bottom:2px solid ${BRAND_ACCENT};width:15%;font-family:${F};">כמות</th>
-          <th style="text-align:left;font-size:11px;font-weight:600;color:#999;padding:8px 12px;border-bottom:2px solid ${BRAND_ACCENT};width:18%;font-family:${F};">מחיר יחידה</th>
-          <th style="text-align:left;font-size:11px;font-weight:600;color:#999;padding:8px 12px;border-bottom:2px solid ${BRAND_ACCENT};width:17%;font-family:${F};">סה״כ</th>
+          <th style="text-align:right;font-size:11px;font-weight:600;color:${BRAND_TEXT};padding:8px 12px;border-bottom:2px solid ${BRAND_ACCENT};width:50%;font-family:${F};">תיאור</th>
+          <th style="text-align:center;font-size:11px;font-weight:600;color:${BRAND_TEXT};padding:8px 12px;border-bottom:2px solid ${BRAND_ACCENT};width:15%;font-family:${F};">כמות</th>
+          <th style="text-align:left;font-size:11px;font-weight:600;color:${BRAND_TEXT};padding:8px 12px;border-bottom:2px solid ${BRAND_ACCENT};width:18%;font-family:${F};">מחיר יחידה</th>
+          <th style="text-align:left;font-size:11px;font-weight:600;color:${BRAND_TEXT};padding:8px 12px;border-bottom:2px solid ${BRAND_ACCENT};width:17%;font-family:${F};">סה״כ</th>
         </tr>
       </thead>
       <tbody>
@@ -198,10 +198,10 @@ function itemsTableHTML(items: QuoteItem[]): string {
     </table>
     <div style="display:flex;justify-content:flex-end;margin-top:8px;">
       <div style="width:280px;font-family:${F};">
-        <div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;color:#888;">
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;color:${BRAND_TEXT};">
           <span>לפני מע״מ</span><span>${fmt(sub)}</span>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;color:#888;">
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;color:${BRAND_TEXT};">
           <span>מע״מ (18%)</span><span>${fmt(vat)}</span>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:19px;font-weight:700;color:${BRAND_TEXT};border-top:2px solid ${BRAND_TEXT};padding-top:12px;margin-top:6px;">
@@ -392,14 +392,14 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
           : `<div style="height:29px;background:#d4c9bc;"></div>`}
         <div style="padding:20px 18px;">
           <div style="font-size:16px;font-weight:700;color:${BRAND_TEXT};margin-bottom:6px;font-family:${F};">${pkg.name}</div>
-          ${pkg.description ? `<div style="font-size:12px;color:#888;margin-bottom:14px;font-family:${F};">${pkg.description}</div>` : ""}
+          ${pkg.description ? `<div style="font-size:12px;color:${BRAND_TEXT};margin-bottom:14px;font-family:${F};">${pkg.description}</div>` : ""}
           ${pkg.items.map((it) => `
-            <div style="display:flex;justify-content:space-between;font-size:12px;color:#666;padding:5px 0;border-bottom:1px solid #f0ece8;font-family:${F};">
+            <div style="display:flex;justify-content:space-between;font-size:12px;color:${BRAND_TEXT};padding:5px 0;border-bottom:1px solid #f0ece8;font-family:${F};">
               <span>${it.description || "—"}${it.quantity > 1 ? ` ×${it.quantity}` : ""}</span>
               <span style="font-weight:600;">${fmt(it.quantity * it.unitPrice)}</span>
             </div>`).join("")}
           <div style="margin-top:14px;padding-top:10px;border-top:2px solid ${BRAND_TEXT};font-family:${F};">
-            <div style="display:flex;justify-content:space-between;font-size:11px;color:#999;margin-bottom:3px;">
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:${BRAND_TEXT};margin-bottom:3px;">
               <span>לפני מע״מ</span><span>${fmt(pkgSub)}</span>
             </div>
             <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:${BRAND_TEXT};">
@@ -481,7 +481,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
   <!-- BODY -->
   <div class="compact-body content-pad" style="padding:36px 44px;direction:rtl;font-family:${F};">
 
-    ${q.intro ? `<p style="font-size:14px;line-height:1.85;color:#666;margin-bottom:40px;white-space:pre-line;font-family:${F};">${q.intro}</p>` : ""}
+    ${q.intro ? `<p style="font-size:14px;line-height:1.85;color:${BRAND_TEXT};margin-bottom:40px;white-space:pre-line;font-family:${F};">${q.intro}</p>` : ""}
 
     ${(q.workshops ?? []).length > 0 ? `
     <div style="margin-bottom:40px;font-family:${F};">
@@ -489,8 +489,8 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
       ${(q.workshops ?? []).map((ws, i) => `
       <div style="margin-bottom:20px;padding:18px 22px;background:#d4c9bc;border-radius:10px;border-right:4px solid ${BRAND_BG};font-family:${F};">
         <div style="font-size:15px;font-weight:700;color:${BRAND_TEXT};margin-bottom:8px;font-family:${F};">${i + 1}. ${ws.title || "סדנה"}</div>
-        ${ws.description ? `<div style="font-size:13px;color:#555;line-height:1.8;white-space:pre-line;font-family:${F};">${ws.description}</div>` : ""}
-        ${ws.notes ? `<div style="margin-top:10px;font-size:12px;color:#999;font-style:italic;font-family:${F};">📌 ${ws.notes}</div>` : ""}
+        ${ws.description ? `<div style="font-size:13px;color:${BRAND_TEXT};line-height:1.8;white-space:pre-line;font-family:${F};">${ws.description}</div>` : ""}
+        ${ws.notes ? `<div style="margin-top:10px;font-size:12px;color:${BRAND_TEXT};font-style:italic;font-family:${F};">📌 ${ws.notes}</div>` : ""}
       </div>`).join("")}
     </div>` : ""}
 
@@ -498,10 +498,10 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     <div style="background:#d4c9bc;border-right:4px solid ${BRAND_BG};padding:20px 24px;border-radius:0 10px 10px 0;margin-bottom:36px;font-family:${F};">
       <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_BG};margin-bottom:8px;font-family:${F};">⚡ על החוויה</div>
       <div style="font-size:15px;font-weight:700;color:${BRAND_TEXT};margin-bottom:6px;font-family:${F};">${selectedBlock.name}</div>
-      ${selectedBlock.tagline ? `<div style="font-size:13px;color:#999;font-style:italic;margin-bottom:10px;font-family:${F};">"${selectedBlock.tagline}"</div>` : ""}
-      <div style="font-size:13px;color:#666;line-height:1.75;font-family:${F};">${selectedBlock.description}</div>
+      ${selectedBlock.tagline ? `<div style="font-size:13px;color:${BRAND_TEXT};font-style:italic;margin-bottom:10px;font-family:${F};">"${selectedBlock.tagline}"</div>` : ""}
+      <div style="font-size:13px;color:${BRAND_TEXT};line-height:1.75;font-family:${F};">${selectedBlock.description}</div>
       ${selectedBlock.duration || selectedBlock.groupSize ? `
-      <div style="display:flex;gap:20px;margin-top:12px;font-size:12px;color:#999;font-family:${F};">
+      <div style="display:flex;gap:20px;margin-top:12px;font-size:12px;color:${BRAND_TEXT};font-family:${F};">
         ${selectedBlock.duration ? `<span>⏱ ${selectedBlock.duration}</span>` : ""}
         ${selectedBlock.groupSize ? `<span>👥 ${selectedBlock.groupSize}</span>` : ""}
       </div>` : ""}
@@ -520,11 +520,11 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     ${q.includes ? `
     <div style="margin-top:36px;">
       <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:12px;border-bottom:2px solid ${BRAND_BG};padding-bottom:6px;font-family:${F};">מה כלול</div>
-      <div style="font-size:13px;color:#555;line-height:1.8;white-space:pre-line;font-family:${F};">${q.includes}</div>
+      <div style="font-size:13px;color:${BRAND_TEXT};line-height:1.8;white-space:pre-line;font-family:${F};">${q.includes}</div>
     </div>` : ""}
 
     ${q.notes ? `
-    <div style="background:#d4c9bc;border-right:3px solid ${BRAND_BG};padding:16px 20px;margin-top:36px;font-size:13px;color:#666;line-height:1.75;white-space:pre-line;border-radius:0 8px 8px 0;font-family:${F};">
+    <div style="background:#d4c9bc;border-right:3px solid ${BRAND_BG};padding:16px 20px;margin-top:36px;font-size:13px;color:${BRAND_TEXT};line-height:1.75;white-space:pre-line;border-radius:0 8px 8px 0;font-family:${F};">
       <strong style="color:${BRAND_TEXT};">הערות:</strong><br/>${q.notes}
     </div>` : ""}
 
@@ -533,12 +533,12 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
       ${q.paymentTerms ? `
       <div style="background:#d4c9bc;border-radius:8px;padding:14px 16px;">
         <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:6px;font-family:${F};">תנאי תשלום</div>
-        <div style="font-size:12px;color:#666;line-height:1.7;font-family:${F};">${q.paymentTerms}</div>
+        <div style="font-size:12px;color:${BRAND_TEXT};line-height:1.7;font-family:${F};">${q.paymentTerms}</div>
       </div>` : ""}
       ${q.cancellationPolicy ? `
       <div style="background:#d4c9bc;border-radius:8px;padding:14px 16px;">
         <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:6px;font-family:${F};">מדיניות ביטול</div>
-        <div style="font-size:12px;color:#666;line-height:1.7;font-family:${F};">${q.cancellationPolicy}</div>
+        <div style="font-size:12px;color:${BRAND_TEXT};line-height:1.7;font-family:${F};">${q.cancellationPolicy}</div>
       </div>` : ""}
     </div>
 
@@ -568,7 +568,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
           <div style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid ${BRAND_BG};border-radius:8px;padding:6px 12px;gap:3px;opacity:0.85;">
             <div style="font-size:13px;">✓</div>
             <div style="font-size:15px;font-weight:700;letter-spacing:0.5px;color:${BRAND_TEXT};font-family:${F};">חתום דיגיטלית</div>
-            <div style="font-size:9px;color:#aaa;font-family:${F};">${new Date().toLocaleDateString("he-IL")}</div>
+            <div style="font-size:9px;color:${BRAND_TEXT};font-family:${F};">${new Date().toLocaleDateString("he-IL")}</div>
           </div>
         </div>
         <div style="border-bottom:2px solid ${BRAND_TEXT};opacity:0.25;margin-bottom:8px;"></div>
@@ -1074,7 +1074,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
             {/* Body */}
             <div style={{ padding: "44px 52px", direction: "rtl", fontFamily: FONT }}>
 
-              {q.intro && <p style={{ fontSize: 13.5, lineHeight: 1.85, color: "#666", marginBottom: 36, whiteSpace: "pre-wrap", wordBreak: "break-word", overflowWrap: "break-word", fontFamily: FONT }}>{q.intro}</p>}
+              {q.intro && <p style={{ fontSize: 13.5, lineHeight: 1.85, color: BRAND_TEXT, marginBottom: 36, whiteSpace: "pre-wrap", wordBreak: "break-word", overflowWrap: "break-word", fontFamily: FONT }}>{q.intro}</p>}
 
               {/* Workshops */}
               {(q.workshops ?? []).length > 0 && (
@@ -1083,8 +1083,8 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
                   {(q.workshops ?? []).map((ws, i) => (
                     <div key={ws.id} style={{ marginBottom: 16, padding: "16px 20px", background: "#d4c9bc", borderRadius: 10, borderRight: `4px solid ${BRAND_BG}` }}>
                       <div style={{ fontSize: 14, fontWeight: 700, color: BRAND_TEXT, marginBottom: 6 }}>{i + 1}. {ws.title || "סדנה"}</div>
-                      {ws.description && <div style={{ fontSize: 13, color: "#555", lineHeight: 1.8, whiteSpace: "pre-line" }}>{ws.description}</div>}
-                      {ws.notes && <div style={{ marginTop: 8, fontSize: 12, color: "#999", fontStyle: "italic" }}>📌 {ws.notes}</div>}
+                      {ws.description && <div style={{ fontSize: 13, color: BRAND_TEXT, lineHeight: 1.8, whiteSpace: "pre-line" }}>{ws.description}</div>}
+                      {ws.notes && <div style={{ marginTop: 8, fontSize: 12, color: BRAND_TEXT, fontStyle: "italic" }}>📌 {ws.notes}</div>}
                     </div>
                   ))}
                 </div>
@@ -1095,9 +1095,9 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
                 <div style={{ background: "#d4c9bc", borderRight: `4px solid ${BRAND_BG}`, padding: "18px 22px", borderRadius: "0 10px 10px 0", marginBottom: 32, fontFamily: FONT }}>
                   <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: BRAND_TEXT, marginBottom: 6 }}>⚡ על החוויה</div>
                   <div style={{ fontSize: 15, fontWeight: 700, color: BRAND_TEXT, marginBottom: 4 }}>{selectedBlock.name}</div>
-                  {selectedBlock.tagline && <div style={{ fontSize: 12, color: "#999", fontStyle: "italic", marginBottom: 8 }}>"{selectedBlock.tagline}"</div>}
-                  <div style={{ fontSize: 13, color: "#666", lineHeight: 1.75 }}>{selectedBlock.description}</div>
-                  <div className="flex gap-4 mt-2" style={{ fontSize: 12, color: "#999" }}>
+                  {selectedBlock.tagline && <div style={{ fontSize: 12, color: BRAND_TEXT, fontStyle: "italic", marginBottom: 8 }}>"{selectedBlock.tagline}"</div>}
+                  <div style={{ fontSize: 13, color: BRAND_TEXT, lineHeight: 1.75 }}>{selectedBlock.description}</div>
+                  <div className="flex gap-4 mt-2" style={{ fontSize: 12, color: BRAND_TEXT }}>
                     {selectedBlock.duration && <span>⏱ {selectedBlock.duration}</span>}
                     {selectedBlock.groupSize && <span>👥 {selectedBlock.groupSize}</span>}
                   </div>
@@ -1115,7 +1115,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
                     <thead>
                       <tr>
                         {(["תיאור", "כמות", "מחיר יחידה", "סה״כ"] as const).map((h, i) => (
-                          <th key={h} style={{ textAlign: i === 0 ? "right" : i === 1 ? "center" : "left", fontSize: 11, fontWeight: 600, color: "#aaa", padding: "7px 10px", borderBottom: `2px solid ${BRAND_BG}`, width: i === 0 ? "50%" : i === 1 ? "15%" : "17.5%", fontFamily: FONT }}>{h}</th>
+                          <th key={h} style={{ textAlign: i === 0 ? "right" : i === 1 ? "center" : "left", fontSize: 11, fontWeight: 600, color: BRAND_TEXT, padding: "7px 10px", borderBottom: `2px solid ${BRAND_BG}`, width: i === 0 ? "50%" : i === 1 ? "15%" : "17.5%", fontFamily: FONT }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -1132,8 +1132,8 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
                   </table>
                   <div className="flex justify-end">
                     <div style={{ width: 260, fontFamily: FONT }}>
-                      <div className="flex justify-between" style={{ fontSize: 12, color: "#999", padding: "4px 0" }}><span>לפני מע״מ</span><span>{fmt(sub)}</span></div>
-                      <div className="flex justify-between" style={{ fontSize: 12, color: "#999", padding: "4px 0" }}><span>מע״מ 18%</span><span>{fmt(vat)}</span></div>
+                      <div className="flex justify-between" style={{ fontSize: 12, color: BRAND_TEXT, padding: "4px 0" }}><span>לפני מע״מ</span><span>{fmt(sub)}</span></div>
+                      <div className="flex justify-between" style={{ fontSize: 12, color: BRAND_TEXT, padding: "4px 0" }}><span>מע״מ 18%</span><span>{fmt(vat)}</span></div>
                       <div className="flex justify-between" style={{ fontSize: 18, fontWeight: 700, color: BRAND_TEXT, borderTop: `2px solid ${BRAND_TEXT}`, paddingTop: 10, marginTop: 4 }}>
                         <span>סה״כ לתשלום</span><span>{fmt(total)}</span>
                       </div>
@@ -1152,15 +1152,15 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
                           : <div style={{ height: 28, background: "#d4c9bc" }} />}
                         <div style={{ padding: "16px 14px" }}>
                           <div style={{ fontSize: 15, fontWeight: 700, color: BRAND_TEXT, marginBottom: 4 }}>{pkg.name}</div>
-                          {pkg.description && <div style={{ fontSize: 11, color: "#999", marginBottom: 12 }}>{pkg.description}</div>}
+                          {pkg.description && <div style={{ fontSize: 11, color: BRAND_TEXT, marginBottom: 12 }}>{pkg.description}</div>}
                           {pkg.items.map((it) => (
-                            <div key={it.id} className="flex justify-between" style={{ fontSize: 12, color: "#666", padding: "4px 0", borderBottom: "1px solid #f0ece8" }}>
+                            <div key={it.id} className="flex justify-between" style={{ fontSize: 12, color: BRAND_TEXT, padding: "4px 0", borderBottom: "1px solid #f0ece8" }}>
                               <span>{it.description || "—"}{it.quantity > 1 ? ` ×${it.quantity}` : ""}</span>
                               <span style={{ fontWeight: 600 }}>{fmt(it.quantity * it.unitPrice)}</span>
                             </div>
                           ))}
                           <div style={{ marginTop: 12, paddingTop: 8, borderTop: `2px solid ${BRAND_TEXT}` }}>
-                            <div className="flex justify-between" style={{ fontSize: 11, color: "#aaa", marginBottom: 2 }}><span>לפני מע״מ</span><span>{fmt(pkgSub)}</span></div>
+                            <div className="flex justify-between" style={{ fontSize: 11, color: BRAND_TEXT, marginBottom: 2 }}><span>לפני מע״מ</span><span>{fmt(pkgSub)}</span></div>
                             <div className="flex justify-between" style={{ fontSize: 15, fontWeight: 700, color: BRAND_TEXT }}><span>סה״כ + מע״מ</span><span>{fmt(pkgTotal)}</span></div>
                           </div>
                         </div>
@@ -1174,13 +1174,13 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
               {q.includes && (
                 <div style={{ marginTop: 32, fontFamily: FONT }}>
                   <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: BRAND_TEXT, marginBottom: 10, borderBottom: `2px solid ${BRAND_BG}`, paddingBottom: 5 }}>מה כלול</div>
-                  <div style={{ fontSize: 13, color: "#555", lineHeight: 1.8, whiteSpace: "pre-line" }}>{q.includes}</div>
+                  <div style={{ fontSize: 13, color: BRAND_TEXT, lineHeight: 1.8, whiteSpace: "pre-line" }}>{q.includes}</div>
                 </div>
               )}
 
               {/* Notes */}
               {q.notes && (
-                <div style={{ background: "#d4c9bc", borderRight: `3px solid ${BRAND_BG}`, padding: "14px 18px", marginTop: 28, fontSize: 13, color: "#666", lineHeight: 1.75, whiteSpace: "pre-line", borderRadius: "0 8px 8px 0", fontFamily: FONT }}>
+                <div style={{ background: "#d4c9bc", borderRight: `3px solid ${BRAND_BG}`, padding: "14px 18px", marginTop: 28, fontSize: 13, color: BRAND_TEXT, lineHeight: 1.75, whiteSpace: "pre-line", borderRadius: "0 8px 8px 0", fontFamily: FONT }}>
                   <strong style={{ color: BRAND_TEXT }}>הערות:</strong><br />{q.notes}
                 </div>
               )}
@@ -1191,13 +1191,13 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
                   {q.paymentTerms && (
                     <div style={{ background: "#d4c9bc", borderRadius: 8, padding: "13px 15px", fontFamily: FONT }}>
                       <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: BRAND_TEXT, marginBottom: 5 }}>תנאי תשלום</div>
-                      <div style={{ fontSize: 12, color: "#666", lineHeight: 1.7 }}>{q.paymentTerms}</div>
+                      <div style={{ fontSize: 12, color: BRAND_TEXT, lineHeight: 1.7 }}>{q.paymentTerms}</div>
                     </div>
                   )}
                   {q.cancellationPolicy && (
                     <div style={{ background: "#d4c9bc", borderRadius: 8, padding: "13px 15px", fontFamily: FONT }}>
                       <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: BRAND_TEXT, marginBottom: 5 }}>מדיניות ביטול</div>
-                      <div style={{ fontSize: 12, color: "#666", lineHeight: 1.7 }}>{q.cancellationPolicy}</div>
+                      <div style={{ fontSize: 12, color: BRAND_TEXT, lineHeight: 1.7 }}>{q.cancellationPolicy}</div>
                     </div>
                   )}
                 </div>
@@ -1231,7 +1231,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
                     <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", justifyContent: "center", border: `2px solid ${BRAND_BG}`, borderRadius: 8, padding: "6px 12px", gap: 3, opacity: 0.85 }}>
                       <div style={{ fontSize: 13 }}>✓</div>
                       <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: 0.5, color: BRAND_TEXT }}>חתום דיגיטלית</div>
-                      <div style={{ fontSize: 9, color: "#aaa" }}>{new Date().toLocaleDateString("he-IL")}</div>
+                      <div style={{ fontSize: 9, color: BRAND_TEXT }}>{new Date().toLocaleDateString("he-IL")}</div>
                     </div>
                   </div>
                   <div style={{ borderBottom: `2px solid ${BRAND_TEXT}`, opacity: 0.25, marginBottom: 8 }} />

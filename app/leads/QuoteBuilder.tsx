@@ -5,10 +5,11 @@ import { supabase } from "@/lib/supabase";
 import { ChevronLeft, Plus, Trash2, Download, FileCode, Eye, Package, Zap, Link } from "lucide-react";
 
 // ─── Brand ───────────────────────────────────────────────────────────────────
-const BRAND_BG     = "#aec6cf"; // light blue — header/footer background
-const BRAND_ACCENT = "#aec6cf"; // light blue — accents, lines, highlights
-const BRAND_TEXT   = "#4a2e1b"; // dark brown — all text
-const BRAND_MUTED  = "#4a2e1b"; // same brown everywhere (no second shade)
+const BRAND_BG     = "#2e5775";
+const BRAND_ACCENT = "#2e5775";
+const BRAND_TEXT   = "#987859";
+const BRAND_MUTED  = "#987859";
+const BRAND_PAPER  = "#e7ded2";
 const FONT         = "'Heebo', 'Arial Hebrew', Arial, sans-serif";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -387,7 +388,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
       <div style="border:2px solid ${pkg.isRecommended ? BRAND_ACCENT : "#e5e0db"};border-radius:12px;overflow:hidden;font-family:${F};page-break-inside:avoid;">
         ${pkg.isRecommended
           ? `<div style="background:${BRAND_ACCENT};color:white;text-align:center;font-size:11px;font-weight:700;letter-spacing:1px;padding:6px;text-transform:uppercase;font-family:${F};">מומלץ</div>`
-          : `<div style="height:29px;background:#f7f4f1;"></div>`}
+          : `<div style="height:29px;background:#d4c9bc;"></div>`}
         <div style="padding:20px 18px;">
           <div style="font-size:16px;font-weight:700;color:${BRAND_TEXT};margin-bottom:6px;font-family:${F};">${pkg.name}</div>
           ${pkg.description ? `<div style="font-size:12px;color:#888;margin-bottom:14px;font-family:${F};">${pkg.description}</div>` : ""}
@@ -419,13 +420,13 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
-  html,body{font-family:${F};background:#e8e3de;color:${BRAND_TEXT};direction:rtl;}
-  table.doc{width:100%;max-width:720px;margin:32px auto;background:#fff;box-shadow:0 4px 40px rgba(74,46,27,0.12);border-radius:2px;border-collapse:collapse;}
+  html,body{font-family:${F};background:${BRAND_PAPER};color:${BRAND_TEXT};direction:rtl;}
+  table.doc{width:100%;max-width:720px;margin:32px auto;background:${BRAND_PAPER};box-shadow:0 4px 40px rgba(46,87,117,0.12);border-radius:2px;border-collapse:collapse;}
   @media(max-width:760px){table.doc{margin:0;border-radius:0;box-shadow:none;}}
   @page{margin:0 0 58px 0;size:A4 portrait;}
   thead{display:none;}
   @media print{
-    html,body{background:#fff;margin:0;padding:0;zoom:0.88;}
+    html,body{background:${BRAND_PAPER};margin:0;padding:0;zoom:0.88;}
     table.doc{margin:0;box-shadow:none;max-width:100%;width:100%;border-radius:0;}
     .print-footer{position:fixed;bottom:0;left:0;right:0;width:100%;background:${BRAND_BG};display:flex;justify-content:space-between;align-items:center;padding:12px 44px;font-family:${F};z-index:10;}
     .sig-block{page-break-inside:avoid;page-break-before:avoid;}
@@ -485,7 +486,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     <div style="margin-bottom:40px;font-family:${F};">
       <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:16px;border-bottom:2px solid ${BRAND_BG};padding-bottom:6px;font-family:${F};">תוכנית הפעילות</div>
       ${(q.workshops ?? []).map((ws, i) => `
-      <div style="margin-bottom:20px;padding:18px 22px;background:#faf8f5;border-radius:10px;border-right:4px solid ${BRAND_BG};font-family:${F};">
+      <div style="margin-bottom:20px;padding:18px 22px;background:#d4c9bc;border-radius:10px;border-right:4px solid ${BRAND_BG};font-family:${F};">
         <div style="font-size:15px;font-weight:700;color:${BRAND_TEXT};margin-bottom:8px;font-family:${F};">${i + 1}. ${ws.title || "סדנה"}</div>
         ${ws.description ? `<div style="font-size:13px;color:#555;line-height:1.8;white-space:pre-line;font-family:${F};">${ws.description}</div>` : ""}
         ${ws.notes ? `<div style="margin-top:10px;font-size:12px;color:#999;font-style:italic;font-family:${F};">📌 ${ws.notes}</div>` : ""}
@@ -493,7 +494,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     </div>` : ""}
 
     ${selectedBlock && selectedBlock.description ? `
-    <div style="background:#faf8f5;border-right:4px solid ${BRAND_BG};padding:20px 24px;border-radius:0 10px 10px 0;margin-bottom:36px;font-family:${F};">
+    <div style="background:#d4c9bc;border-right:4px solid ${BRAND_BG};padding:20px 24px;border-radius:0 10px 10px 0;margin-bottom:36px;font-family:${F};">
       <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_BG};margin-bottom:8px;font-family:${F};">⚡ על החוויה</div>
       <div style="font-size:15px;font-weight:700;color:${BRAND_TEXT};margin-bottom:6px;font-family:${F};">${selectedBlock.name}</div>
       ${selectedBlock.tagline ? `<div style="font-size:13px;color:#999;font-style:italic;margin-bottom:10px;font-family:${F};">"${selectedBlock.tagline}"</div>` : ""}
@@ -522,19 +523,19 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     </div>` : ""}
 
     ${q.notes ? `
-    <div style="background:#faf8f5;border-right:3px solid ${BRAND_BG};padding:16px 20px;margin-top:36px;font-size:13px;color:#666;line-height:1.75;white-space:pre-line;border-radius:0 8px 8px 0;font-family:${F};">
+    <div style="background:#d4c9bc;border-right:3px solid ${BRAND_BG};padding:16px 20px;margin-top:36px;font-size:13px;color:#666;line-height:1.75;white-space:pre-line;border-radius:0 8px 8px 0;font-family:${F};">
       <strong style="color:${BRAND_TEXT};">הערות:</strong><br/>${q.notes}
     </div>` : ""}
 
     <!-- TERMS GRID -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:28px;font-family:${F};">
       ${q.paymentTerms ? `
-      <div style="background:#f7f5f2;border-radius:8px;padding:14px 16px;">
+      <div style="background:#d4c9bc;border-radius:8px;padding:14px 16px;">
         <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:6px;font-family:${F};">תנאי תשלום</div>
         <div style="font-size:12px;color:#666;line-height:1.7;font-family:${F};">${q.paymentTerms}</div>
       </div>` : ""}
       ${q.cancellationPolicy ? `
-      <div style="background:#f7f5f2;border-radius:8px;padding:14px 16px;">
+      <div style="background:#d4c9bc;border-radius:8px;padding:14px 16px;">
         <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:6px;font-family:${F};">מדיניות ביטול</div>
         <div style="font-size:12px;color:#666;line-height:1.7;font-family:${F};">${q.cancellationPolicy}</div>
       </div>` : ""}
@@ -546,7 +547,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
       <div style="display:flex;flex-wrap:wrap;gap:10px;">
         ${activeLinks.map((l) => `
         <a href="${l.url}" target="_blank"
-           style="display:inline-flex;align-items:center;gap:6px;background:#faf8f5;border:1px solid ${BRAND_BG};border-radius:8px;padding:8px 14px;font-size:13px;color:${BRAND_TEXT};text-decoration:none;font-weight:600;font-family:${F};">
+           style="display:inline-flex;align-items:center;gap:6px;background:#d4c9bc;border:1px solid ${BRAND_BG};border-radius:8px;padding:8px 14px;font-size:13px;color:${BRAND_TEXT};text-decoration:none;font-weight:600;font-family:${F};">
           🔗 ${l.label || l.url}
         </a>`).join("")}
       </div>
@@ -1068,7 +1069,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
                 <div style={{ marginBottom: 36, fontFamily: FONT }}>
                   <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: BRAND_TEXT, marginBottom: 14, borderBottom: `2px solid ${BRAND_BG}`, paddingBottom: 5 }}>תוכנית הפעילות</div>
                   {(q.workshops ?? []).map((ws, i) => (
-                    <div key={ws.id} style={{ marginBottom: 16, padding: "16px 20px", background: "#faf8f5", borderRadius: 10, borderRight: `4px solid ${BRAND_BG}` }}>
+                    <div key={ws.id} style={{ marginBottom: 16, padding: "16px 20px", background: "#d4c9bc", borderRadius: 10, borderRight: `4px solid ${BRAND_BG}` }}>
                       <div style={{ fontSize: 14, fontWeight: 700, color: BRAND_TEXT, marginBottom: 6 }}>{i + 1}. {ws.title || "סדנה"}</div>
                       {ws.description && <div style={{ fontSize: 13, color: "#555", lineHeight: 1.8, whiteSpace: "pre-line" }}>{ws.description}</div>}
                       {ws.notes && <div style={{ marginTop: 8, fontSize: 12, color: "#999", fontStyle: "italic" }}>📌 {ws.notes}</div>}
@@ -1079,7 +1080,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
 
               {/* Block info */}
               {selectedBlock && selectedBlock.description && (
-                <div style={{ background: "#faf8f5", borderRight: `4px solid ${BRAND_BG}`, padding: "18px 22px", borderRadius: "0 10px 10px 0", marginBottom: 32, fontFamily: FONT }}>
+                <div style={{ background: "#d4c9bc", borderRight: `4px solid ${BRAND_BG}`, padding: "18px 22px", borderRadius: "0 10px 10px 0", marginBottom: 32, fontFamily: FONT }}>
                   <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: BRAND_TEXT, marginBottom: 6 }}>⚡ על החוויה</div>
                   <div style={{ fontSize: 15, fontWeight: 700, color: BRAND_TEXT, marginBottom: 4 }}>{selectedBlock.name}</div>
                   {selectedBlock.tagline && <div style={{ fontSize: 12, color: "#999", fontStyle: "italic", marginBottom: 8 }}>"{selectedBlock.tagline}"</div>}
@@ -1136,7 +1137,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
                       <div key={pkg.id} className="rounded-xl overflow-hidden" style={{ border: `2px solid ${pkg.isRecommended ? BRAND_BG : "#e5e0db"}`, fontFamily: FONT }}>
                         {pkg.isRecommended
                           ? <div className="text-center text-xs font-bold py-1.5 tracking-widest" style={{ background: BRAND_BG, color: BRAND_TEXT }}>מומלץ</div>
-                          : <div style={{ height: 28, background: "#f7f4f1" }} />}
+                          : <div style={{ height: 28, background: "#d4c9bc" }} />}
                         <div style={{ padding: "16px 14px" }}>
                           <div style={{ fontSize: 15, fontWeight: 700, color: BRAND_TEXT, marginBottom: 4 }}>{pkg.name}</div>
                           {pkg.description && <div style={{ fontSize: 11, color: "#999", marginBottom: 12 }}>{pkg.description}</div>}
@@ -1167,7 +1168,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
 
               {/* Notes */}
               {q.notes && (
-                <div style={{ background: "#faf8f5", borderRight: `3px solid ${BRAND_BG}`, padding: "14px 18px", marginTop: 28, fontSize: 13, color: "#666", lineHeight: 1.75, whiteSpace: "pre-line", borderRadius: "0 8px 8px 0", fontFamily: FONT }}>
+                <div style={{ background: "#d4c9bc", borderRight: `3px solid ${BRAND_BG}`, padding: "14px 18px", marginTop: 28, fontSize: 13, color: "#666", lineHeight: 1.75, whiteSpace: "pre-line", borderRadius: "0 8px 8px 0", fontFamily: FONT }}>
                   <strong style={{ color: BRAND_TEXT }}>הערות:</strong><br />{q.notes}
                 </div>
               )}
@@ -1176,13 +1177,13 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
               {(q.paymentTerms || q.cancellationPolicy) && (
                 <div className="grid grid-cols-2 gap-4 mt-6">
                   {q.paymentTerms && (
-                    <div style={{ background: "#f7f5f2", borderRadius: 8, padding: "13px 15px", fontFamily: FONT }}>
+                    <div style={{ background: "#d4c9bc", borderRadius: 8, padding: "13px 15px", fontFamily: FONT }}>
                       <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: BRAND_TEXT, marginBottom: 5 }}>תנאי תשלום</div>
                       <div style={{ fontSize: 12, color: "#666", lineHeight: 1.7 }}>{q.paymentTerms}</div>
                     </div>
                   )}
                   {q.cancellationPolicy && (
-                    <div style={{ background: "#f7f5f2", borderRadius: 8, padding: "13px 15px", fontFamily: FONT }}>
+                    <div style={{ background: "#d4c9bc", borderRadius: 8, padding: "13px 15px", fontFamily: FONT }}>
                       <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: BRAND_TEXT, marginBottom: 5 }}>מדיניות ביטול</div>
                       <div style={{ fontSize: 12, color: "#666", lineHeight: 1.7 }}>{q.cancellationPolicy}</div>
                     </div>
@@ -1196,7 +1197,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
                   <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: BRAND_TEXT, marginBottom: 10, borderBottom: `2px solid ${BRAND_BG}`, paddingBottom: 5 }}>חומרים נוספים</div>
                   <div className="flex flex-wrap gap-2">
                     {q.blockLinks.filter((l) => l.url).map((l) => (
-                      <span key={l.id} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#faf8f5", border: `1px solid ${BRAND_BG}`, borderRadius: 8, padding: "7px 14px", fontSize: 12, color: BRAND_TEXT, fontWeight: 600, fontFamily: FONT }}>
+                      <span key={l.id} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#d4c9bc", border: `1px solid ${BRAND_BG}`, borderRadius: 8, padding: "7px 14px", fontSize: 12, color: BRAND_TEXT, fontWeight: 600, fontFamily: FONT }}>
                         🔗 {l.label || l.url}
                       </span>
                     ))}

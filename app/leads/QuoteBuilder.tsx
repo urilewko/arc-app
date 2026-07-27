@@ -584,11 +584,11 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
 <!-- FOOTER: fixed in print (every page bottom), in-flow on screen -->
 <div class="print-footer" style="background:${BRAND_BG};display:flex;justify-content:space-between;align-items:center;direction:rtl;padding:16px 44px;font-family:${F};">
   <div>
-    <div style="font-size:17px;font-weight:700;color:${BRAND_TEXT};letter-spacing:3px;font-family:${F};">ARC</div>
-    <div style="font-size:10px;color:${BRAND_MUTED};letter-spacing:2px;text-transform:uppercase;margin-top:2px;font-family:${F};">Irreplaceable Experiences</div>
+    <div style="font-size:17px;font-weight:700;color:${BRAND_ON_BG};letter-spacing:3px;font-family:${F};">ARC</div>
+    <div style="font-size:10px;color:${BRAND_ON_BG};opacity:0.7;letter-spacing:2px;text-transform:uppercase;margin-top:2px;font-family:${F};">Irreplaceable Experiences</div>
   </div>
-  <div style="text-align:left;font-size:11px;color:${BRAND_MUTED};line-height:1.9;font-family:${F};">
-    <div style="font-weight:600;color:${BRAND_TEXT};">אורי לבקוביץ</div>
+  <div style="text-align:left;font-size:11px;color:${BRAND_ON_BG};opacity:0.8;line-height:1.9;font-family:${F};">
+    <div style="font-weight:600;color:${BRAND_ON_BG};opacity:1;">אורי לבקוביץ</div>
     <div>urilewko@arcexpe.com</div>
     <div>052-610-8102</div>
   </div>

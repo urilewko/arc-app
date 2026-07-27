@@ -1032,8 +1032,8 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
 
         {/* ── PREVIEW PANEL ── */}
         <div className={`flex-1 overflow-y-auto p-6 ${tab === "edit" ? "hidden md:block" : ""}`}
-          style={{ background: "#ddd8d2", fontFamily: FONT }}>
-          <div className="max-w-[740px] mx-auto bg-white shadow-2xl" style={{ fontFamily: FONT }}>
+          style={{ background: BRAND_PAPER, fontFamily: FONT }}>
+          <div className="max-w-[740px] mx-auto shadow-2xl" style={{ background: BRAND_PAPER, fontFamily: FONT }}>
 
             {/* Header */}
             <div style={{ background: BRAND_BG, padding: "20px 48px 18px", direction: "rtl", fontFamily: FONT }}>

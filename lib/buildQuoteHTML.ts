@@ -4,6 +4,7 @@ export const BRAND_ACCENT = "#2e5775";
 export const BRAND_TEXT   = "#987859";
 export const BRAND_MUTED  = "#987859";
 export const BRAND_PAPER  = "#e7ded2";
+export const BRAND_ON_BG  = "#e7ded2";
 export const FONT         = "'Heebo', 'Arial Hebrew', Arial, sans-serif";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -191,8 +192,8 @@ export function buildQuoteHTML(
   <thead>
     <tr><td style="padding:0;">
       <div style="background:${BRAND_BG};height:44px;display:flex;align-items:center;padding:0 44px;justify-content:space-between;direction:rtl;font-family:${F};">
-        <div style="font-size:15px;font-weight:700;color:${BRAND_TEXT};letter-spacing:3px;font-family:${F};">ARC</div>
-        <div style="font-size:9px;color:${BRAND_TEXT};opacity:0.6;letter-spacing:2px;text-transform:uppercase;font-family:${F};">Irreplaceable Experiences</div>
+        <div style="font-size:15px;font-weight:700;color:${BRAND_ON_BG};letter-spacing:3px;font-family:${F};">ARC</div>
+        <div style="font-size:9px;color:${BRAND_ON_BG};opacity:0.6;letter-spacing:2px;text-transform:uppercase;font-family:${F};">Irreplaceable Experiences</div>
       </div>
     </td></tr>
   </thead>
@@ -201,21 +202,21 @@ export function buildQuoteHTML(
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <div>${buildLogoTag(logoUrl)}</div>
         <div style="text-align:left;font-family:${F};">
-          <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_TEXT};opacity:0.6;">הצעת מחיר</div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_ON_BG};opacity:0.6;">הצעת מחיר</div>
         </div>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:flex-end;">
         <div>
-          <div style="font-size:26px;font-weight:700;color:${BRAND_TEXT};font-family:${F};">${q.orgName || "שם הארגון"}</div>
-          ${q.contactName ? `<div style="font-size:13px;color:${BRAND_MUTED};margin-top:4px;font-family:${F};">${q.contactName}</div>` : ""}
-          ${q.productType ? `<div style="font-size:11px;color:${BRAND_MUTED};letter-spacing:1px;text-transform:uppercase;margin-top:6px;font-family:${F};">${q.productType}</div>` : ""}
+          <div style="font-size:26px;font-weight:700;color:${BRAND_ON_BG};font-family:${F};">${q.orgName || "שם הארגון"}</div>
+          ${q.contactName ? `<div style="font-size:13px;color:${BRAND_ON_BG};margin-top:4px;font-family:${F};">${q.contactName}</div>` : ""}
+          ${q.productType ? `<div style="font-size:11px;color:${BRAND_ON_BG};letter-spacing:1px;text-transform:uppercase;margin-top:6px;font-family:${F};">${q.productType}</div>` : ""}
         </div>
-        <div style="text-align:left;font-size:12px;color:${BRAND_MUTED};line-height:2;font-family:${F};">
-          <div><strong style="color:${BRAND_TEXT};">תאריך הצעה:</strong> ${formatDate(q.quoteDate)}</div>
-          <div><strong style="color:${BRAND_TEXT};">תוקף עד:</strong> ${formatDate(q.validUntil)}</div>
-          ${q.eventDate ? `<div><strong style="color:${BRAND_TEXT};">תאריך אירוע:</strong> ${formatDate(q.eventDate)}</div>` : ""}
-          ${q.participants ? `<div><strong style="color:${BRAND_TEXT};">משתתפים:</strong> ${q.participants}</div>` : ""}
-          ${q.location ? `<div><strong style="color:${BRAND_TEXT};">מיקום:</strong> ${q.location}</div>` : ""}
+        <div style="text-align:left;font-size:12px;color:${BRAND_ON_BG};line-height:2;font-family:${F};">
+          <div><strong style="color:${BRAND_ON_BG};">תאריך הצעה:</strong> ${formatDate(q.quoteDate)}</div>
+          <div><strong style="color:${BRAND_ON_BG};">תוקף עד:</strong> ${formatDate(q.validUntil)}</div>
+          ${q.eventDate ? `<div><strong style="color:${BRAND_ON_BG};">תאריך אירוע:</strong> ${formatDate(q.eventDate)}</div>` : ""}
+          ${q.participants ? `<div><strong style="color:${BRAND_ON_BG};">משתתפים:</strong> ${q.participants}</div>` : ""}
+          ${q.location ? `<div><strong style="color:${BRAND_ON_BG};">מיקום:</strong> ${q.location}</div>` : ""}
         </div>
       </div>
     </div>

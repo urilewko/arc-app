@@ -598,13 +598,24 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
   };
 
   const handlePrint = () => {
-    const html = buildHTML(true);
-    const win = window.open("", "_blank", "width=900,height=720");
-    if (!win) return;
-    win.document.write(html);
-    win.document.close();
-    win.focus();
-    setTimeout(() => win.print(), 500);
+    const quoteId = versions[safeIdx]?.id;
+    const base = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
+    const url = quoteId ? `${base}/quote/${quoteId}` : null;
+    if (url) {
+      const win = window.open(url, "_blank");
+      if (!win) return;
+      // wait for page to load then print
+      win.addEventListener("load", () => setTimeout(() => win.print(), 500));
+    } else {
+      // fallback — no saved quote yet
+      const html = buildHTML(true);
+      const win = window.open("", "_blank", "width=900,height=720");
+      if (!win) return;
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      setTimeout(() => win.print(), 500);
+    }
   };
 
   const handleDownloadHTML = () => {

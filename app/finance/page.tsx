@@ -76,7 +76,15 @@ export default function FinancePage() {
   );
   const generalExpenseRecords = financeRecords.filter((r) => r.recordType === "expense");
 
-  const totalPaid    = incomeRecords.filter((r) => r.paymentStatus === "שולם במלואו").reduce((s, r) => s + r.amount, 0);
+  // ── Income from debriefs (paymentReceived) ─────────────────────
+  const incomeFromDebriefs = useMemo(
+    () => debriefs.filter((d) => (d.paymentReceived || 0) > 0 && inPeriod(d.eventDate || d.createdAt)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [debriefs, period, year]
+  );
+  const debriefIncomePaid = incomeFromDebriefs.reduce((s, d) => s + (d.paymentReceived || 0), 0);
+
+  const totalPaid    = incomeRecords.filter((r) => r.paymentStatus === "שולם במלואו").reduce((s, r) => s + r.amount, 0) + debriefIncomePaid;
   const totalPending = incomeRecords.filter((r) => r.paymentStatus !== "שולם במלואו").reduce((s, r) => s + r.amount, 0);
 
   // ── Partner balance (50/50) ────────────────────────────────────
@@ -253,7 +261,7 @@ export default function FinancePage() {
                 </tr>
               </thead>
               <tbody>
-                {incomeRecords.length === 0 && (
+                {incomeRecords.length === 0 && incomeFromDebriefs.length === 0 && (
                   <tr><td colSpan={7} className="text-center py-10 text-gray-400">אין רשומות הכנסה עדיין</td></tr>
                 )}
                 {incomeRecords.map((r) => (
@@ -277,6 +285,23 @@ export default function FinancePage() {
                         <button onClick={() => deleteFinanceRecord(r.id)} className="text-gray-400 hover:text-red-600"><Trash2 size={15} /></button>
                       </div>
                     </td>
+                  </tr>
+                ))}
+                {incomeFromDebriefs.map((d) => (
+                  <tr key={`debrief-${d.id}`} className="border-b last:border-0 hover:bg-gray-50 bg-blue-50/30">
+                    <td className="px-4 py-3 font-medium">
+                      {d.orgName}
+                      <span className="ml-2 px-1.5 py-0.5 rounded text-xs bg-blue-100 text-blue-600">תחקיר</span>
+                    </td>
+                    <td className="px-4 py-3 font-semibold text-green-700">₪{(d.paymentReceived || 0).toLocaleString()}</td>
+                    <td className="px-4 py-3">
+                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">שולם במלואו</span>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-gray-500">—</td>
+                    <td className="px-4 py-3 text-gray-500">{d.eventDate || "—"}</td>
+                    <td className="px-4 py-3 text-gray-500">{d.eventDate || "—"}</td>
+                    <td className="px-4 py-3 text-gray-400 text-xs">מתחקיר</td>
+                    <td className="px-4 py-3"></td>
                   </tr>
                 ))}
               </tbody>

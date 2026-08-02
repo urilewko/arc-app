@@ -83,6 +83,7 @@ export interface Debrief {
   orgWorkScore: number;
   orgValueScore: number;
   paymentReceived: number;
+  paymentReceivedBy?: "אורי" | "ינון" | "שניהם";
   expenses: { id: string; description: string; amount: number; paidBy?: string }[];
   photoAlbumLink: string;
   quotesLink: string;

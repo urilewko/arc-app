@@ -83,14 +83,22 @@ export default function FinancePage() {
     [debriefs, period, year]
   );
   const debriefIncomePaid = incomeFromDebriefs.reduce((s, d) => s + (d.paymentReceived || 0), 0);
+  const debriefUriIncome   = incomeFromDebriefs.reduce((s, d) => {
+    const p = d.paymentReceivedBy || "שניהם";
+    return s + (p === "אורי" ? (d.paymentReceived || 0) : p === "שניהם" ? (d.paymentReceived || 0) / 2 : 0);
+  }, 0);
+  const debriefYinonIncome = incomeFromDebriefs.reduce((s, d) => {
+    const p = d.paymentReceivedBy || "שניהם";
+    return s + (p === "ינון" ? (d.paymentReceived || 0) : p === "שניהם" ? (d.paymentReceived || 0) / 2 : 0);
+  }, 0);
 
   const totalPaid    = incomeRecords.filter((r) => r.paymentStatus === "שולם במלואו").reduce((s, r) => s + r.amount, 0) + debriefIncomePaid;
   const totalPending = incomeRecords.filter((r) => r.paymentStatus !== "שולם במלואו").reduce((s, r) => s + r.amount, 0);
 
   // ── Partner balance (50/50) ────────────────────────────────────
   const paidRecords = incomeRecords.filter((r) => r.paymentStatus === "שולם במלואו");
-  const uriIncome   = paidRecords.reduce((s, r) => s + (r.person === "אורי" ? r.amount : r.person === "שניהם" ? r.amount / 2 : 0), 0);
-  const yinonIncome = paidRecords.reduce((s, r) => s + (r.person === "ינון" ? r.amount : r.person === "שניהם" ? r.amount / 2 : 0), 0);
+  const uriIncome   = paidRecords.reduce((s, r) => s + (r.person === "אורי" ? r.amount : r.person === "שניהם" ? r.amount / 2 : 0), 0) + (debriefUriIncome ?? 0);
+  const yinonIncome = paidRecords.reduce((s, r) => s + (r.person === "ינון" ? r.amount : r.person === "שניהם" ? r.amount / 2 : 0), 0) + (debriefYinonIncome ?? 0);
 
   // ── Expense aggregation from all sources ──────────────────────
   const expFromDebriefs   = useMemo(() => debriefs.filter((d) => inPeriod(d.eventDate || d.createdAt)).flatMap((d) => (d.expenses || []).map((e) => ({ ...e, source: "תחקיר", sourceName: d.orgName, date: d.eventDate || "" }))),
@@ -297,7 +305,9 @@ export default function FinancePage() {
                     <td className="px-4 py-3">
                       <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">שולם במלואו</span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-500">—</td>
+                    <td className="px-4 py-3 text-xs text-gray-500">
+                      <span className="px-2 py-0.5 rounded-full bg-[#aec6cf]/20 text-[#4a2e1b] font-medium">{d.paymentReceivedBy || "שניהם"}</span>
+                    </td>
                     <td className="px-4 py-3 text-gray-500">{d.eventDate || "—"}</td>
                     <td className="px-4 py-3 text-gray-500">{d.eventDate || "—"}</td>
                     <td className="px-4 py-3 text-gray-400 text-xs">מתחקיר</td>

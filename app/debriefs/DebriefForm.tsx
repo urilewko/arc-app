@@ -312,12 +312,22 @@ export default function DebriefForm({ debrief, onClose }: Props) {
 
         {/* 7. Financials */}
         <Section title="7. פיננסים">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1">תשלום שהתקבל (₪)</label>
               <input type="number" className="w-full border rounded-lg px-3 py-2 text-sm"
                 value={form.paymentReceived || ""}
                 onChange={(e) => set({ paymentReceived: Number(e.target.value) })} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">קיבל את התשלום</label>
+              <select className="w-full border rounded-lg px-3 py-2 text-sm"
+                value={form.paymentReceivedBy || "שניהם"}
+                onChange={(e) => set({ paymentReceivedBy: e.target.value as "אורי" | "ינון" | "שניהם" })}>
+                <option value="שניהם">שניהם</option>
+                <option value="אורי">אורי</option>
+                <option value="ינון">ינון</option>
+              </select>
             </div>
             <div className="flex items-end">
               <div className="bg-gray-50 rounded-lg px-4 py-2 text-sm w-full">

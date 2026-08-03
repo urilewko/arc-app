@@ -457,10 +457,10 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     <!-- THICK HEADER (page 1) — sits right after the thin thead bar -->
     <div class="compact-header" style="background:${BRAND_BG};padding:16px 44px 20px;direction:rtl;font-family:${F};">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <div>${buildLogoTag(logoDataUrl)}</div>
         <div style="text-align:left;font-family:${F};">
           <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_ON_BG};opacity:0.6;">הצעת מחיר</div>
         </div>
+        <div>${buildLogoTag(logoDataUrl)}</div>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:flex-end;">
         <div>
@@ -589,8 +589,8 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
   </div>
   <div style="text-align:left;font-size:11px;color:${BRAND_ON_BG};opacity:0.8;line-height:1.9;font-family:${F};">
     <div style="font-weight:600;color:${BRAND_ON_BG};opacity:1;">אורי לבקוביץ</div>
-    <div>urilewko@arcexpe.com</div>
-    <div>052-610-8102</div>
+    <div>uri@arc-exp.com</div>
+    <div>052-6108102</div>
   </div>
 </div>
 </body>
@@ -1050,7 +1050,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
             <div style={{ background: BRAND_BG, padding: "20px 48px 18px", direction: "rtl", fontFamily: FONT }}>
               <div className="flex justify-between items-center mb-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/arc-logo.png" alt="ARC" style={{ height: 48, width: "auto", maxWidth: 200, objectFit: "contain", display: "block", filter: "brightness(0) invert(1)" }} />
+                <img src="/arc-logo.png" alt="ARC" style={{ height: 32, width: "auto", maxWidth: 140, objectFit: "contain", display: "block", filter: "brightness(0) saturate(100%) invert(93%) sepia(10%) saturate(300%) hue-rotate(330deg) brightness(102%)" }} />
                 <div style={{ textAlign: "left", fontFamily: FONT }}>
                   <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: BRAND_ON_BG, opacity: 0.6 }}>הצעת מחיר</div>
                 </div>
@@ -1248,8 +1248,8 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
               </div>
               <div style={{ textAlign: "left", fontSize: 11, color: BRAND_ON_BG, lineHeight: 1.9, opacity: 0.8 }}>
                 <div style={{ fontWeight: 600 }}>אורי לבקוביץ</div>
-                <div>urilewko@arcexpe.com</div>
-                <div>052-610-8102</div>
+                <div>uri@arc-exp.com</div>
+                <div>052-6108102</div>
               </div>
             </div>
 

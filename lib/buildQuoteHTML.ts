@@ -81,8 +81,11 @@ export const fmt = (n: number) =>
 export const calcItems = (items: QuoteItem[]) =>
   items.reduce((s, it) => s + it.quantity * it.unitPrice, 0);
 
-function buildLogoTag(logoUrl: string) {
-  return `<img src="${logoUrl}" alt="ARC" style="height:48px;width:auto;max-width:200px;object-fit:contain;display:block;filter:brightness(0) invert(1);" />`;
+function buildLogoTag(logoUrl: string, color = "#e7ded2") {
+  const filter = color === "#e7ded2"
+    ? "brightness(0) saturate(100%) invert(93%) sepia(10%) saturate(300%) hue-rotate(330deg) brightness(102%)"
+    : "brightness(0) invert(1)";
+  return `<img src="${logoUrl}" alt="ARC" style="height:32px;width:auto;max-width:140px;object-fit:contain;display:block;filter:${filter};" />`;
 }
 
 function itemsTableHTML(items: QuoteItem[]): string {
@@ -200,10 +203,10 @@ export function buildQuoteHTML(
   <tbody><tr><td style="padding:0;">
     <div class="compact-header" style="background:${BRAND_BG};padding:16px 44px 20px;direction:rtl;font-family:${F};">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <div>${buildLogoTag(logoUrl)}</div>
         <div style="text-align:left;font-family:${F};">
           <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_ON_BG};opacity:0.6;">הצעת מחיר</div>
         </div>
+        <div>${buildLogoTag(logoUrl)}</div>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:flex-end;">
         <div>
@@ -325,9 +328,9 @@ export function buildQuoteHTML(
     <div style="font-size:10px;color:${BRAND_MUTED};letter-spacing:2px;text-transform:uppercase;margin-top:2px;font-family:${F};">Irreplaceable Experiences</div>
   </div>
   <div style="text-align:left;font-size:11px;color:${BRAND_MUTED};line-height:1.9;font-family:${F};">
-    <div style="font-weight:600;color:${BRAND_TEXT};">אורי לבקוביץ</div>
-    <div>urilewko@arcexpe.com</div>
-    <div>052-610-8102</div>
+    <div style="font-weight:600;color:${BRAND_ON_BG};">אורי לבקוביץ</div>
+    <div>uri@arc-exp.com</div>
+    <div>052-6108102</div>
   </div>
 </div>
 </body>

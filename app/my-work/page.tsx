@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { format, parseISO, isValid, isBefore, isToday } from "date-fns";
 import { he } from "date-fns/locale";
 import Link from "next/link";
-import { Plus, X, Check } from "lucide-react";
+import { Plus, X, Check, RefreshCw } from "lucide-react";
 
 const TEAM = ["אורי", "ינון"];
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -50,6 +50,8 @@ function dueBadge(dateStr: string) {
 
 export default function MyWorkPage() {
   const { leads, projects, infraProjects, updateProjectTask, updateInfraTask } = useStore();
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
   const [person, setPerson] = useState<string>(TEAM[0]);
   const [hideCompleted, setHideCompleted] = useState(true);
   const [standalone, setStandalone] = useState<StandaloneTask[]>([]);
@@ -162,6 +164,82 @@ export default function MyWorkPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leads, projects, infraProjects, person, standalone]);
 
+  const syncAllToTodoist = async () => {
+    setSyncing(true);
+    setSyncResult(null);
+    let synced = 0;
+
+    // Sync project tasks
+    for (const project of projects) {
+      for (const task of (project.tasks || [])) {
+        if (task.todoistId) continue;
+        try {
+          const res = await fetch("/api/todoist", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: task.title,
+              dueDate: task.dueDate || undefined,
+              responsible: task.responsible || undefined,
+              projectName: project.orgName,
+              notes: task.notes || undefined,
+            }),
+          });
+          const { todoistId } = await res.json();
+          if (todoistId) { updateProjectTask(project.id, task.id, { ...task, todoistId }); synced++; }
+        } catch { /* skip */ }
+      }
+    }
+
+    // Sync infra tasks
+    for (const project of infraProjects) {
+      for (const task of (project.tasks || [])) {
+        if ((task as { todoistId?: string }).todoistId) continue;
+        try {
+          const res = await fetch("/api/todoist", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: task.title,
+              dueDate: task.dueDate || undefined,
+              responsible: task.responsible || undefined,
+              projectName: project.name,
+            }),
+          });
+          const { todoistId } = await res.json();
+          if (todoistId) { updateInfraTask(project.id, task.id, { ...(task as object), todoistId } as Parameters<typeof updateInfraTask>[2]); synced++; }
+        } catch { /* skip */ }
+      }
+    }
+
+    // Sync standalone tasks
+    for (const task of standalone) {
+      if ((task as StandaloneTask & { todoistId?: string }).todoistId) continue;
+      try {
+        const res = await fetch("/api/todoist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: task.title,
+            dueDate: task.dueDate || undefined,
+            responsible: task.responsible || undefined,
+            projectName: "כללי",
+          }),
+        });
+        const { todoistId } = await res.json();
+        if (todoistId) {
+          await supabase.from("standalone_tasks").update({ todoist_id: todoistId }).eq("id", task.id);
+          setStandalone((prev) => prev.map((t) => t.id === task.id ? { ...t, todoistId } : t));
+          synced++;
+        }
+      } catch { /* skip */ }
+    }
+
+    setSyncing(false);
+    setSyncResult(`סונכרנו ${synced} משימות ל-Todoist`);
+    setTimeout(() => setSyncResult(null), 4000);
+  };
+
   const visible = hideCompleted ? tasks.filter((t) => !t.done) : tasks;
   const sorted = [...visible].sort((a, b) => {
     const da = safeDate(a.dueDate), db = safeDate(b.dueDate);
@@ -196,6 +274,12 @@ export default function MyWorkPage() {
               </button>
             ))}
           </div>
+          {syncResult && <span className="text-xs text-green-600 font-medium">{syncResult}</span>}
+          <button onClick={syncAllToTodoist} disabled={syncing}
+            className="flex items-center gap-2 border border-gray-300 text-gray-600 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50">
+            <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
+            {syncing ? "מסנכרן..." : "סנכרן Todoist"}
+          </button>
           <button onClick={() => setShowAdd(true)}
             className="flex items-center gap-2 bg-[#1a1a1a] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#333]">
             <Plus size={15} /> משימה חדשה

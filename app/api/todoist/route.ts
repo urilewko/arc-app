@@ -4,6 +4,11 @@ const TOKEN = process.env.TODOIST_API_TOKEN!;
 const PROJECT_ID = "6gg3qq9G8QhVcG5H"; // ARC project
 const BASE = "https://api.todoist.com/api/v1";
 
+const ASSIGNEES: Record<string, string> = {
+  "ינון": "34771966",
+  "אורי": "37077200",
+};
+
 async function todoistFetch(path: string, options: RequestInit = {}) {
   const res = await fetch(`${BASE}${path}`, {
     ...options,
@@ -41,13 +46,15 @@ export async function POST(req: NextRequest) {
     const { title, dueDate, responsible, projectName, notes } = await req.json();
     const sectionId = projectName ? await getOrCreateSection(projectName) : undefined;
 
+    const assigneeId = responsible ? ASSIGNEES[responsible] : undefined;
+
     const body: Record<string, unknown> = {
       content: title,
       project_id: PROJECT_ID,
       ...(sectionId ? { section_id: sectionId } : {}),
       ...(dueDate ? { due_date: dueDate } : {}),
       ...(notes ? { description: notes } : {}),
-      ...(responsible ? { description: `${notes ? notes + "\n" : ""}אחראי: ${responsible}` } : {}),
+      ...(assigneeId ? { assignee_id: assigneeId } : {}),
     };
 
     const task = await todoistFetch("/tasks", {

@@ -49,7 +49,7 @@ function dueBadge(dateStr: string) {
 }
 
 export default function MyWorkPage() {
-  const { leads, projects, infraProjects, updateProjectTask, updateInfraTask } = useStore();
+  const { leads, projects, infraProjects, updateProjectTask, updateInfraTask, updateLead } = useStore();
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [person, setPerson] = useState<string>(TEAM[0]);
@@ -112,17 +112,17 @@ export default function MyWorkPage() {
     });
 
     // Leads
-    leads.filter((l) => l.responsible === person && !["נסגר", "נפל"].includes(l.status)).forEach((l) => {
+    leads.filter((l) => l.responsible === person && !["נסגר", "נפל"].includes(l.status) && l.nextAction).forEach((l) => {
       items.push({
         id: `lead-${l.id}`,
-        title: `${l.nextAction || "פעולה הבאה"} — ${l.orgName}`,
+        title: `${l.nextAction} — ${l.orgName}`,
         responsible: l.responsible,
         dueDate: l.dueDate,
         source: "ליד",
         sourceLabel: l.orgName,
         href: "/leads",
         done: false,
-        onToggle: () => {},
+        onToggle: () => updateLead(l.id, { nextAction: "" }),
       });
     });
 
@@ -359,10 +359,9 @@ export default function MyWorkPage() {
             return (
               <div key={task.id} className={`bg-white rounded-xl border shadow-sm px-4 py-3.5 flex items-center gap-4 group transition-opacity ${task.done ? "opacity-50" : ""}`}>
                 <button onClick={task.onToggle}
-                  disabled={task.source === "ליד"}
                   className={`shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
                     task.done ? "bg-green-500 border-green-500" : "border-gray-300 hover:border-green-400"
-                  } ${task.source === "ליד" ? "opacity-30 cursor-default" : ""}`}>
+                  }`}>
                   {task.done && <span className="text-white text-[10px]">✓</span>}
                 </button>
                 <div className="flex-1 min-w-0">

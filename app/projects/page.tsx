@@ -5,7 +5,7 @@ import {
   ProductType, ProductionStatus, TaskCategory, TaskStatus
 } from "@/lib/store";
 import Modal from "@/components/Modal";
-import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, CheckSquare, ExternalLink } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, CheckSquare, ExternalLink, RefreshCw } from "lucide-react";
 
 const PRODUCT_TYPES: ProductType[] = ["ריטריט", "סדנה חד פעמית", "Offsite", "קורס", "אירוע"];
 const PRODUCTION_STATUSES: ProductionStatus[] = ["עוד לא התחלנו", "בעבודה", "בוצע"];
@@ -115,6 +115,8 @@ export default function ProjectsPage() {
   const [editTaskForm, setEditTaskForm] = useState(emptyTask);
   const [catFilter, setCatFilter] = useState<TaskCategory | "הכל">("הכל");
   const [typeFilter, setTypeFilter] = useState<ProductType | "הכל">("הכל");
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
 
   const openNew = () => { setEditing(null); setForm(emptyProject); setOpenModal(true); };
   const openEdit = (p: Project) => { setEditing(p); setForm({ ...p, driveLink: p.driveLink || "" }); setOpenModal(true); };
@@ -168,6 +170,38 @@ export default function ProjectsPage() {
     setEditTaskModal(null);
   };
 
+  const syncAllToTodoist = async () => {
+    setSyncing(true);
+    setSyncResult(null);
+    let synced = 0;
+    for (const project of projects) {
+      for (const task of (project.tasks || [])) {
+        if (task.todoistId) continue; // already synced
+        try {
+          const res = await fetch("/api/todoist", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: task.title,
+              dueDate: task.dueDate || undefined,
+              responsible: task.responsible || undefined,
+              projectName: project.orgName,
+              notes: task.notes || undefined,
+            }),
+          });
+          const { todoistId } = await res.json();
+          if (todoistId) {
+            updateProjectTask(project.id, task.id, { ...task, todoistId });
+            synced++;
+          }
+        } catch { /* skip on error */ }
+      }
+    }
+    setSyncing(false);
+    setSyncResult(`סונכרנו ${synced} משימות ל-Todoist`);
+    setTimeout(() => setSyncResult(null), 4000);
+  };
+
   const activeProjects = projects.filter((p) => p.productionStatus !== "בוצע");
   const completedProjects = projects.filter((p) => p.productionStatus === "בוצע");
   const filtered = typeFilter === "הכל" ? activeProjects : activeProjects.filter((p) => p.productType === typeFilter);
@@ -190,10 +224,18 @@ export default function ProjectsPage() {
             </a>
           )}
         </div>
-        <button onClick={openNew}
-          className="flex items-center gap-2 bg-[#1a1a1a] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#333]">
-          <Plus size={16} /> פרויקט חדש
-        </button>
+        <div className="flex items-center gap-2">
+          {syncResult && <span className="text-xs text-green-600 font-medium">{syncResult}</span>}
+          <button onClick={syncAllToTodoist} disabled={syncing}
+            className="flex items-center gap-2 border border-gray-300 text-gray-600 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50">
+            <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
+            {syncing ? "מסנכרן..." : "סנכרן Todoist"}
+          </button>
+          <button onClick={openNew}
+            className="flex items-center gap-2 bg-[#1a1a1a] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#333]">
+            <Plus size={16} /> פרויקט חדש
+          </button>
+        </div>
       </div>
 
       {/* Type filter */}

@@ -557,13 +557,13 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     <!-- SIGNATURE -->
     <div class="sig-block" style="margin-top:52px;padding-top:32px;border-top:1px solid #e8e3de;display:grid;grid-template-columns:1fr 1fr;gap:48px;font-family:${F};">
       <div>
-        <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#bbb;margin-bottom:8px;font-family:${F};">חתימת הלקוח</div>
+        <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:8px;font-family:${F};">חתימת הלקוח</div>
         <div style="height:90px;"></div>
         <div style="border-bottom:2px solid ${BRAND_TEXT};opacity:0.25;margin-bottom:8px;"></div>
-        <div style="font-size:11px;color:#bbb;font-family:${F};">שם, תפקיד ותאריך</div>
+        <div style="font-size:11px;color:${BRAND_TEXT};font-family:${F};">שם, תפקיד ותאריך</div>
       </div>
       <div>
-        <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#bbb;margin-bottom:8px;font-family:${F};">חתימת ARC</div>
+        <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:8px;font-family:${F};">חתימת ARC</div>
         <div style="height:90px;display:flex;align-items:center;justify-content:center;">
           <div style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid ${BRAND_BG};border-radius:8px;padding:6px 12px;gap:3px;opacity:0.85;">
             <div style="font-size:13px;">✓</div>
@@ -572,7 +572,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
           </div>
         </div>
         <div style="border-bottom:2px solid ${BRAND_TEXT};opacity:0.25;margin-bottom:8px;"></div>
-        <div style="font-size:11px;color:#bbb;font-family:${F};">אורי לבקוביץ, ARC</div>
+        <div style="font-size:11px;color:${BRAND_TEXT};font-family:${F};">אורי לבקוביץ, ARC</div>
       </div>
     </div>
 
@@ -1220,13 +1220,13 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
               {/* Signature */}
               <div style={{ marginTop: 48, paddingTop: 28, borderTop: "1px solid #e8e3de", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, fontFamily: FONT }}>
                 <div>
-                  <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", color: "#bbb", marginBottom: 8 }}>חתימת הלקוח</div>
+                  <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", color: BRAND_TEXT, marginBottom: 8 }}>חתימת הלקוח</div>
                   <div style={{ height: 90 }} />
                   <div style={{ borderBottom: `2px solid ${BRAND_TEXT}`, opacity: 0.25, marginBottom: 8 }} />
-                  <div style={{ fontSize: 11, color: "#bbb" }}>שם, תפקיד ותאריך</div>
+                  <div style={{ fontSize: 11, color: BRAND_TEXT }}>שם, תפקיד ותאריך</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", color: "#bbb", marginBottom: 8 }}>חתימת ARC</div>
+                  <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", color: BRAND_TEXT, marginBottom: 8 }}>חתימת ARC</div>
                   <div style={{ height: 90, display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", justifyContent: "center", border: `2px solid ${BRAND_BG}`, borderRadius: 8, padding: "6px 12px", gap: 3, opacity: 0.85 }}>
                       <div style={{ fontSize: 13 }}>✓</div>
@@ -1235,7 +1235,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
                     </div>
                   </div>
                   <div style={{ borderBottom: `2px solid ${BRAND_TEXT}`, opacity: 0.25, marginBottom: 8 }} />
-                  <div style={{ fontSize: 11, color: "#bbb" }}>אורי לבקוביץ, ARC</div>
+                  <div style={{ fontSize: 11, color: BRAND_TEXT }}>אורי לבקוביץ, ARC</div>
                 </div>
               </div>
             </div>

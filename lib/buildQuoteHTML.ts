@@ -299,13 +299,13 @@ export function buildQuoteHTML(
 
     <div class="sig-block" style="margin-top:52px;padding-top:32px;border-top:1px solid #e8e3de;display:grid;grid-template-columns:1fr 1fr;gap:48px;font-family:${F};">
       <div>
-        <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#bbb;margin-bottom:8px;font-family:${F};">חתימת הלקוח</div>
+        <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:8px;font-family:${F};">חתימת הלקוח</div>
         <div style="height:90px;"></div>
         <div style="border-bottom:2px solid ${BRAND_TEXT};opacity:0.25;margin-bottom:8px;"></div>
-        <div style="font-size:11px;color:#bbb;font-family:${F};">שם, תפקיד ותאריך</div>
+        <div style="font-size:11px;color:${BRAND_TEXT};font-family:${F};">שם, תפקיד ותאריך</div>
       </div>
       <div>
-        <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#bbb;margin-bottom:8px;font-family:${F};">חתימת ARC</div>
+        <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:8px;font-family:${F};">חתימת ARC</div>
         <div style="height:90px;display:flex;align-items:center;justify-content:center;">
           <div style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid ${BRAND_BG};border-radius:8px;padding:6px 12px;gap:3px;opacity:0.85;">
             <div style="font-size:13px;">✓</div>
@@ -314,7 +314,7 @@ export function buildQuoteHTML(
           </div>
         </div>
         <div style="border-bottom:2px solid ${BRAND_TEXT};opacity:0.25;margin-bottom:8px;"></div>
-        <div style="font-size:11px;color:#bbb;font-family:${F};">אורי לבקוביץ, ARC</div>
+        <div style="font-size:11px;color:${BRAND_TEXT};font-family:${F};">אורי לבקוביץ, ARC</div>
       </div>
     </div>
 

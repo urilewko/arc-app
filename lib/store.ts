@@ -26,6 +26,7 @@ export interface ProjectTask {
   responsible: string;
   dueDate: string;
   notes: string;
+  todoistId?: string;
 }
 export type BlockStatus = "רעיון" | "בפיתוח" | "מוכן" | "בוצע בשטח";
 export type CollabDomain = "הנחייה" | "אמנות" | "מוזיקה" | "תנועה" | "טבע" | "בישול" | "טכנולוגיה" | "אחר";
@@ -450,10 +451,37 @@ export const useStore = create<ARCStore>()((set, get) => ({
         p.id === projectId ? { ...p, tasks: [...(p.tasks || []), newTask] } : p
       ),
     }));
+    // Sync to Todoist
     const project = get().projects.find((p) => p.id === projectId);
-    if (project) dbUpdate("projects", projectId, { tasks: project.tasks } as Rec);
+    fetch("/api/todoist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: newTask.title,
+        dueDate: newTask.dueDate || undefined,
+        responsible: newTask.responsible || undefined,
+        projectName: project?.orgName || undefined,
+        notes: newTask.notes || undefined,
+      }),
+    })
+      .then((r) => r.json())
+      .then(({ todoistId }) => {
+        if (!todoistId) return;
+        set((s) => ({
+          projects: s.projects.map((p) =>
+            p.id === projectId
+              ? { ...p, tasks: (p.tasks || []).map((t) => t.id === newTask.id ? { ...t, todoistId } : t) }
+              : p
+          ),
+        }));
+        const updated = get().projects.find((p) => p.id === projectId);
+        if (updated) dbUpdate("projects", projectId, { tasks: updated.tasks } as Rec);
+      })
+      .catch(() => {});
+    if (project) dbUpdate("projects", projectId, { tasks: [...(project.tasks || []), newTask] } as Rec);
   },
   updateProjectTask: (projectId, taskId, task) => {
+    const prevTask = get().projects.find((p) => p.id === projectId)?.tasks?.find((t) => t.id === taskId);
     set((s) => ({
       projects: s.projects.map((p) =>
         p.id === projectId
@@ -461,10 +489,20 @@ export const useStore = create<ARCStore>()((set, get) => ({
           : p
       ),
     }));
+    // Sync completion status to Todoist
+    if (prevTask?.todoistId && task.status !== undefined && task.status !== prevTask.status) {
+      const completed = task.status === "הושלם";
+      fetch("/api/todoist", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ todoistId: prevTask.todoistId, completed }),
+      }).catch(() => {});
+    }
     const project = get().projects.find((p) => p.id === projectId);
     if (project) dbUpdate("projects", projectId, { tasks: project.tasks } as Rec);
   },
   deleteProjectTask: (projectId, taskId) => {
+    const prevTask = get().projects.find((p) => p.id === projectId)?.tasks?.find((t) => t.id === taskId);
     set((s) => ({
       projects: s.projects.map((p) =>
         p.id === projectId
@@ -472,6 +510,14 @@ export const useStore = create<ARCStore>()((set, get) => ({
           : p
       ),
     }));
+    // Delete from Todoist
+    if (prevTask?.todoistId) {
+      fetch("/api/todoist", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ todoistId: prevTask.todoistId }),
+      }).catch(() => {});
+    }
     const project = get().projects.find((p) => p.id === projectId);
     if (project) dbUpdate("projects", projectId, { tasks: project.tasks } as Rec);
   },

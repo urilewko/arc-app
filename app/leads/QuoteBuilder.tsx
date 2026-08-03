@@ -1050,7 +1050,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
             <div style={{ background: BRAND_BG, padding: "20px 48px 18px", direction: "rtl", fontFamily: FONT }}>
               <div className="flex justify-between items-center mb-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/arc-logo.png" alt="ARC" style={{ height: 72, width: 72, objectFit: "contain", display: "block" }} />
+                <img src="/arc-logo.png" alt="ARC" style={{ height: 48, width: "auto", maxWidth: 200, objectFit: "contain", display: "block", filter: "brightness(0) invert(1)" }} />
                 <div style={{ textAlign: "left", fontFamily: FONT }}>
                   <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: BRAND_ON_BG, opacity: 0.6 }}>הצעת מחיר</div>
                 </div>

@@ -82,7 +82,7 @@ export const calcItems = (items: QuoteItem[]) =>
   items.reduce((s, it) => s + it.quantity * it.unitPrice, 0);
 
 function buildLogoTag(logoUrl: string) {
-  return `<img src="${logoUrl}" alt="ARC" style="height:88px;width:88px;object-fit:contain;border-radius:8px;display:block;" />`;
+  return `<img src="${logoUrl}" alt="ARC" style="height:48px;width:auto;max-width:200px;object-fit:contain;display:block;filter:brightness(0) invert(1);" />`;
 }
 
 function itemsTableHTML(items: QuoteItem[]): string {

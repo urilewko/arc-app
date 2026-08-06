@@ -89,7 +89,10 @@ export async function POST(req: NextRequest) {
             model: "claude-opus-5",
             max_tokens: 16000,
             thinking: { type: "adaptive" },
-            output_config: { effort: "high" },
+            // Composing from a documented library rather than solving from
+            // scratch — medium holds quality here at a fraction of the
+            // thinking tokens, which dominate the bill.
+            output_config: { effort: "medium" },
             system,
             tools: [CREATE_DOCUMENT, WEB_SEARCH, REMEMBER],
             messages,

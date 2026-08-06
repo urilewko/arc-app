@@ -9,7 +9,7 @@ import type Anthropic from "@anthropic-ai/sdk";
 export const WEB_SEARCH = {
   type: "web_search_20260209",
   name: "web_search",
-  max_uses: 8,
+  max_uses: 5,
 } as const;
 
 /**

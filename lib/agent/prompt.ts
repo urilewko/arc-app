@@ -169,14 +169,18 @@ export function buildSystem(
   const blocks: Array<{
     type: "text";
     text: string;
-    cache_control?: { type: "ephemeral" };
+    cache_control?: { type: "ephemeral"; ttl?: "5m" | "1h" };
   }> = [
     { type: "text", text: SYSTEM_PROMPT },
     {
       type: "text",
       text: `# בסיס הידע — כרטיסי הבלוקים\n\n${knowledge}`,
       // Stable across requests → cache it. Volatile context goes after.
-      cache_control: { type: "ephemeral" },
+      //
+      // 1h rather than the 5m default: questions arrive across a working day,
+      // not in bursts, so the short window meant almost every turn paid a
+      // fresh write of the whole knowledge base.
+      cache_control: { type: "ephemeral", ttl: "1h" },
     },
   ];
 

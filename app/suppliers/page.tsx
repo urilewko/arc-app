@@ -3,6 +3,10 @@ import { useState } from "react";
 import { Search, Plus, Trash2, ChevronDown, ChevronUp, Phone, Mail, Pencil } from "lucide-react";
 import Modal from "@/components/Modal";
 import { supabase } from "@/lib/supabase";
+import {
+  VENUE_CATEGORY, VenueEditor, VenueSummary, VenueBadges,
+  type SupplierDetails,
+} from "./supplierDetails";
 import { useEffect } from "react";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -46,13 +50,14 @@ interface Supplier {
   priceRange: string;
   rating: number;
   notes: string;
+  details?: SupplierDetails;
   createdAt: string;
 }
 
 const empty: Omit<Supplier, "id" | "createdAt"> = {
   name: "", category: "אחר", contactName: "",
   phone: "", email: "", paymentTerms: "",
-  priceRange: "", rating: 0, notes: "",
+  priceRange: "", rating: 0, notes: "", details: {},
 };
 
 const AVATAR_COLORS = ["bg-violet-400","bg-blue-400","bg-teal-400","bg-emerald-400","bg-amber-400","bg-rose-400"];
@@ -185,6 +190,7 @@ export default function SuppliersPage() {
                     {s.contactName && <span>{s.contactName}</span>}
                     {s.priceRange && <span>💰 {s.priceRange}</span>}
                     {s.paymentTerms && <span>📋 {s.paymentTerms}</span>}
+                    {s.category === VENUE_CATEGORY && s.details && <VenueBadges d={s.details} />}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -203,12 +209,15 @@ export default function SuppliersPage() {
               </div>
 
               {isOpen && (
-                <div className="border-t border-gray-100 px-5 py-4 bg-gray-50/50 grid grid-cols-2 gap-4 text-sm">
+                <div className="border-t border-gray-100 px-5 py-4 bg-gray-50/50 text-sm">
+                  <div className="grid grid-cols-2 gap-4">
                   {s.phone && <div><span className="text-xs text-gray-400 block mb-0.5">טלפון</span><span>{s.phone}</span></div>}
                   {s.email && <div><span className="text-xs text-gray-400 block mb-0.5">אימייל</span><span>{s.email}</span></div>}
                   {s.priceRange && <div><span className="text-xs text-gray-400 block mb-0.5">טווח מחירים</span><span>{s.priceRange}</span></div>}
                   {s.paymentTerms && <div><span className="text-xs text-gray-400 block mb-0.5">תנאי תשלום</span><span>{s.paymentTerms}</span></div>}
                   {s.notes && <div className="col-span-2"><span className="text-xs text-gray-400 block mb-0.5">הערות</span><span className="text-gray-600">{s.notes}</span></div>}
+                  </div>
+                  {s.category === VENUE_CATEGORY && s.details && <VenueSummary d={s.details} />}
                 </div>
               )}
             </div>
@@ -277,6 +286,12 @@ export default function SuppliersPage() {
               <textarea className="w-full border rounded-lg px-3 py-2 text-sm" rows={3} value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })} />
             </div>
+            {form.category === VENUE_CATEGORY && (
+              <VenueEditor
+                d={form.details || {}}
+                onChange={(details) => setForm({ ...form, details })}
+              />
+            )}
             <div className="flex gap-2 pt-2">
               <button onClick={save} className="flex-1 bg-[#1a1a1a] text-white py-2 rounded-lg text-sm hover:bg-[#333]">שמור</button>
               <button onClick={() => setOpen(false)} className="flex-1 border py-2 rounded-lg text-sm hover:bg-gray-50">ביטול</button>

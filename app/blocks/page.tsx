@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
 import { useStore, Block, BlockStatus, BlockContentItem, BlockMarketingLink, ExpenseItem, ProductType } from "@/lib/store";
-import { Plus, Pencil, Trash2, Zap, ArrowRight, X, Link2, Eye, Edit3, Check } from "lucide-react";
+import Link from "next/link";
+import { Plus, Pencil, Trash2, Zap, ArrowRight, X, Link2, Eye, Edit3, Check, Download } from "lucide-react";
 
 const BLOCK_STATUSES: BlockStatus[] = ["רעיון", "בפיתוח", "מוכן", "בוצע בשטח"];
 const PRODUCT_TYPES: ProductType[] = ["ריטריט", "סדנה חד פעמית", "Offsite", "קורס", "אירוע"];
@@ -21,6 +22,18 @@ const STATUS_BADGE: Record<BlockStatus, string> = {
 };
 const PILLAR_COLORS = ["bg-blue-500", "bg-purple-500", "bg-amber-500", "bg-rose-500"];
 const PILLAR_LABELS = ["תוכן", "חוויה", "לוגיסטיקה", "שיווק"];
+
+// ── Maturity scale: red → orange → yellow → lime → green ──────────
+// Read as a traffic light, so a block's readiness is legible at a glance.
+const MATURITY = [
+  { min: 90, bar: "bg-green-500",  text: "text-green-600",  label: "מוכן" },
+  { min: 70, bar: "bg-lime-500",   text: "text-lime-600",   label: "כמעט" },
+  { min: 50, bar: "bg-yellow-400", text: "text-yellow-600", label: "באמצע" },
+  { min: 30, bar: "bg-orange-500", text: "text-orange-600", label: "בתחילת הדרך" },
+  { min: 0,  bar: "bg-red-500",    text: "text-red-600",    label: "חסר" },
+];
+const maturity = (pct: number) =>
+  MATURITY.find((m) => pct >= m.min) ?? MATURITY[MATURITY.length - 1];
 
 const uid = () => Math.random().toString(36).slice(2);
 
@@ -205,7 +218,12 @@ function BlockDetail({ block, onBack }: { block: Block; onBack: () => void }) {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold mb-1 text-gray-600">התקדמות — {form.completionPercent}%</label>
+                <label className="block text-xs font-semibold mb-1 text-gray-600">
+                  בשלות —{" "}
+                  <span className={maturity(form.completionPercent).text}>
+                    {form.completionPercent}% · {maturity(form.completionPercent).label}
+                  </span>
+                </label>
                 <input type="range" min={0} max={100} step={5} className="w-full mt-2 accent-gray-800"
                   value={form.completionPercent}
                   onChange={(e) => setForm({ ...form, completionPercent: Number(e.target.value) })} />
@@ -231,10 +249,12 @@ function BlockDetail({ block, onBack }: { block: Block; onBack: () => void }) {
             {/* Progress bar */}
             <div className="mt-4">
               <div className="flex justify-between text-xs text-gray-500 mb-1">
-                <span>התקדמות</span><span>{form.completionPercent}%</span>
+                <span>בשלות · {maturity(form.completionPercent).label}</span>
+                <span className="font-semibold">{form.completionPercent}%</span>
               </div>
               <div className="h-2 bg-white/40 rounded-full overflow-hidden">
-                <div className="h-full bg-white/80 rounded-full transition-all" style={{ width: `${form.completionPercent}%` }} />
+                <div className={`h-full rounded-full transition-all ${maturity(form.completionPercent).bar}`}
+                  style={{ width: `${form.completionPercent}%` }} />
               </div>
             </div>
           </>
@@ -605,10 +625,12 @@ function BlockCard({ block, onView, onDelete }: {
         <div>
           <div className="flex justify-between text-xs text-gray-400 mb-1">
             <span>{filledCount}/4 פילרים</span>
-            <span>{block.completionPercent}%</span>
+            <span className={`font-semibold ${maturity(block.completionPercent).text}`}>
+              {block.completionPercent}%
+            </span>
           </div>
           <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-            <div className="h-full bg-gray-400 rounded-full transition-all"
+            <div className={`h-full rounded-full transition-all ${maturity(block.completionPercent).bar}`}
               style={{ width: `${block.completionPercent}%` }} />
           </div>
         </div>
@@ -695,10 +717,16 @@ export default function BlocksPage() {
           <p className="text-sm text-gray-500 mt-0.5">קטלוג חוויות המוצר של ARC — {blocks.length} בלוקים</p>
         </div>
         {!creating && (
-          <button onClick={() => setCreating(true)}
-            className="flex items-center gap-2 bg-[#1a1a1a] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#333]">
-            <Plus size={16} /> Block חדש
-          </button>
+          <div className="flex items-center gap-2">
+            <Link href="/blocks/import"
+              className="flex items-center gap-2 border border-gray-300 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-50">
+              <Download size={16} /> ייבוא מהארכיון
+            </Link>
+            <button onClick={() => setCreating(true)}
+              className="flex items-center gap-2 bg-[#1a1a1a] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#333]">
+              <Plus size={16} /> Block חדש
+            </button>
+          </div>
         )}
       </div>
 

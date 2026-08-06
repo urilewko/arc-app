@@ -8,12 +8,6 @@ const BLOCK_STATUSES: BlockStatus[] = ["רעיון", "בפיתוח", "מוכן",
 const PRODUCT_TYPES: ProductType[] = ["ריטריט", "סדנה חד פעמית", "Offsite", "קורס", "אירוע"];
 
 // ── Visual config ──────────────────────────────────────────────────
-const STATUS_GRADIENT: Record<BlockStatus, string> = {
-  "רעיון":       "from-gray-300 to-gray-100",
-  "בפיתוח":      "from-[#aec6cf] to-[#d8eaee]",
-  "מוכן":        "from-emerald-300 to-emerald-100",
-  "בוצע בשטח":   "from-green-600 to-green-400",
-};
 const STATUS_BADGE: Record<BlockStatus, string> = {
   "רעיון":       "bg-gray-100 text-gray-500",
   "בפיתוח":      "bg-[#aec6cf]/30 text-[#4a6b73]",
@@ -26,11 +20,11 @@ const PILLAR_LABELS = ["תוכן", "חוויה", "לוגיסטיקה", "שיוו
 // ── Maturity scale: red → orange → yellow → lime → green ──────────
 // Read as a traffic light, so a block's readiness is legible at a glance.
 const MATURITY = [
-  { min: 90, bar: "bg-green-500",  text: "text-green-600",  label: "מוכן" },
-  { min: 70, bar: "bg-lime-500",   text: "text-lime-600",   label: "כמעט" },
-  { min: 50, bar: "bg-yellow-400", text: "text-yellow-600", label: "באמצע" },
-  { min: 30, bar: "bg-orange-500", text: "text-orange-600", label: "בתחילת הדרך" },
-  { min: 0,  bar: "bg-red-500",    text: "text-red-600",    label: "חסר" },
+  { min: 90, bar: "bg-green-500",  text: "text-green-600",  grad: "from-green-500 to-green-300",   label: "מוכן" },
+  { min: 70, bar: "bg-lime-500",   text: "text-lime-600",   grad: "from-lime-500 to-lime-300",     label: "כמעט" },
+  { min: 50, bar: "bg-yellow-400", text: "text-yellow-600", grad: "from-yellow-400 to-yellow-200", label: "באמצע" },
+  { min: 30, bar: "bg-orange-500", text: "text-orange-600", grad: "from-orange-400 to-orange-200", label: "בתחילת הדרך" },
+  { min: 0,  bar: "bg-red-500",    text: "text-red-600",    grad: "from-red-500 to-red-300",       label: "חסר" },
 ];
 const maturity = (pct: number) =>
   MATURITY.find((m) => pct >= m.min) ?? MATURITY[MATURITY.length - 1];
@@ -164,7 +158,7 @@ function BlockDetail({ block, onBack }: { block: Block; onBack: () => void }) {
       </div>
 
       {/* ── Hero card ── */}
-      <div className={`rounded-2xl bg-gradient-to-br ${STATUS_GRADIENT[form.status]} p-6 mb-6 shadow-sm`}>
+      <div className={`rounded-2xl bg-gradient-to-br ${maturity(form.completionPercent).grad} p-6 mb-6 shadow-sm`}>
         {editing ? (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
@@ -579,7 +573,7 @@ function BlockCard({ block, onView, onDelete }: {
     <div className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all cursor-pointer"
       onClick={onView}>
       {/* Gradient header */}
-      <div className={`bg-gradient-to-br ${STATUS_GRADIENT[block.status]} px-5 pt-5 pb-4 relative`}>
+      <div className={`bg-gradient-to-br ${maturity(block.completionPercent).grad} px-5 pt-5 pb-4 relative`}>
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
             <h3 className="font-bold text-xl text-gray-800 leading-tight">{block.name}</h3>

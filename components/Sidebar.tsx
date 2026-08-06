@@ -20,10 +20,12 @@ import {
   BarChart2,
   ListTodo,
   ShoppingCart,
+  Sparkles,
 } from "lucide-react";
 
 const links = [
   { href: "/", label: "דאשבורד", icon: LayoutDashboard },
+  { href: "/agent", label: "אדריכל התוכן", icon: Sparkles },
   { href: "/my-work", label: "העבודה שלי", icon: ListTodo },
   { href: "/strategy", label: "ניהול אסטרטגי", icon: Target },
   { href: "/leads", label: "לידים", icon: TrendingUp },

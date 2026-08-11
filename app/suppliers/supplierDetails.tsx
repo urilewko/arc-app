@@ -10,6 +10,14 @@ import { Plus, X, ExternalLink, BedDouble, Users, Banknote } from "lucide-react"
 
 export const VENUE_CATEGORY = "מרחבים ומקומות";
 
+export type LodgingType = "room" | "shared" | "none" | "unknown";
+export const LODGING_TYPE_LABELS: Record<LodgingType, string> = {
+  room: "לינה בחדרים",
+  shared: "לינה משותפת (אוהלים/מזרונים)",
+  none: "ללא לינה — יום בלבד",
+  unknown: "לא ידוע",
+};
+
 export interface VenueDetails {
   region?: string;
   address?: string;
@@ -19,6 +27,7 @@ export interface VenueDetails {
   hasLodging?: boolean;
   lodgingRooms?: number;
   lodgingBeds?: number;
+  lodgingType?: LodgingType;
   pricePerDay?: number;
   pricePerPersonNight?: number;
   spaces?: string[];
@@ -27,6 +36,9 @@ export interface VenueDetails {
   season?: string;
   cancellation?: string;
   photos?: string[];
+  /** Approximate position on the stylized Israel map, 0–100 (not real geo coordinates). */
+  mapX?: number;
+  mapY?: number;
 }
 
 /** Venue fields plus room for other categories to add their own later. */
@@ -70,6 +82,10 @@ export function VenueSummary({ d }: { d: VenueDetails }) {
     ["אזור", d.region || null],
     ["כתובת", d.address || null],
     ["קיבולת", cap],
+    [
+      "סוג לינה",
+      d.lodgingType ? LODGING_TYPE_LABELS[d.lodgingType] : null,
+    ],
     [
       "לינה",
       d.hasLodging
@@ -157,9 +173,9 @@ export function VenueBadges({ d }: { d: VenueDetails }) {
           <Users size={11} /> {cap}
         </span>
       )}
-      {d.hasLodging && (
+      {d.lodgingType && d.lodgingType !== "unknown" && (
         <span className="flex items-center gap-1 text-green-600">
-          <BedDouble size={11} /> לינה
+          <BedDouble size={11} /> {LODGING_TYPE_LABELS[d.lodgingType]}
         </span>
       )}
       {!!d.pricePerDay && (
@@ -249,6 +265,21 @@ export function VenueEditor({
       </div>
 
       {/* Lodging */}
+      <div>
+        <label className={label}>סוג לינה</label>
+        <select
+          className={input}
+          value={d.lodgingType || "unknown"}
+          onChange={(e) => {
+            const lodgingType = e.target.value as LodgingType;
+            set({ lodgingType, hasLodging: lodgingType === "room" || lodgingType === "shared" });
+          }}
+        >
+          {(Object.keys(LODGING_TYPE_LABELS) as LodgingType[]).map((k) => (
+            <option key={k} value={k}>{LODGING_TYPE_LABELS[k]}</option>
+          ))}
+        </select>
+      </div>
       <div className="rounded-lg bg-gray-50 p-3">
         <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
           <input
@@ -257,7 +288,7 @@ export function VenueEditor({
             onChange={(e) => set({ hasLodging: e.target.checked })}
             className="w-4 h-4 accent-green-600"
           />
-          יש לינה במקום
+          יש לינה במקום (פרטים מדויקים)
         </label>
         {d.hasLodging && (
           <div className="grid grid-cols-2 gap-3 mt-3">

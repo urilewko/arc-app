@@ -1,12 +1,14 @@
 "use client";
 import { useState } from "react";
-import { Search, Plus, Trash2, ChevronDown, ChevronUp, Phone, Mail, Pencil } from "lucide-react";
+import { Search, Plus, Trash2, ChevronDown, ChevronUp, Phone, Mail, Pencil, MapIcon, Download } from "lucide-react";
 import Modal from "@/components/Modal";
 import { supabase } from "@/lib/supabase";
 import {
   VENUE_CATEGORY, VenueEditor, VenueSummary, VenueBadges,
   type SupplierDetails,
 } from "./supplierDetails";
+import { VENUE_SEED, NAME_ONLY_SEED } from "./venueSeedData";
+import VenueMap from "./VenueMap";
 import { useEffect } from "react";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -75,6 +77,9 @@ export default function SuppliersPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Supplier | null>(null);
   const [form, setForm] = useState(empty);
+  const [showMap, setShowMap] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.from("suppliers").select("*").then(({ data }) => {
@@ -119,6 +124,67 @@ export default function SuppliersPage() {
     setSuppliers((prev) => prev.filter((s) => s.id !== id));
   };
 
+  const importVenues = async () => {
+    setImporting(true);
+    setImportMsg(null);
+    const existingNames = new Set(suppliers.map((s) => s.name));
+    const toInsert = VENUE_SEED.filter((v) => !existingNames.has(v.name)).map((v) => {
+      const details: SupplierDetails = {
+        region: v.region,
+        website: v.website || undefined,
+        lodgingType: v.lodgingType,
+        hasLodging: v.lodgingType === "room" || v.lodgingType === "shared",
+        mapX: v.mapX,
+        mapY: v.mapY,
+      };
+      const row = {
+        id: uid(),
+        name: v.name,
+        category: VENUE_CATEGORY,
+        contact_name: v.contactName,
+        phone: v.phone,
+        email: v.email,
+        payment_terms: "",
+        price_range: "",
+        rating: 0,
+        notes: v.notes,
+        details,
+        created_at: new Date().toISOString(),
+      };
+      return row;
+    });
+    const nameOnlyExisting = new Set(suppliers.map((s) => s.name));
+    const nameOnlyInsert = NAME_ONLY_SEED.filter((v) => !nameOnlyExisting.has(v.name)).map((v) => ({
+      id: uid(),
+      name: v.name,
+      category: VENUE_CATEGORY,
+      contact_name: "",
+      phone: "",
+      email: "",
+      payment_terms: "",
+      price_range: "",
+      rating: 0,
+      notes: `שם בלבד — ${v.sourceNote}`,
+      details: { lodgingType: "unknown" } as SupplierDetails,
+      created_at: new Date().toISOString(),
+    }));
+
+    const allRows = [...toInsert, ...nameOnlyInsert];
+    if (allRows.length === 0) {
+      setImportMsg("כל המרחבים כבר קיימים במאגר");
+      setImporting(false);
+      return;
+    }
+    const { error } = await supabase.from("suppliers").insert(allRows);
+    if (error) {
+      setImportMsg(`שגיאה בייבוא: ${error.message}`);
+    } else {
+      setSuppliers((prev) => [...prev, ...allRows.map((r) => toCamel(r as unknown as Record<string, unknown>) as unknown as Supplier)]);
+      setImportMsg(`יובאו ${allRows.length} מרחבים חדשים`);
+    }
+    setImporting(false);
+  };
+
   const filtered = suppliers.filter((s) => {
     const matchSearch = s.name.includes(search) || s.contactName.includes(search) || s.category.includes(search);
     const matchCat = catFilter === "הכל" || s.category === catFilter;
@@ -127,13 +193,33 @@ export default function SuppliersPage() {
 
   return (
     <div dir="rtl">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
         <h1 className="text-2xl font-bold">ספקים</h1>
-        <button onClick={openNew}
-          className="flex items-center gap-2 bg-[#1a1a1a] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#333]">
-          <Plus size={16} /> ספק חדש
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {importMsg && <span className="text-xs text-gray-500">{importMsg}</span>}
+          <button onClick={importVenues} disabled={importing}
+            className="flex items-center gap-2 border border-gray-300 text-gray-600 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50">
+            <Download size={14} className={importing ? "animate-pulse" : ""} />
+            {importing ? "מייבא..." : "ייבא מרחבים ומקומות"}
+          </button>
+          <button onClick={() => setShowMap((v) => !v)}
+            className={`flex items-center gap-2 border px-3 py-2 rounded-lg text-sm transition-colors ${
+              showMap ? "bg-[#1a1a1a] text-white border-[#1a1a1a]" : "border-gray-300 text-gray-600 hover:bg-gray-50"}`}>
+            <MapIcon size={14} /> {showMap ? "הצג רשימה" : "הצג מפה"}
+          </button>
+          <button onClick={openNew}
+            className="flex items-center gap-2 bg-[#1a1a1a] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#333]">
+            <Plus size={16} /> ספק חדש
+          </button>
+        </div>
       </div>
+
+      {showMap && (
+        <VenueMap
+          venues={suppliers.filter((s) => s.category === VENUE_CATEGORY)}
+          onSelect={(id) => { setShowMap(false); setExpanded(id); }}
+        />
+      )}
 
       {/* Search + filter */}
       <div className="flex gap-3 mb-5 flex-wrap">
@@ -164,10 +250,10 @@ export default function SuppliersPage() {
       </div>
 
       {/* List */}
-      {filtered.length === 0 && (
+      {!showMap && filtered.length === 0 && (
         <div className="bg-white rounded-xl p-12 text-center text-gray-400 shadow-sm">אין ספקים להצגה</div>
       )}
-      <div className="space-y-2">
+      <div className={`space-y-2 ${showMap ? "hidden" : ""}`}>
         {filtered.map((s) => {
           const isOpen = expanded === s.id;
           const initials = s.name.slice(0, 2);

@@ -42,23 +42,24 @@ export default function VenueMap({
         <div className="relative shrink-0" style={{ width: 260, height: 520 }}>
           <svg viewBox="0 0 100 100" width="260" height="520" className="overflow-visible">
             <path
-              d="M 50 4
-                 C 54 6, 56 10, 55 15
-                 C 54 20, 52 24, 51 30
-                 C 50 38, 49 44, 48 50
-                 C 47 58, 46 64, 45 70
-                 C 44 78, 45 86, 44 93
-                 C 43.5 96, 42.5 97.5, 42 96
-                 C 40 90, 38 84, 36 78
-                 C 33 70, 31 62, 32 54
-                 C 32.5 48, 34 43, 33 37
-                 C 32 32, 30 28, 31 23
-                 C 32 18, 35 14, 38 10
-                 C 42 6, 46 4, 50 4 Z"
+              d="M 34 3
+                 L 44 2 L 50 3 L 54 5
+                 L 56 9 L 53 13 L 50 18 L 49 24
+                 L 48 30 L 47 36 L 46 42
+                 L 47 47 L 48 52 L 47 57
+                 L 45 63 L 44 70 L 43 77 L 42 84 L 41 90 L 39.5 96 L 38 99
+                 L 35 95 L 32 90 L 29 83 L 27 76 L 26 70
+                 L 27 64 L 29 58 L 29 50 L 30 44 L 31 39
+                 L 30 34 L 31 28 L 33 25 L 31 21 L 32 16 L 34 9 Z"
               fill="#eef0e8"
-              stroke="#c9cabb"
-              strokeWidth="0.4"
+              stroke="#b9bba8"
+              strokeWidth="0.6"
+              strokeLinejoin="round"
             />
+            {/* Sea of Galilee */}
+            <ellipse cx="51" cy="16" rx="1.4" ry="2" fill="#c7d9e0" />
+            {/* Dead Sea */}
+            <path d="M 47 46 L 48 51 L 47 56 L 45.5 51 Z" fill="#c7d9e0" />
             {placed.map((v) => {
               const x = v.details!.mapX!;
               const y = v.details!.mapY!;

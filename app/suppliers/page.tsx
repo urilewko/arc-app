@@ -185,6 +185,32 @@ export default function SuppliersPage() {
     setImporting(false);
   };
 
+  const updateVenuePositions = async () => {
+    setImporting(true);
+    setImportMsg(null);
+    let updated = 0;
+    for (const v of VENUE_SEED) {
+      const existing = suppliers.find((s) => s.name === v.name && s.category === VENUE_CATEGORY);
+      if (!existing) continue;
+      const details: SupplierDetails = {
+        ...(existing.details || {}),
+        region: v.region,
+        website: v.website || undefined,
+        lodgingType: v.lodgingType,
+        hasLodging: v.lodgingType === "room" || v.lodgingType === "shared",
+        mapX: v.mapX,
+        mapY: v.mapY,
+      };
+      const { error } = await supabase.from("suppliers").update({ details }).eq("id", existing.id);
+      if (!error) {
+        updated++;
+        setSuppliers((prev) => prev.map((s) => s.id === existing.id ? { ...s, details } : s));
+      }
+    }
+    setImportMsg(`עודכנו מיקומים ל-${updated} מרחבים`);
+    setImporting(false);
+  };
+
   const filtered = suppliers.filter((s) => {
     const matchSearch = s.name.includes(search) || s.contactName.includes(search) || s.category.includes(search);
     const matchCat = catFilter === "הכל" || s.category === catFilter;
@@ -200,7 +226,12 @@ export default function SuppliersPage() {
           <button onClick={importVenues} disabled={importing}
             className="flex items-center gap-2 border border-gray-300 text-gray-600 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50">
             <Download size={14} className={importing ? "animate-pulse" : ""} />
-            {importing ? "מייבא..." : "ייבא מרחבים ומקומות"}
+            {importing ? "מעבד..." : "ייבא מרחבים ומקומות"}
+          </button>
+          <button onClick={updateVenuePositions} disabled={importing}
+            className="flex items-center gap-2 border border-gray-300 text-gray-600 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50">
+            <MapIcon size={14} className={importing ? "animate-pulse" : ""} />
+            עדכן מיקומים על המפה
           </button>
           <button onClick={() => setShowMap((v) => !v)}
             className={`flex items-center gap-2 border px-3 py-2 rounded-lg text-sm transition-colors ${

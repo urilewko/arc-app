@@ -39,27 +39,34 @@ export default function VenueMap({
       </div>
 
       <div className="flex gap-4">
-        <div className="relative shrink-0" style={{ width: 260, height: 520 }}>
-          <svg viewBox="0 0 100 100" width="260" height="520" className="overflow-visible">
+        <div className="relative shrink-0" style={{ width: 220, height: 500 }}>
+          <svg viewBox="0 0 70 100" width="220" height="500" className="overflow-visible">
+            {/* Israel outline — schematic, traced clockwise from Rosh HaNikra */}
             <path
-              d="M 34 3
-                 L 44 2 L 50 3 L 54 5
-                 L 56 9 L 53 13 L 50 18 L 49 24
-                 L 48 30 L 47 36 L 46 42
-                 L 47 47 L 48 52 L 47 57
-                 L 45 63 L 44 70 L 43 77 L 42 84 L 41 90 L 39.5 96 L 38 99
-                 L 35 95 L 32 90 L 29 83 L 27 76 L 26 70
-                 L 27 64 L 29 58 L 29 50 L 30 44 L 31 39
-                 L 30 34 L 31 28 L 33 25 L 31 21 L 32 16 L 34 9 Z"
-              fill="#eef0e8"
-              stroke="#b9bba8"
-              strokeWidth="0.6"
+              d="M 22 4.2
+                 L 30 1.7 L 45 1.3 L 58 1.7
+                 L 66 4.2 L 68 8.3 L 66 13.3
+                 L 62 18.8 L 58 24.2 L 56 29.2
+                 L 54 34.2 L 56 38.3 L 60 43.8
+                 L 62 49.2 L 60 54.2 L 55 58.3
+                 L 52 63.3 L 50 68.3 L 48 73.3
+                 L 46 78.3 L 44 83.3 L 43 88.3
+                 L 42 92.5 L 40 98.3
+                 L 36 95 L 33 90.8 L 31 85.8
+                 L 29 81.7 L 26 77.5 L 24 73.3
+                 L 22 69.2 L 16 65.8 L 14 62.5
+                 L 13 58.3 L 13 50 L 14 41.7
+                 L 15 33.3 L 14 25 L 17 18.8
+                 L 19 10.4 Z"
+              fill="#eef1e7"
+              stroke="#adb098"
+              strokeWidth="0.5"
               strokeLinejoin="round"
             />
             {/* Sea of Galilee */}
-            <ellipse cx="51" cy="16" rx="1.4" ry="2" fill="#c7d9e0" />
+            <ellipse cx="60" cy="16" rx="1.6" ry="2.4" fill="#c6d8e0" />
             {/* Dead Sea */}
-            <path d="M 47 46 L 48 51 L 47 56 L 45.5 51 Z" fill="#c7d9e0" />
+            <path d="M 60 44 L 62 49.5 L 59.5 54 L 57.5 49 Z" fill="#c6d8e0" />
             {placed.map((v) => {
               const x = v.details!.mapX!;
               const y = v.details!.mapY!;
@@ -91,8 +98,8 @@ export default function VenueMap({
                 key={`tip-${v.id}`}
                 className="absolute z-10 bg-[#1a1a1a] text-white text-[11px] rounded-lg px-2.5 py-1.5 pointer-events-none shadow-lg whitespace-nowrap"
                 style={{
-                  left: `${x * 2.6}px`,
-                  top: `${y * 5.2}px`,
+                  left: `${x * (220 / 70)}px`,
+                  top: `${y * 5}px`,
                   transform: "translate(-50%, -130%)",
                 }}
               >

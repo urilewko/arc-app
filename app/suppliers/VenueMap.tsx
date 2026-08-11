@@ -12,8 +12,11 @@ const LODGE_DOT: Record<string, string> = {
   room: "#2e5775",
   shared: "#987859",
   none: "#8a5540",
-  unknown: "#a0907a",
+  unknown: "#6b6b6b",
 };
+
+// Natural size of /public/israel-map-ref.jpeg
+const MAP_ASPECT = 280 / 714;
 
 export default function VenueMap({
   venues,
@@ -25,10 +28,11 @@ export default function VenueMap({
   const [hover, setHover] = useState<string | null>(null);
   const placed = venues.filter((v) => v.details?.mapX != null && v.details?.mapY != null);
   const unplaced = venues.filter((v) => v.details?.mapX == null || v.details?.mapY == null);
+  const hovered = placed.find((v) => v.id === hover);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-5">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div className="text-sm font-semibold text-gray-600">מפה סכמטית — מיקום מקורב לפי אזור</div>
         <div className="flex items-center gap-3 text-[11px] text-gray-500">
           <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: LODGE_DOT.room }} /> לינה בחדרים</span>
@@ -38,80 +42,60 @@ export default function VenueMap({
         </div>
       </div>
 
-      <div className="flex gap-4">
-        <div className="relative shrink-0" style={{ width: 220, height: 500 }}>
-          <svg viewBox="0 0 70 100" width="220" height="500" className="overflow-visible">
-            {/* Israel outline — schematic, traced clockwise from Rosh HaNikra */}
-            <path
-              d="M 22 4.2
-                 L 30 1.7 L 45 1.3 L 58 1.7
-                 L 66 4.2 L 68 8.3 L 66 13.3
-                 L 62 18.8 L 58 24.2 L 56 29.2
-                 L 54 34.2 L 56 38.3 L 60 43.8
-                 L 62 49.2 L 60 54.2 L 55 58.3
-                 L 52 63.3 L 50 68.3 L 48 73.3
-                 L 46 78.3 L 44 83.3 L 43 88.3
-                 L 42 92.5 L 40 98.3
-                 L 36 95 L 33 90.8 L 31 85.8
-                 L 29 81.7 L 26 77.5 L 24 73.3
-                 L 22 69.2 L 16 65.8 L 14 62.5
-                 L 13 58.3 L 13 50 L 14 41.7
-                 L 15 33.3 L 14 25 L 17 18.8
-                 L 19 10.4 Z"
-              fill="#eef1e7"
-              stroke="#adb098"
-              strokeWidth="0.5"
-              strokeLinejoin="round"
-            />
-            {/* Sea of Galilee */}
-            <ellipse cx="60" cy="16" rx="1.6" ry="2.4" fill="#c6d8e0" />
-            {/* Dead Sea */}
-            <path d="M 60 44 L 62 49.5 L 59.5 54 L 57.5 49 Z" fill="#c6d8e0" />
-            {placed.map((v) => {
-              const x = v.details!.mapX!;
-              const y = v.details!.mapY!;
-              const lodge = v.details?.lodgingType || "unknown";
-              const isHover = hover === v.id;
-              return (
-                <g key={v.id}>
-                  <circle
-                    cx={x} cy={y} r={isHover ? 2.4 : 1.6}
-                    fill={LODGE_DOT[lodge]}
-                    stroke="#fff"
-                    strokeWidth="0.5"
-                    className="cursor-pointer transition-all"
-                    onMouseEnter={() => setHover(v.id)}
-                    onMouseLeave={() => setHover(null)}
-                    onClick={() => onSelect(v.id)}
-                  />
-                </g>
-              );
-            })}
-          </svg>
-
+      <div className="flex gap-5 flex-wrap md:flex-nowrap">
+        <div
+          className="relative shrink-0 mx-auto md:mx-0 rounded-lg overflow-hidden border border-gray-100"
+          style={{
+            width: "min(100%, 380px)",
+            aspectRatio: `${MAP_ASPECT}`,
+            backgroundImage: "url(/israel-map-ref.jpeg)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
           {placed.map((v) => {
-            if (hover !== v.id) return null;
             const x = v.details!.mapX!;
             const y = v.details!.mapY!;
+            const lodge = v.details?.lodgingType || "unknown";
+            const isHover = hover === v.id;
             return (
-              <div
-                key={`tip-${v.id}`}
-                className="absolute z-10 bg-[#1a1a1a] text-white text-[11px] rounded-lg px-2.5 py-1.5 pointer-events-none shadow-lg whitespace-nowrap"
+              <button
+                key={v.id}
+                onMouseEnter={() => setHover(v.id)}
+                onMouseLeave={() => setHover(null)}
+                onClick={() => onSelect(v.id)}
+                className="absolute rounded-full border-2 border-white shadow transition-transform"
                 style={{
-                  left: `${x * (220 / 70)}px`,
-                  top: `${y * 5}px`,
-                  transform: "translate(-50%, -130%)",
+                  left: `${x}%`,
+                  top: `${y}%`,
+                  width: isHover ? 14 : 9,
+                  height: isHover ? 14 : 9,
+                  background: LODGE_DOT[lodge],
+                  transform: "translate(-50%, -50%)",
+                  zIndex: isHover ? 20 : 1,
                 }}
-              >
-                <div className="font-semibold">{v.name}</div>
-                {v.details?.lodgingType && (
-                  <div className="text-gray-300 text-[10px] mt-0.5">
-                    {LODGING_TYPE_LABELS[v.details.lodgingType]}
-                  </div>
-                )}
-              </div>
+                aria-label={v.name}
+              />
             );
           })}
+
+          {hovered && (
+            <div
+              className="absolute z-30 bg-[#1a1a1a] text-white text-[11px] rounded-lg px-2.5 py-1.5 pointer-events-none shadow-lg whitespace-nowrap"
+              style={{
+                left: `${hovered.details!.mapX}%`,
+                top: `${hovered.details!.mapY}%`,
+                transform: "translate(-50%, -135%)",
+              }}
+            >
+              <div className="font-semibold">{hovered.name}</div>
+              {hovered.details?.lodgingType && (
+                <div className="text-gray-300 text-[10px] mt-0.5">
+                  {LODGING_TYPE_LABELS[hovered.details.lodgingType]}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex-1 min-w-0">

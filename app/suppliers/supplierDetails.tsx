@@ -18,6 +18,9 @@ export const LODGING_TYPE_LABELS: Record<LodgingType, string> = {
   unknown: "לא ידוע",
 };
 
+export type IsraelZone = "צפון" | "מרכז" | "דרום" | "לא ידוע";
+export const ISRAEL_ZONES: IsraelZone[] = ["צפון", "מרכז", "דרום", "לא ידוע"];
+
 export interface VenueDetails {
   region?: string;
   address?: string;
@@ -36,9 +39,8 @@ export interface VenueDetails {
   season?: string;
   cancellation?: string;
   photos?: string[];
-  /** Approximate position on the stylized Israel map, 0–100 (not real geo coordinates). */
-  mapX?: number;
-  mapY?: number;
+  /** Rough part of the country — used for filtering, not a precise location. */
+  israelZone?: IsraelZone;
 }
 
 /** Venue fields plus room for other categories to add their own later. */
@@ -79,6 +81,7 @@ export function VenueSummary({ d }: { d: VenueDetails }) {
       : null;
 
   const rows: Array<[string, string | null]> = [
+    ["חלק בארץ", d.israelZone && d.israelZone !== "לא ידוע" ? d.israelZone : null],
     ["אזור", d.region || null],
     ["כתובת", d.address || null],
     ["קיבולת", cap],
@@ -168,6 +171,9 @@ export function VenueBadges({ d }: { d: VenueDetails }) {
   const cap = d.capacitySeated || d.capacityStanding;
   return (
     <>
+      {d.israelZone && d.israelZone !== "לא ידוע" && (
+        <span className="flex items-center gap-1 text-gray-500">{d.israelZone}</span>
+      )}
       {!!cap && (
         <span className="flex items-center gap-1">
           <Users size={11} /> {cap}
@@ -213,7 +219,17 @@ export function VenueEditor({
     <div className="space-y-3 pt-3 mt-3 border-t border-gray-200">
       <div className="text-sm font-semibold text-green-700">פרטי המרחב</div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <label className={label}>חלק בארץ</label>
+          <select
+            className={input}
+            value={d.israelZone || "לא ידוע"}
+            onChange={(e) => set({ israelZone: e.target.value as IsraelZone })}
+          >
+            {ISRAEL_ZONES.map((z) => <option key={z} value={z}>{z}</option>)}
+          </select>
+        </div>
         <div>
           <label className={label}>אזור</label>
           <input

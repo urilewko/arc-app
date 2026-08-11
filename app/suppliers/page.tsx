@@ -1,14 +1,13 @@
 "use client";
 import { useState } from "react";
-import { Search, Plus, Trash2, ChevronDown, ChevronUp, Phone, Mail, Pencil, MapIcon, Download } from "lucide-react";
+import { Search, Plus, Trash2, ChevronDown, ChevronUp, Phone, Mail, Pencil, Download } from "lucide-react";
 import Modal from "@/components/Modal";
 import { supabase } from "@/lib/supabase";
 import {
   VENUE_CATEGORY, VenueEditor, VenueSummary, VenueBadges,
-  type SupplierDetails,
+  ISRAEL_ZONES, type IsraelZone, type SupplierDetails,
 } from "./supplierDetails";
 import { VENUE_SEED, NAME_ONLY_SEED } from "./venueSeedData";
-import VenueMap from "./VenueMap";
 import { useEffect } from "react";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -77,7 +76,7 @@ export default function SuppliersPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Supplier | null>(null);
   const [form, setForm] = useState(empty);
-  const [showMap, setShowMap] = useState(false);
+  const [zoneFilter, setZoneFilter] = useState<IsraelZone | "הכל">("הכל");
   const [importing, setImporting] = useState(false);
   const [importMsg, setImportMsg] = useState<string | null>(null);
 
@@ -134,8 +133,7 @@ export default function SuppliersPage() {
         website: v.website || undefined,
         lodgingType: v.lodgingType,
         hasLodging: v.lodgingType === "room" || v.lodgingType === "shared",
-        mapX: v.mapX,
-        mapY: v.mapY,
+        israelZone: v.israelZone,
       };
       const row = {
         id: uid(),
@@ -185,7 +183,7 @@ export default function SuppliersPage() {
     setImporting(false);
   };
 
-  const updateVenuePositions = async () => {
+  const updateVenueZones = async () => {
     setImporting(true);
     setImportMsg(null);
     let updated = 0;
@@ -198,8 +196,7 @@ export default function SuppliersPage() {
         website: v.website || undefined,
         lodgingType: v.lodgingType,
         hasLodging: v.lodgingType === "room" || v.lodgingType === "shared",
-        mapX: v.mapX,
-        mapY: v.mapY,
+        israelZone: v.israelZone,
       };
       const { error } = await supabase.from("suppliers").update({ details }).eq("id", existing.id);
       if (!error) {
@@ -207,14 +204,15 @@ export default function SuppliersPage() {
         setSuppliers((prev) => prev.map((s) => s.id === existing.id ? { ...s, details } : s));
       }
     }
-    setImportMsg(`עודכנו מיקומים ל-${updated} מרחבים`);
+    setImportMsg(`עודכנו אזורים ל-${updated} מרחבים`);
     setImporting(false);
   };
 
   const filtered = suppliers.filter((s) => {
     const matchSearch = s.name.includes(search) || s.contactName.includes(search) || s.category.includes(search);
     const matchCat = catFilter === "הכל" || s.category === catFilter;
-    return matchSearch && matchCat;
+    const matchZone = zoneFilter === "הכל" || (s.category === VENUE_CATEGORY && s.details?.israelZone === zoneFilter);
+    return matchSearch && matchCat && matchZone;
   });
 
   return (
@@ -228,15 +226,9 @@ export default function SuppliersPage() {
             <Download size={14} className={importing ? "animate-pulse" : ""} />
             {importing ? "מעבד..." : "ייבא מרחבים ומקומות"}
           </button>
-          <button onClick={updateVenuePositions} disabled={importing}
+          <button onClick={updateVenueZones} disabled={importing}
             className="flex items-center gap-2 border border-gray-300 text-gray-600 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50">
-            <MapIcon size={14} className={importing ? "animate-pulse" : ""} />
-            עדכן מיקומים על המפה
-          </button>
-          <button onClick={() => setShowMap((v) => !v)}
-            className={`flex items-center gap-2 border px-3 py-2 rounded-lg text-sm transition-colors ${
-              showMap ? "bg-[#1a1a1a] text-white border-[#1a1a1a]" : "border-gray-300 text-gray-600 hover:bg-gray-50"}`}>
-            <MapIcon size={14} /> {showMap ? "הצג רשימה" : "הצג מפה"}
+            {importing ? "מעדכן..." : "עדכן אזורים"}
           </button>
           <button onClick={openNew}
             className="flex items-center gap-2 bg-[#1a1a1a] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#333]">
@@ -245,15 +237,8 @@ export default function SuppliersPage() {
         </div>
       </div>
 
-      {showMap && (
-        <VenueMap
-          venues={suppliers.filter((s) => s.category === VENUE_CATEGORY)}
-          onSelect={(id) => { setShowMap(false); setExpanded(id); }}
-        />
-      )}
-
       {/* Search + filter */}
-      <div className="flex gap-3 mb-5 flex-wrap">
+      <div className="flex gap-3 mb-3 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input value={search} onChange={(e) => setSearch(e.target.value)}
@@ -270,6 +255,19 @@ export default function SuppliersPage() {
         </div>
       </div>
 
+      {catFilter === VENUE_CATEGORY && (
+        <div className="flex items-center gap-2 mb-5 flex-wrap">
+          <span className="text-xs text-gray-400">חלק בארץ:</span>
+          {(["הכל", ...ISRAEL_ZONES.filter((z) => z !== "לא ידוע")] as const).map((z) => (
+            <button key={z} onClick={() => setZoneFilter(z as IsraelZone | "הכל")}
+              className={`px-3 py-1 rounded-full text-xs border transition-colors ${
+                zoneFilter === z ? "bg-green-600 text-white border-green-600" : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"}`}>
+              {z}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Stats */}
       <div className="flex gap-3 mb-5">
         {CATEGORIES.filter((c) => suppliers.some((s) => s.category === c)).map((c) => (
@@ -281,10 +279,10 @@ export default function SuppliersPage() {
       </div>
 
       {/* List */}
-      {!showMap && filtered.length === 0 && (
+      {filtered.length === 0 && (
         <div className="bg-white rounded-xl p-12 text-center text-gray-400 shadow-sm">אין ספקים להצגה</div>
       )}
-      <div className={`space-y-2 ${showMap ? "hidden" : ""}`}>
+      <div className="space-y-2">
         {filtered.map((s) => {
           const isOpen = expanded === s.id;
           const initials = s.name.slice(0, 2);

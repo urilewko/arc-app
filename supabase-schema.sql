@@ -161,30 +161,3 @@ create policy "auth_all" on blocks for all to authenticated using (true) with ch
 create policy "auth_all" on collaborators for all to authenticated using (true) with check (true);
 create policy "auth_all" on finance_records for all to authenticated using (true) with check (true);
 create policy "auth_all" on debriefs for all to authenticated using (true) with check (true);
-
--- ================================================
--- AGENT — conversation history and long-term memory
--- ================================================
-create table if not exists agent_conversations (
-  id text primary key,
-  title text default '',
-  messages jsonb default '[]',
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
--- What the agent has learned about how ARC works. Written explicitly via the
--- `remember` tool so every entry is inspectable and deletable — never a
--- black box the team can't audit.
-create table if not exists agent_memory (
-  id text primary key,
-  content text not null,
-  kind text default 'עובדה',
-  source_conversation_id text,
-  created_at timestamptz default now()
-);
-
-alter table agent_conversations enable row level security;
-alter table agent_memory enable row level security;
-create policy "auth_all" on agent_conversations for all to authenticated using (true) with check (true);
-create policy "auth_all" on agent_memory for all to authenticated using (true) with check (true);

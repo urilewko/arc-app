@@ -117,6 +117,7 @@ export interface Lead {
   activityDate: string;
   notes: string;
   trustLevel?: "חם" | "בינוני" | "קר";
+  archived?: boolean;
   createdAt: string;
 }
 

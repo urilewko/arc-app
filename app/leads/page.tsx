@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useStore, Lead, LeadStatus } from "@/lib/store";
 import Modal from "@/components/Modal";
-import { Plus, Pencil, Trash2, CheckCircle, LayoutList, Kanban, FileText } from "lucide-react";
+import { Plus, Pencil, Trash2, CheckCircle, LayoutList, Kanban, FileText, Archive, ArchiveRestore } from "lucide-react";
 import QuoteBuilder from "./QuoteBuilder";
 import {
   DndContext, DragEndEvent, DragOverlay, DragStartEvent,
@@ -104,25 +104,26 @@ function DroppableColumn({ id, children }: { id: string; children: React.ReactNo
   );
 }
 
-function DraggableLeadCard({ lead, onEdit, onDelete, onClose, onQuote }: {
-  lead: Lead; onEdit: () => void; onDelete: () => void; onClose: () => void; onQuote: () => void;
+function DraggableLeadCard({ lead, onEdit, onDelete, onClose, onQuote, onArchive }: {
+  lead: Lead; onEdit: () => void; onDelete: () => void; onClose: () => void; onQuote: () => void; onArchive: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: lead.id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.3 : 1 };
   return (
     <div ref={setNodeRef} style={style}>
-      <LeadCard lead={lead} onEdit={onEdit} onDelete={onDelete} onClose={onClose} onQuote={onQuote}
+      <LeadCard lead={lead} onEdit={onEdit} onDelete={onDelete} onClose={onClose} onQuote={onQuote} onArchive={onArchive}
         dragHandleProps={{ ...attributes, ...listeners }} />
     </div>
   );
 }
 
-function LeadCard({ lead, onEdit, onDelete, onClose, onQuote, dragHandleProps }: {
+function LeadCard({ lead, onEdit, onDelete, onClose, onQuote, onArchive, dragHandleProps }: {
   lead: Lead;
   onEdit: () => void;
   onDelete: () => void;
   onClose: () => void;
   onQuote: () => void;
+  onArchive?: () => void;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
 }) {
   const daysUntilDue = lead.dueDate
@@ -155,6 +156,9 @@ function LeadCard({ lead, onEdit, onDelete, onClose, onQuote, dragHandleProps }:
             <button onClick={onClose} title="סגור עסקה" className="text-green-500 hover:text-green-700"><CheckCircle size={13} /></button>
           )}
           <button onClick={onQuote} title="הצעת מחיר" className="text-blue-400 hover:text-blue-600"><FileText size={12} /></button>
+          {onArchive && (
+            <button onClick={onArchive} title="העבר לארכיון" className="text-gray-300 hover:text-amber-600"><Archive size={12} /></button>
+          )}
           <button onClick={onEdit} className="text-gray-300 hover:text-gray-600"><Pencil size={12} /></button>
           <button onClick={onDelete} className="text-gray-300 hover:text-red-500"><Trash2 size={12} /></button>
         </div>
@@ -217,6 +221,10 @@ export default function LeadsPage() {
   const [filter, setFilter] = useState<LeadStatus | "הכל">("הכל");
   const [activeId, setActiveId] = useState<string | null>(null);
   const [quoteLead, setQuoteLead] = useState<Lead | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
+
+  const activeLeads = leads.filter((l) => !l.archived);
+  const archivedLeads = leads.filter((l) => l.archived);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -271,7 +279,7 @@ export default function LeadsPage() {
     setOpen(false);
   };
 
-  const filtered = filter === "הכל" ? leads : leads.filter((l) => l.status === filter);
+  const filtered = filter === "הכל" ? activeLeads : activeLeads.filter((l) => l.status === filter);
 
   if (quoteLead) return <QuoteBuilder lead={quoteLead} onClose={() => setQuoteLead(null)} />;
 
@@ -300,6 +308,13 @@ export default function LeadsPage() {
             </button>
           </div>
           <button
+            onClick={() => setShowArchived((v) => !v)}
+            className={`flex items-center gap-2 border px-3 py-2 rounded-lg text-sm transition-colors ${
+              showArchived ? "bg-[#1a1a1a] text-white border-[#1a1a1a]" : "border-gray-300 text-gray-600 hover:bg-gray-50"}`}
+          >
+            <Archive size={15} /> ארכיון{archivedLeads.length > 0 ? ` (${archivedLeads.length})` : ""}
+          </button>
+          <button
             onClick={openNew}
             className="flex items-center gap-2 bg-[#1a1a1a] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#333]"
           >
@@ -308,14 +323,61 @@ export default function LeadsPage() {
         </div>
       </div>
 
+      {/* ARCHIVE VIEW */}
+      {showArchived && (
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
+          {archivedLeads.length === 0 ? (
+            <div className="text-center py-10 text-gray-400 text-sm">אין לידים בארכיון</div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="text-right px-4 py-3 font-medium text-gray-500">ארגון</th>
+                  <th className="text-right px-4 py-3 font-medium text-gray-500">סטטוס</th>
+                  <th className="text-right px-4 py-3 font-medium text-gray-500">ערך עסקה</th>
+                  <th className="text-right px-4 py-3 font-medium text-gray-500">תאריך פעילות</th>
+                  <th className="px-4 py-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {archivedLeads.map((lead) => (
+                  <tr key={lead.id} className="border-b last:border-0 hover:bg-gray-50">
+                    <td className="px-4 py-3 font-medium">{lead.orgName}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[lead.status]}`}>
+                        {lead.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {lead.dealValue ? `₪${lead.dealValue.toLocaleString()}` : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">{lead.activityDate}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2 justify-end">
+                        <button onClick={() => updateLead(lead.id, { archived: false })} title="שחזר מהארכיון" className="text-blue-500 hover:text-blue-700">
+                          <ArchiveRestore size={15} />
+                        </button>
+                        <button onClick={() => deleteLead(lead.id)} title="מחק לצמיתות" className="text-gray-400 hover:text-red-600">
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
       {/* PIPELINE VIEW */}
-      {view === "pipeline" && (
+      {!showArchived && view === "pipeline" && (
         <DndContext sensors={sensors} collisionDetection={closestCorners}
           onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="pb-4">
             <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(8, minmax(0, 1fr))" }}>
               {[...PIPELINE_STATUSES, "נסגר" as LeadStatus, "נפל" as LeadStatus].map((status) => {
-                const statusLeads = leads.filter((l) => l.status === status);
+                const statusLeads = activeLeads.filter((l) => l.status === status);
                 const totalValue = statusLeads.reduce((s, l) => s + (l.dealValue || 0), 0);
                 return (
                   <div key={status} className="min-w-0">
@@ -340,6 +402,7 @@ export default function LeadsPage() {
                             onDelete={() => deleteLead(lead.id)}
                             onClose={() => closeLead(lead.id)}
                             onQuote={() => setQuoteLead(lead)}
+                            onArchive={() => updateLead(lead.id, { archived: true })}
                           />
                         ))}
                         {statusLeads.length === 0 && (
@@ -365,7 +428,7 @@ export default function LeadsPage() {
       )}
 
       {/* TABLE VIEW */}
-      {view === "table" && (
+      {!showArchived && view === "table" && (
         <>
           <div className="flex gap-2 flex-wrap mb-4">
             {(["הכל", ...STATUSES] as const).map((s) => (
@@ -425,6 +488,7 @@ export default function LeadsPage() {
                           </button>
                         )}
                         <button onClick={() => setQuoteLead(lead)} title="הצעת מחיר" className="text-blue-400 hover:text-blue-600"><FileText size={15} /></button>
+                        <button onClick={() => updateLead(lead.id, { archived: true })} title="העבר לארכיון" className="text-gray-400 hover:text-amber-600"><Archive size={15} /></button>
                         <button onClick={() => openEdit(lead)} className="text-gray-400 hover:text-gray-700"><Pencil size={15} /></button>
                         <button onClick={() => deleteLead(lead.id)} className="text-gray-400 hover:text-red-600"><Trash2 size={15} /></button>
                       </div>

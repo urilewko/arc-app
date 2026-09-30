@@ -1,8 +1,8 @@
 "use client";
 import { useState, useMemo } from "react";
-import { useStore, FinanceRecord, PaymentStatus, FinanceRecordType } from "@/lib/store";
+import { useStore, FinanceRecord, RecurringExpense, PaymentStatus, FinanceRecordType } from "@/lib/store";
 import Modal from "@/components/Modal";
-import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, ChevronDown, ChevronUp, Repeat } from "lucide-react";
 import { parseISO, isValid } from "date-fns";
 
 type FinancePeriod = "h1" | "h2" | "year";
@@ -13,6 +13,13 @@ function safeDate(str: string): Date | null {
   if (!str) return null;
   const d = parseISO(str);
   return isValid(d) ? d : null;
+}
+
+function periodMonths(year: number, period: FinancePeriod): string[] {
+  const [from, to] = period === "h1" ? [0, 5] : period === "h2" ? [6, 11] : [0, 11];
+  const out: string[] = [];
+  for (let m = from; m <= to; m++) out.push(`${year}-${String(m + 1).padStart(2, "0")}`);
+  return out;
 }
 
 const PAYMENT_STATUSES: PaymentStatus[] = ["ממתין", "שולם חלקית", "שולם במלואו"];
@@ -47,8 +54,17 @@ const emptyExpense = {
 
 type FinanceTab = "income" | "expenses";
 
+const emptyRecurring = {
+  description: "", amount: 0, category: "אחר", payer: "",
+  startMonth: new Date().toISOString().slice(0, 7), active: true, notes: "",
+};
+
 export default function FinancePage() {
-  const { financeRecords, projects, debriefs, infraProjects, blocks, addFinanceRecord, updateFinanceRecord, deleteFinanceRecord } = useStore();
+  const {
+    financeRecords, recurringExpenses, projects, debriefs, infraProjects, blocks,
+    addFinanceRecord, updateFinanceRecord, deleteFinanceRecord,
+    addRecurringExpense, updateRecurringExpense, deleteRecurringExpense,
+  } = useStore();
   const [tab, setTab] = useState<FinanceTab>("income");
   const [period, setPeriod] = useState<FinancePeriod>("h2");
   const [year, setYear] = useState(2026);
@@ -56,6 +72,9 @@ export default function FinancePage() {
   const [editing, setEditing] = useState<FinanceRecord | null>(null);
   const [form, setForm] = useState(emptyIncome);
   const [expandedSource, setExpandedSource] = useState<string | null>(null);
+  const [recurringOpen, setRecurringOpen] = useState(false);
+  const [editingRecurring, setEditingRecurring] = useState<RecurringExpense | null>(null);
+  const [recurringForm, setRecurringForm] = useState(emptyRecurring);
 
   // ── Period filter ─────────────────────────────────────────────
   function inPeriod(dateStr: string): boolean {
@@ -108,7 +127,23 @@ export default function FinancePage() {
   const expFromBlocks     = blocks.flatMap((b) => (b.expenses || []).filter((e) => inPeriod(e.date || "")).map((e) => ({ ...e, source: "בלוק", sourceName: b.name, date: e.date || "" })));
   const expFromGeneral    = generalExpenseRecords.filter((r) => inPeriod(r.invoiceDate || r.createdAt)).map((r) => ({ id: r.id, description: r.notes || r.orgName, amount: r.amount, paidBy: "", source: "כללי", sourceName: r.expenseCategory || "כללי", date: r.invoiceDate || "" }));
 
-  const allExpenses = [...expFromDebriefs, ...expFromInfra, ...expFromBlocks, ...expFromGeneral];
+  // ── Recurring (fixed) expenses ─────────────────────────────────
+  const monthsThisPeriod = useMemo(() => periodMonths(year, period), [year, period]);
+  const expFromRecurring = useMemo(() => recurringExpenses
+    .filter((r) => r.active)
+    .map((r) => {
+      const months = monthsThisPeriod.filter((m) => m >= r.startMonth);
+      if (months.length === 0) return null;
+      return {
+        id: r.id, description: r.description, amount: r.amount * months.length,
+        paidBy: r.payer, source: "קבוע", sourceName: r.category || "קבוע",
+        date: `${months.length} חודשים × ₪${r.amount.toLocaleString()}`,
+      };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null),
+    [recurringExpenses, monthsThisPeriod]);
+
+  const allExpenses = [...expFromDebriefs, ...expFromInfra, ...expFromBlocks, ...expFromGeneral, ...expFromRecurring];
   const totalExpenses = allExpenses.reduce((s, e) => s + (e.amount || 0), 0);
 
   // ── Partner balance including expenses ────────────────────────
@@ -125,6 +160,7 @@ export default function FinancePage() {
     { key: "תחקיר", label: "הוצאות אירועים",    color: "bg-blue-500",   items: expFromDebriefs },
     { key: "תשתית", label: "פרויקטי תשתית",     color: "bg-purple-500", items: expFromInfra },
     { key: "בלוק",  label: "הוצאות בלוקים",     color: "bg-amber-500",  items: expFromBlocks },
+    { key: "קבוע",  label: "הוצאות קבועות",     color: "bg-teal-500",   items: expFromRecurring },
     { key: "כללי",  label: "הוצאות כלליות",     color: "bg-red-400",    items: expFromGeneral },
   ].filter((g) => g.items.length > 0);
 
@@ -146,6 +182,15 @@ export default function FinancePage() {
     setOpen(false);
   };
 
+  const openNewRecurring = () => { setEditingRecurring(null); setRecurringForm(emptyRecurring); setRecurringOpen(true); };
+  const openEditRecurring = (r: RecurringExpense) => { setEditingRecurring(r); setRecurringForm({ ...r }); setRecurringOpen(true); };
+  const saveRecurring = () => {
+    if (!recurringForm.description || !recurringForm.amount) return;
+    if (editingRecurring) updateRecurringExpense(editingRecurring.id, recurringForm);
+    else addRecurringExpense(recurringForm);
+    setRecurringOpen(false);
+  };
+
   return (
     <div>
       {/* Header */}
@@ -162,10 +207,16 @@ export default function FinancePage() {
             </button>
           )}
           {tab === "expenses" && (
-            <button onClick={openNewExpense}
-              className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700">
-              <Plus size={16} /> הוצאה כללית
-            </button>
+            <>
+              <button onClick={openNewRecurring}
+                className="flex items-center gap-2 bg-teal-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-teal-700">
+                <Repeat size={16} /> הוצאה קבועה
+              </button>
+              <button onClick={openNewExpense}
+                className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700">
+                <Plus size={16} /> הוצאה כללית
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -376,7 +427,7 @@ export default function FinancePage() {
                               <th className="text-right px-4 py-2 font-medium text-gray-400 text-xs">סכום</th>
                               <th className="text-right px-4 py-2 font-medium text-gray-400 text-xs">שילם</th>
                               <th className="text-right px-4 py-2 font-medium text-gray-400 text-xs">תאריך</th>
-                              {group.key === "כללי" && <th className="px-4 py-2"></th>}
+                              {(group.key === "כללי" || group.key === "קבוע") && <th className="px-4 py-2"></th>}
                             </tr>
                           </thead>
                           <tbody>
@@ -394,6 +445,18 @@ export default function FinancePage() {
                                     <button
                                       onClick={() => { const r = financeRecords.find((x) => x.id === e.id); if (r) openEdit(r); }}
                                       className="text-gray-300 hover:text-gray-600"><Pencil size={13} /></button>
+                                  </td>
+                                )}
+                                {group.key === "קבוע" && (
+                                  <td className="px-4 py-2.5">
+                                    <div className="flex gap-2 justify-end">
+                                      <button
+                                        onClick={() => { const r = recurringExpenses.find((x) => x.id === e.id); if (r) openEditRecurring(r); }}
+                                        className="text-gray-300 hover:text-gray-600"><Pencil size={13} /></button>
+                                      <button
+                                        onClick={() => deleteRecurringExpense(e.id)}
+                                        className="text-gray-300 hover:text-red-500"><Trash2 size={13} /></button>
+                                    </div>
                                   </td>
                                 )}
                               </tr>
@@ -517,6 +580,62 @@ export default function FinancePage() {
             <div className="flex gap-2 pt-2">
               <button onClick={save} className="flex-1 bg-[#4a2e1b] text-white py-2 rounded-lg text-sm hover:bg-[#3a2415]">שמור</button>
               <button onClick={() => setOpen(false)} className="flex-1 border py-2 rounded-lg text-sm hover:bg-gray-50">ביטול</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Recurring expense modal */}
+      {recurringOpen && (
+        <Modal title={editingRecurring ? "עריכת הוצאה קבועה" : "הוצאה קבועה חדשה"} onClose={() => setRecurringOpen(false)}>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium mb-1">תיאור *</label>
+              <input className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="למשל: שכירות משרד, ביטוח, שכר"
+                value={recurringForm.description} onChange={(e) => setRecurringForm({ ...recurringForm, description: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">סכום חודשי (₪) *</label>
+                <input type="number" className="w-full border rounded-lg px-3 py-2 text-sm" value={recurringForm.amount}
+                  onChange={(e) => setRecurringForm({ ...recurringForm, amount: Number(e.target.value) })} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">קטגוריה</label>
+                <select className="w-full border rounded-lg px-3 py-2 text-sm" value={recurringForm.category}
+                  onChange={(e) => setRecurringForm({ ...recurringForm, category: e.target.value })}>
+                  {EXPENSE_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">שילם</label>
+                <select className="w-full border rounded-lg px-3 py-2 text-sm" value={recurringForm.payer}
+                  onChange={(e) => setRecurringForm({ ...recurringForm, payer: e.target.value })}>
+                  <option value="">בחר...</option>
+                  {PAYERS.map((p) => <option key={p}>{p}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">חל החל מחודש</label>
+                <input type="month" className="w-full border rounded-lg px-3 py-2 text-sm" value={recurringForm.startMonth}
+                  onChange={(e) => setRecurringForm({ ...recurringForm, startMonth: e.target.value })} />
+              </div>
+            </div>
+            <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+              <input type="checkbox" checked={recurringForm.active}
+                onChange={(e) => setRecurringForm({ ...recurringForm, active: e.target.checked })} />
+              פעילה (נכללת בחישוב ההוצאות)
+            </label>
+            <div>
+              <label className="block text-sm font-medium mb-1">הערות</label>
+              <textarea className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} value={recurringForm.notes}
+                onChange={(e) => setRecurringForm({ ...recurringForm, notes: e.target.value })} />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button onClick={saveRecurring} className="flex-1 bg-teal-600 text-white py-2 rounded-lg text-sm hover:bg-teal-700">שמור</button>
+              <button onClick={() => setRecurringOpen(false)} className="flex-1 border py-2 rounded-lg text-sm hover:bg-gray-50">ביטול</button>
             </div>
           </div>
         </Modal>

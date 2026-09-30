@@ -114,6 +114,19 @@ create table if not exists finance_records (
   created_at text default ''
 );
 
+-- RECURRING EXPENSES
+create table if not exists recurring_expenses (
+  id text primary key,
+  description text default '',
+  amount numeric default 0,
+  category text default '',
+  payer text default '',
+  start_month text default '',
+  active boolean default true,
+  notes text default '',
+  created_at text default ''
+);
+
 -- DEBRIEFS
 create table if not exists debriefs (
   id text primary key,
@@ -151,6 +164,7 @@ alter table infra_projects enable row level security;
 alter table blocks enable row level security;
 alter table collaborators enable row level security;
 alter table finance_records enable row level security;
+alter table recurring_expenses enable row level security;
 alter table debriefs enable row level security;
 
 create policy "auth_all" on contacts for all to authenticated using (true) with check (true);
@@ -160,4 +174,5 @@ create policy "auth_all" on infra_projects for all to authenticated using (true)
 create policy "auth_all" on blocks for all to authenticated using (true) with check (true);
 create policy "auth_all" on collaborators for all to authenticated using (true) with check (true);
 create policy "auth_all" on finance_records for all to authenticated using (true) with check (true);
+create policy "auth_all" on recurring_expenses for all to authenticated using (true) with check (true);
 create policy "auth_all" on debriefs for all to authenticated using (true) with check (true);

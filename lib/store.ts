@@ -226,6 +226,18 @@ export interface FinanceRecord {
   createdAt: string;
 }
 
+export interface RecurringExpense {
+  id: string;
+  description: string;
+  amount: number;
+  category: string;
+  payer: string;
+  startMonth: string; // "YYYY-MM"
+  active: boolean;
+  notes: string;
+  createdAt: string;
+}
+
 // ── Supabase sync helpers ──────────────────────────────────────────
 type Rec = Record<string, unknown>;
 
@@ -261,6 +273,7 @@ interface ARCStore {
   blocks: Block[];
   collaborators: Collaborator[];
   financeRecords: FinanceRecord[];
+  recurringExpenses: RecurringExpense[];
   debriefs: Debrief[];
 
   // UI state (not synced)
@@ -309,6 +322,10 @@ interface ARCStore {
   updateFinanceRecord: (id: string, f: Partial<FinanceRecord>) => void;
   deleteFinanceRecord: (id: string) => void;
 
+  addRecurringExpense: (r: Omit<RecurringExpense, "id" | "createdAt">) => void;
+  updateRecurringExpense: (id: string, r: Partial<RecurringExpense>) => void;
+  deleteRecurringExpense: (id: string) => void;
+
   addDebrief: (d: Omit<Debrief, "id" | "createdAt">) => void;
   updateDebrief: (id: string, d: Partial<Debrief>) => void;
   deleteDebrief: (id: string) => void;
@@ -323,6 +340,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
   blocks: [],
   collaborators: [],
   financeRecords: [],
+  recurringExpenses: [],
   debriefs: [],
 
   financeYear: new Date().getFullYear(),
@@ -331,7 +349,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
   setFinancePeriod: (p) => set({ financePeriod: p }),
 
   loadAll: async () => {
-    const [contacts, leads, projects, infraProjects, blocks, collaborators, financeRecords, debriefs] =
+    const [contacts, leads, projects, infraProjects, blocks, collaborators, financeRecords, recurringExpenses, debriefs] =
       await Promise.all([
         dbFetch("contacts"),
         dbFetch("leads"),
@@ -340,6 +358,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
         dbFetch("blocks"),
         dbFetch("collaborators"),
         dbFetch("finance_records"),
+        dbFetch("recurring_expenses"),
         dbFetch("debriefs"),
       ]);
     set({
@@ -350,6 +369,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
       blocks: blocks as unknown as Block[],
       collaborators: collaborators as unknown as Collaborator[],
       financeRecords: financeRecords as unknown as FinanceRecord[],
+      recurringExpenses: recurringExpenses as unknown as RecurringExpense[],
       debriefs: debriefs as unknown as Debrief[],
     });
   },
@@ -656,6 +676,20 @@ export const useStore = create<ARCStore>()((set, get) => ({
   deleteFinanceRecord: (id) => {
     set((s) => ({ financeRecords: s.financeRecords.filter((x) => x.id !== id) }));
     dbDelete("finance_records", id);
+  },
+
+  addRecurringExpense: (r) => {
+    const row: RecurringExpense = { ...r, id: uid(), createdAt: new Date().toISOString() };
+    set((s) => ({ recurringExpenses: [...s.recurringExpenses, row] }));
+    dbInsert("recurring_expenses", row as unknown as Rec);
+  },
+  updateRecurringExpense: (id, r) => {
+    set((s) => ({ recurringExpenses: s.recurringExpenses.map((x) => x.id === id ? { ...x, ...r } : x) }));
+    dbUpdate("recurring_expenses", id, r as Rec);
+  },
+  deleteRecurringExpense: (id) => {
+    set((s) => ({ recurringExpenses: s.recurringExpenses.filter((x) => x.id !== id) }));
+    dbDelete("recurring_expenses", id);
   },
 
   // ── Debriefs ──

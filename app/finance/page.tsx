@@ -3,7 +3,8 @@ import { useState, useMemo } from "react";
 import { useStore, FinanceRecord, RecurringExpense, PaymentStatus, FinanceRecordType } from "@/lib/store";
 import Modal from "@/components/Modal";
 import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, ChevronDown, ChevronUp, Repeat } from "lucide-react";
-import { parseISO, isValid } from "date-fns";
+import { parseISO, isValid, format } from "date-fns";
+import { he } from "date-fns/locale";
 
 type FinancePeriod = "h1" | "h2" | "year";
 const PERIOD_LABELS: Record<FinancePeriod, string> = { h1: "מחצית א׳", h2: "מחצית ב׳", year: "שנה מלאה" };
@@ -72,6 +73,7 @@ export default function FinancePage() {
   const [editing, setEditing] = useState<FinanceRecord | null>(null);
   const [form, setForm] = useState(emptyIncome);
   const [expandedSource, setExpandedSource] = useState<string | null>(null);
+  const [showMonthly, setShowMonthly] = useState(false);
   const [recurringOpen, setRecurringOpen] = useState(false);
   const [editingRecurring, setEditingRecurring] = useState<RecurringExpense | null>(null);
   const [recurringForm, setRecurringForm] = useState(emptyRecurring);
@@ -145,6 +147,44 @@ export default function FinancePage() {
 
   const allExpenses = [...expFromDebriefs, ...expFromInfra, ...expFromBlocks, ...expFromGeneral, ...expFromRecurring];
   const totalExpenses = allExpenses.reduce((s, e) => s + (e.amount || 0), 0);
+
+  // ── Monthly balance breakdown ───────────────────────────────────
+  const monthlyData = useMemo(() => {
+    const map: Record<string, { income: number; expenses: number }> = {};
+    monthsThisPeriod.forEach((m) => { map[m] = { income: 0, expenses: 0 }; });
+
+    incomeRecords.filter((r) => r.paymentStatus === "שולם במלואו").forEach((r) => {
+      const key = (r.paidDate || r.invoiceDate || r.createdAt || "").slice(0, 7);
+      if (map[key]) map[key].income += r.amount;
+    });
+    incomeFromDebriefs.forEach((d) => {
+      const key = (d.eventDate || d.createdAt || "").slice(0, 7);
+      if (map[key]) map[key].income += d.paymentReceived || 0;
+    });
+
+    [...expFromDebriefs, ...expFromInfra, ...expFromBlocks, ...expFromGeneral].forEach((e) => {
+      const key = (e.date || "").slice(0, 7);
+      if (map[key]) map[key].expenses += e.amount || 0;
+    });
+    monthsThisPeriod.forEach((m) => {
+      map[m].expenses += recurringExpenses
+        .filter((r) => r.active && r.startMonth <= m)
+        .reduce((s, r) => s + r.amount, 0);
+    });
+
+    return monthsThisPeriod.map((m) => ({
+      month: m,
+      income: map[m].income,
+      expenses: map[m].expenses,
+      net: map[m].income - map[m].expenses,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [monthsThisPeriod, incomeRecords, incomeFromDebriefs, expFromDebriefs, expFromInfra, expFromBlocks, expFromGeneral, recurringExpenses]);
+
+  const monthLabel = (m: string) => {
+    const d = parseISO(`${m}-01`);
+    return isValid(d) ? format(d, "MMMM yyyy", { locale: he }) : m;
+  };
 
   // ── Partner balance including expenses ────────────────────────
   const uriExpenses   = allExpenses.reduce((s, e) => s + (e.paidBy === "אורי"  ? (e.amount || 0) : 0), 0);
@@ -304,6 +344,53 @@ export default function FinancePage() {
                 <div className="border-t pt-1 flex justify-between text-sm font-bold text-[#4a2e1b]"><span>נטו</span><span>₪{Math.round(yinonNet).toLocaleString()}</span></div>
               </div>
             </div>
+          </div>
+
+          {/* Monthly balance */}
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
+            <button
+              className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
+              onClick={() => setShowMonthly((v) => !v)}>
+              <span className="font-semibold text-gray-800">מאזן חודשי</span>
+              {showMonthly ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
+            </button>
+            {showMonthly && (
+              <div className="border-t border-gray-100">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="text-right px-5 py-2 font-medium text-gray-400 text-xs">חודש</th>
+                      <th className="text-right px-4 py-2 font-medium text-gray-400 text-xs">הכנסות</th>
+                      <th className="text-right px-4 py-2 font-medium text-gray-400 text-xs">הוצאות</th>
+                      <th className="text-right px-4 py-2 font-medium text-gray-400 text-xs">נטו</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {monthlyData.map((m) => (
+                      <tr key={m.month} className="border-t border-gray-50">
+                        <td className="px-5 py-2.5 text-gray-700">{monthLabel(m.month)}</td>
+                        <td className="px-4 py-2.5 text-green-600 font-medium">₪{Math.round(m.income).toLocaleString()}</td>
+                        <td className="px-4 py-2.5 text-red-500 font-medium">₪{Math.round(m.expenses).toLocaleString()}</td>
+                        <td className={`px-4 py-2.5 font-bold ${m.net >= 0 ? "text-green-700" : "text-red-600"}`}>
+                          ₪{Math.round(m.net).toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t-2 border-gray-200 bg-gray-50/50">
+                      <td className="px-5 py-2.5 font-semibold text-gray-600">סה״כ</td>
+                      <td className="px-4 py-2.5 font-bold text-green-700">₪{Math.round(monthlyData.reduce((s, m) => s + m.income, 0)).toLocaleString()}</td>
+                      <td className="px-4 py-2.5 font-bold text-red-600">₪{Math.round(monthlyData.reduce((s, m) => s + m.expenses, 0)).toLocaleString()}</td>
+                      <td className="px-4 py-2.5 font-bold text-[#4a2e1b]">₪{Math.round(monthlyData.reduce((s, m) => s + m.net, 0)).toLocaleString()}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+                <p className="text-xs text-gray-400 px-5 py-2">
+                  לא כולל הכנסות/הוצאות ללא תאריך — אלו נספרות רק בסך התקופה למעלה.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">

@@ -27,20 +27,40 @@ function monthLabel(m: string) {
   return isValid(d) ? format(d, "MMMM yyyy", { locale: he }) : m;
 }
 
-interface Bucket { key: string; label: string; income: number; expenses: number; net: number }
+interface MonthlyRow {
+  month: string;
+  income: number; expenses: number;
+  uriIncome: number; yinonIncome: number;
+  uriExpenses: number; yinonExpenses: number;
+}
+interface Bucket {
+  key: string; label: string;
+  income: number; expenses: number; net: number;
+  uriIncome: number; yinonIncome: number;
+  uriExpenses: number; yinonExpenses: number;
+}
 
-function groupBuckets(monthly: { month: string; income: number; expenses: number }[], granularity: Granularity, year: number): Bucket[] {
+function groupBuckets(monthly: MonthlyRow[], granularity: Granularity, year: number): Bucket[] {
+  const toBucket = (chunk: MonthlyRow[], key: string, label: string): Bucket => {
+    const income = chunk.reduce((s, c) => s + c.income, 0);
+    const expenses = chunk.reduce((s, c) => s + c.expenses, 0);
+    return {
+      key, label, income, expenses, net: income - expenses,
+      uriIncome: chunk.reduce((s, c) => s + c.uriIncome, 0),
+      yinonIncome: chunk.reduce((s, c) => s + c.yinonIncome, 0),
+      uriExpenses: chunk.reduce((s, c) => s + c.uriExpenses, 0),
+      yinonExpenses: chunk.reduce((s, c) => s + c.yinonExpenses, 0),
+    };
+  };
   if (granularity === "month") {
-    return monthly.map((m) => ({ key: m.month, label: monthLabel(m.month), income: m.income, expenses: m.expenses, net: m.income - m.expenses }));
+    return monthly.map((m) => toBucket([m], m.month, monthLabel(m.month)));
   }
   const size = granularity === "quarter" ? 3 : 6;
   const groups: Bucket[] = [];
   for (let i = 0; i < monthly.length; i += size) {
     const chunk = monthly.slice(i, i + size);
-    const income = chunk.reduce((s, c) => s + c.income, 0);
-    const expenses = chunk.reduce((s, c) => s + c.expenses, 0);
     const label = granularity === "quarter" ? `רבעון ${i / 3 + 1} · ${year}` : (i === 0 ? `מחצית א׳ · ${year}` : `מחצית ב׳ · ${year}`);
-    groups.push({ key: `${granularity}-${i}`, label, income, expenses, net: income - expenses });
+    groups.push(toBucket(chunk, `${granularity}-${i}`, label));
   }
   return groups;
 }
@@ -170,29 +190,44 @@ export default function FinancePage() {
   // ── Monthly breakdown (always full year, 12 rows) — then grouped
   // into the selected granularity for display. ───────────────────
   const monthlyData = useMemo(() => {
-    const map: Record<string, { income: number; expenses: number }> = {};
-    monthsThisYear.forEach((m) => { map[m] = { income: 0, expenses: 0 }; });
+    const map: Record<string, { income: number; expenses: number; uriIncome: number; yinonIncome: number; uriExpenses: number; yinonExpenses: number }> = {};
+    monthsThisYear.forEach((m) => { map[m] = { income: 0, expenses: 0, uriIncome: 0, yinonIncome: 0, uriExpenses: 0, yinonExpenses: 0 }; });
 
     incomeRecords.filter((r) => r.paymentStatus === "שולם במלואו").forEach((r) => {
       const key = (r.paidDate || r.invoiceDate || r.createdAt || "").slice(0, 7);
-      if (map[key]) map[key].income += r.amount;
+      if (!map[key]) return;
+      map[key].income += r.amount;
+      if (r.person === "אורי") map[key].uriIncome += r.amount;
+      else if (r.person === "ינון") map[key].yinonIncome += r.amount;
+      else if (r.person === "שניהם") { map[key].uriIncome += r.amount / 2; map[key].yinonIncome += r.amount / 2; }
     });
     incomeFromDebriefs.forEach((d) => {
       const key = (d.eventDate || d.createdAt || "").slice(0, 7);
-      if (map[key]) map[key].income += d.paymentReceived || 0;
+      if (!map[key]) return;
+      const amt = d.paymentReceived || 0;
+      map[key].income += amt;
+      const p = d.paymentReceivedBy || "שניהם";
+      if (p === "אורי") map[key].uriIncome += amt;
+      else if (p === "ינון") map[key].yinonIncome += amt;
+      else { map[key].uriIncome += amt / 2; map[key].yinonIncome += amt / 2; }
     });
 
     [...expFromDebriefs, ...expFromInfra, ...expFromBlocks, ...expFromGeneral].forEach((e) => {
       const key = (e.date || "").slice(0, 7);
-      if (map[key]) map[key].expenses += e.amount || 0;
+      if (!map[key]) return;
+      map[key].expenses += e.amount || 0;
+      if (e.paidBy === "אורי") map[key].uriExpenses += e.amount || 0;
+      else if (e.paidBy === "ינון") map[key].yinonExpenses += e.amount || 0;
     });
     monthsThisYear.forEach((m) => {
-      map[m].expenses += recurringExpenses
-        .filter((r) => r.active && r.startMonth <= m)
-        .reduce((s, r) => s + r.amount, 0);
+      recurringExpenses.filter((r) => r.active && r.startMonth <= m).forEach((r) => {
+        map[m].expenses += r.amount;
+        if (r.payer === "אורי") map[m].uriExpenses += r.amount;
+        else if (r.payer === "ינון") map[m].yinonExpenses += r.amount;
+      });
     });
 
-    return monthsThisYear.map((m) => ({ month: m, income: map[m].income, expenses: map[m].expenses }));
+    return monthsThisYear.map((m) => ({ month: m, ...map[m] }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [monthsThisYear, incomeRecords, incomeFromDebriefs, expFromDebriefs, expFromInfra, expFromBlocks, expFromGeneral, recurringExpenses]);
 
@@ -327,6 +362,8 @@ export default function FinancePage() {
                 <tr>
                   <th className="text-right px-5 py-2.5 font-medium text-gray-400 text-xs">{GRANULARITY_LABELS[granularity]}</th>
                   <th className="text-right px-4 py-2.5 font-medium text-gray-400 text-xs">הכנסות</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-gray-400 text-xs">אורי קיבל</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-gray-400 text-xs">ינון קיבל</th>
                 </tr>
               </thead>
               <tbody>
@@ -334,6 +371,8 @@ export default function FinancePage() {
                   <tr key={b.key} className="border-t border-gray-50">
                     <td className="px-5 py-2.5 text-gray-700">{b.label}</td>
                     <td className="px-4 py-2.5 text-green-600 font-semibold">₪{Math.round(b.income).toLocaleString()}</td>
+                    <td className="px-4 py-2.5 text-gray-500">₪{Math.round(b.uriIncome).toLocaleString()}</td>
+                    <td className="px-4 py-2.5 text-gray-500">₪{Math.round(b.yinonIncome).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -341,6 +380,8 @@ export default function FinancePage() {
                 <tr className="border-t-2 border-gray-200 bg-gray-50/50">
                   <td className="px-5 py-2.5 font-semibold text-gray-600">סה״כ</td>
                   <td className="px-4 py-2.5 font-bold text-green-700">₪{Math.round(buckets.reduce((s, b) => s + b.income, 0)).toLocaleString()}</td>
+                  <td className="px-4 py-2.5 font-bold text-gray-600">₪{Math.round(buckets.reduce((s, b) => s + b.uriIncome, 0)).toLocaleString()}</td>
+                  <td className="px-4 py-2.5 font-bold text-gray-600">₪{Math.round(buckets.reduce((s, b) => s + b.yinonIncome, 0)).toLocaleString()}</td>
                 </tr>
               </tfoot>
             </table>
@@ -436,6 +477,8 @@ export default function FinancePage() {
                 <tr>
                   <th className="text-right px-5 py-2.5 font-medium text-gray-400 text-xs">{GRANULARITY_LABELS[granularity]}</th>
                   <th className="text-right px-4 py-2.5 font-medium text-gray-400 text-xs">הוצאות</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-gray-400 text-xs">אורי שילם</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-gray-400 text-xs">ינון שילם</th>
                 </tr>
               </thead>
               <tbody>
@@ -443,6 +486,8 @@ export default function FinancePage() {
                   <tr key={b.key} className="border-t border-gray-50">
                     <td className="px-5 py-2.5 text-gray-700">{b.label}</td>
                     <td className="px-4 py-2.5 text-red-500 font-semibold">₪{Math.round(b.expenses).toLocaleString()}</td>
+                    <td className="px-4 py-2.5 text-gray-500">₪{Math.round(b.uriExpenses).toLocaleString()}</td>
+                    <td className="px-4 py-2.5 text-gray-500">₪{Math.round(b.yinonExpenses).toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -450,6 +495,8 @@ export default function FinancePage() {
                 <tr className="border-t-2 border-gray-200 bg-gray-50/50">
                   <td className="px-5 py-2.5 font-semibold text-gray-600">סה״כ</td>
                   <td className="px-4 py-2.5 font-bold text-red-600">₪{Math.round(buckets.reduce((s, b) => s + b.expenses, 0)).toLocaleString()}</td>
+                  <td className="px-4 py-2.5 font-bold text-gray-600">₪{Math.round(buckets.reduce((s, b) => s + b.uriExpenses, 0)).toLocaleString()}</td>
+                  <td className="px-4 py-2.5 font-bold text-gray-600">₪{Math.round(buckets.reduce((s, b) => s + b.yinonExpenses, 0)).toLocaleString()}</td>
                 </tr>
               </tfoot>
             </table>

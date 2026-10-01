@@ -2,12 +2,12 @@
 import { useState, useMemo } from "react";
 import { useStore, FinanceRecord, RecurringExpense, PaymentStatus, FinanceRecordType } from "@/lib/store";
 import Modal from "@/components/Modal";
-import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, ChevronDown, ChevronUp, Repeat } from "lucide-react";
+import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, Scale, ChevronDown, ChevronUp, Repeat } from "lucide-react";
 import { parseISO, isValid, format } from "date-fns";
 import { he } from "date-fns/locale";
 
-type FinancePeriod = "h1" | "h2" | "year";
-const PERIOD_LABELS: Record<FinancePeriod, string> = { h1: "מחצית א׳", h2: "מחצית ב׳", year: "שנה מלאה" };
+type Granularity = "month" | "quarter" | "half";
+const GRANULARITY_LABELS: Record<Granularity, string> = { month: "חודש", quarter: "רבעון", half: "חצי שנה" };
 const YEAR_OPTIONS = [2025, 2026, 2027];
 
 function safeDate(str: string): Date | null {
@@ -16,11 +16,33 @@ function safeDate(str: string): Date | null {
   return isValid(d) ? d : null;
 }
 
-function periodMonths(year: number, period: FinancePeriod): string[] {
-  const [from, to] = period === "h1" ? [0, 5] : period === "h2" ? [6, 11] : [0, 11];
+function yearMonths(year: number): string[] {
   const out: string[] = [];
-  for (let m = from; m <= to; m++) out.push(`${year}-${String(m + 1).padStart(2, "0")}`);
+  for (let m = 0; m <= 11; m++) out.push(`${year}-${String(m + 1).padStart(2, "0")}`);
   return out;
+}
+
+function monthLabel(m: string) {
+  const d = parseISO(`${m}-01`);
+  return isValid(d) ? format(d, "MMMM yyyy", { locale: he }) : m;
+}
+
+interface Bucket { key: string; label: string; income: number; expenses: number; net: number }
+
+function groupBuckets(monthly: { month: string; income: number; expenses: number }[], granularity: Granularity, year: number): Bucket[] {
+  if (granularity === "month") {
+    return monthly.map((m) => ({ key: m.month, label: monthLabel(m.month), income: m.income, expenses: m.expenses, net: m.income - m.expenses }));
+  }
+  const size = granularity === "quarter" ? 3 : 6;
+  const groups: Bucket[] = [];
+  for (let i = 0; i < monthly.length; i += size) {
+    const chunk = monthly.slice(i, i + size);
+    const income = chunk.reduce((s, c) => s + c.income, 0);
+    const expenses = chunk.reduce((s, c) => s + c.expenses, 0);
+    const label = granularity === "quarter" ? `רבעון ${i / 3 + 1} · ${year}` : (i === 0 ? `מחצית א׳ · ${year}` : `מחצית ב׳ · ${year}`);
+    groups.push({ key: `${granularity}-${i}`, label, income, expenses, net: income - expenses });
+  }
+  return groups;
 }
 
 const PAYMENT_STATUSES: PaymentStatus[] = ["ממתין", "שולם חלקית", "שולם במלואו"];
@@ -53,7 +75,7 @@ const emptyExpense = {
   person: "שניהם" as "אורי" | "ינון" | "שניהם",
 };
 
-type FinanceTab = "income" | "expenses";
+type FinanceTab = "income" | "expenses" | "balance";
 
 const emptyRecurring = {
   description: "", amount: 0, category: "אחר", payer: "",
@@ -67,41 +89,38 @@ export default function FinancePage() {
     addRecurringExpense, updateRecurringExpense, deleteRecurringExpense,
   } = useStore();
   const [tab, setTab] = useState<FinanceTab>("income");
-  const [period, setPeriod] = useState<FinancePeriod>("h2");
   const [year, setYear] = useState(2026);
+  const [granularity, setGranularity] = useState<Granularity>("month");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<FinanceRecord | null>(null);
   const [form, setForm] = useState(emptyIncome);
   const [expandedSource, setExpandedSource] = useState<string | null>(null);
-  const [showMonthly, setShowMonthly] = useState(false);
   const [recurringOpen, setRecurringOpen] = useState(false);
   const [editingRecurring, setEditingRecurring] = useState<RecurringExpense | null>(null);
   const [recurringForm, setRecurringForm] = useState(emptyRecurring);
 
-  // ── Period filter ─────────────────────────────────────────────
-  function inPeriod(dateStr: string): boolean {
+  // ── Year filter — all data in scope is always the full selected year;
+  // granularity only controls how the breakdown tables group it. ────
+  function inYear(dateStr: string): boolean {
     const date = safeDate(dateStr);
-    if (!date) return true; // no date = always show
-    if (date.getFullYear() !== year) return false;
-    if (period === "h1") return date.getMonth() < 6;
-    if (period === "h2") return date.getMonth() >= 6;
-    return true;
+    if (!date) return true; // no date = always show (counted in yearly totals, not in the breakdown table)
+    return date.getFullYear() === year;
   }
 
   // ── Income records only ────────────────────────────────────────
   const allIncomeRecords = financeRecords.filter((r) => !r.recordType || r.recordType === "income");
   const incomeRecords = useMemo(
-    () => allIncomeRecords.filter((r) => inPeriod(r.paidDate || r.invoiceDate || r.createdAt)),
+    () => allIncomeRecords.filter((r) => inYear(r.paidDate || r.invoiceDate || r.createdAt)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [financeRecords, period, year]
+    [financeRecords, year]
   );
   const generalExpenseRecords = financeRecords.filter((r) => r.recordType === "expense");
 
   // ── Income from debriefs (paymentReceived) ─────────────────────
   const incomeFromDebriefs = useMemo(
-    () => debriefs.filter((d) => (d.paymentReceived || 0) > 0 && inPeriod(d.eventDate || d.createdAt)),
+    () => debriefs.filter((d) => (d.paymentReceived || 0) > 0 && inYear(d.eventDate || d.createdAt)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [debriefs, period, year]
+    [debriefs, year]
   );
   const debriefIncomePaid = incomeFromDebriefs.reduce((s, d) => s + (d.paymentReceived || 0), 0);
   const debriefUriIncome   = incomeFromDebriefs.reduce((s, d) => {
@@ -122,19 +141,19 @@ export default function FinancePage() {
   const yinonIncome = paidRecords.reduce((s, r) => s + (r.person === "ינון" ? r.amount : r.person === "שניהם" ? r.amount / 2 : 0), 0) + (debriefYinonIncome ?? 0);
 
   // ── Expense aggregation from all sources ──────────────────────
-  const expFromDebriefs   = useMemo(() => debriefs.filter((d) => inPeriod(d.eventDate || d.createdAt)).flatMap((d) => (d.expenses || []).map((e) => ({ ...e, source: "תחקיר", sourceName: d.orgName, date: d.eventDate || "" }))),
+  const expFromDebriefs   = useMemo(() => debriefs.filter((d) => inYear(d.eventDate || d.createdAt)).flatMap((d) => (d.expenses || []).map((e) => ({ ...e, source: "תחקיר", sourceName: d.orgName, date: d.eventDate || "" }))),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [debriefs, period, year]);
-  const expFromInfra      = infraProjects.flatMap((p) => (p.expenses || []).filter((e) => inPeriod(e.date || "")).map((e) => ({ ...e, source: "תשתית", sourceName: p.name, date: e.date || "" })));
-  const expFromBlocks     = blocks.flatMap((b) => (b.expenses || []).filter((e) => inPeriod(e.date || "")).map((e) => ({ ...e, source: "בלוק", sourceName: b.name, date: e.date || "" })));
-  const expFromGeneral    = generalExpenseRecords.filter((r) => inPeriod(r.invoiceDate || r.createdAt)).map((r) => ({ id: r.id, description: r.notes || r.orgName, amount: r.amount, paidBy: "", source: "כללי", sourceName: r.expenseCategory || "כללי", date: r.invoiceDate || "" }));
+    [debriefs, year]);
+  const expFromInfra      = infraProjects.flatMap((p) => (p.expenses || []).filter((e) => inYear(e.date || "")).map((e) => ({ ...e, source: "תשתית", sourceName: p.name, date: e.date || "" })));
+  const expFromBlocks     = blocks.flatMap((b) => (b.expenses || []).filter((e) => inYear(e.date || "")).map((e) => ({ ...e, source: "בלוק", sourceName: b.name, date: e.date || "" })));
+  const expFromGeneral    = generalExpenseRecords.filter((r) => inYear(r.invoiceDate || r.createdAt)).map((r) => ({ id: r.id, description: r.notes || r.orgName, amount: r.amount, paidBy: "", source: "כללי", sourceName: r.expenseCategory || "כללי", date: r.invoiceDate || "" }));
 
   // ── Recurring (fixed) expenses ─────────────────────────────────
-  const monthsThisPeriod = useMemo(() => periodMonths(year, period), [year, period]);
+  const monthsThisYear = useMemo(() => yearMonths(year), [year]);
   const expFromRecurring = useMemo(() => recurringExpenses
     .filter((r) => r.active)
     .map((r) => {
-      const months = monthsThisPeriod.filter((m) => m >= r.startMonth);
+      const months = monthsThisYear.filter((m) => m >= r.startMonth);
       if (months.length === 0) return null;
       return {
         id: r.id, description: r.description, amount: r.amount * months.length,
@@ -143,15 +162,16 @@ export default function FinancePage() {
       };
     })
     .filter((x): x is NonNullable<typeof x> => x !== null),
-    [recurringExpenses, monthsThisPeriod]);
+    [recurringExpenses, monthsThisYear]);
 
   const allExpenses = [...expFromDebriefs, ...expFromInfra, ...expFromBlocks, ...expFromGeneral, ...expFromRecurring];
   const totalExpenses = allExpenses.reduce((s, e) => s + (e.amount || 0), 0);
 
-  // ── Monthly balance breakdown ───────────────────────────────────
+  // ── Monthly breakdown (always full year, 12 rows) — then grouped
+  // into the selected granularity for display. ───────────────────
   const monthlyData = useMemo(() => {
     const map: Record<string, { income: number; expenses: number }> = {};
-    monthsThisPeriod.forEach((m) => { map[m] = { income: 0, expenses: 0 }; });
+    monthsThisYear.forEach((m) => { map[m] = { income: 0, expenses: 0 }; });
 
     incomeRecords.filter((r) => r.paymentStatus === "שולם במלואו").forEach((r) => {
       const key = (r.paidDate || r.invoiceDate || r.createdAt || "").slice(0, 7);
@@ -166,30 +186,22 @@ export default function FinancePage() {
       const key = (e.date || "").slice(0, 7);
       if (map[key]) map[key].expenses += e.amount || 0;
     });
-    monthsThisPeriod.forEach((m) => {
+    monthsThisYear.forEach((m) => {
       map[m].expenses += recurringExpenses
         .filter((r) => r.active && r.startMonth <= m)
         .reduce((s, r) => s + r.amount, 0);
     });
 
-    return monthsThisPeriod.map((m) => ({
-      month: m,
-      income: map[m].income,
-      expenses: map[m].expenses,
-      net: map[m].income - map[m].expenses,
-    }));
+    return monthsThisYear.map((m) => ({ month: m, income: map[m].income, expenses: map[m].expenses }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [monthsThisPeriod, incomeRecords, incomeFromDebriefs, expFromDebriefs, expFromInfra, expFromBlocks, expFromGeneral, recurringExpenses]);
+  }, [monthsThisYear, incomeRecords, incomeFromDebriefs, expFromDebriefs, expFromInfra, expFromBlocks, expFromGeneral, recurringExpenses]);
 
-  const monthLabel = (m: string) => {
-    const d = parseISO(`${m}-01`);
-    return isValid(d) ? format(d, "MMMM yyyy", { locale: he }) : m;
-  };
+  const buckets = useMemo(() => groupBuckets(monthlyData, granularity, year), [monthlyData, granularity, year]);
+  const noDateNote = "פריטים ללא תאריך לא מופיעים בפירוט לפי " + GRANULARITY_LABELS[granularity] + " — הם נספרים רק בסך השנתי.";
 
   // ── Partner balance including expenses ────────────────────────
   const uriExpenses   = allExpenses.reduce((s, e) => s + (e.paidBy === "אורי"  ? (e.amount || 0) : 0), 0);
   const yinonExpenses = allExpenses.reduce((s, e) => s + (e.paidBy === "ינון"  ? (e.amount || 0) : 0), 0);
-  // net position per person (income brought in minus expenses paid out)
   const uriNet   = uriIncome   - uriExpenses;
   const yinonNet = yinonIncome - yinonExpenses;
   const netDiff  = uriNet - yinonNet; // positive = Yinon owes Uri, negative = Uri owes Yinon
@@ -261,23 +273,21 @@ export default function FinancePage() {
         </div>
       </div>
 
-      {/* Period filter */}
-      <div className="flex items-center gap-3 mb-5">
+      {/* Year + granularity filter */}
+      <div className="flex items-center gap-3 mb-6 flex-wrap">
         <select value={year} onChange={(e) => setYear(Number(e.target.value))}
           className="border rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none">
           {YEAR_OPTIONS.map((y) => <option key={y} value={y}>{y}</option>)}
         </select>
         <div className="flex bg-white border rounded-lg overflow-hidden text-sm shadow-sm">
-          {(Object.keys(PERIOD_LABELS) as FinancePeriod[]).map((p) => (
-            <button key={p} onClick={() => setPeriod(p)}
-              className={`px-3 py-1.5 transition-colors ${period === p ? "bg-[#4a2e1b] text-white" : "text-gray-500 hover:bg-gray-50"}`}>
-              {PERIOD_LABELS[p]}
+          {(Object.keys(GRANULARITY_LABELS) as Granularity[]).map((g) => (
+            <button key={g} onClick={() => setGranularity(g)}
+              className={`px-3 py-1.5 transition-colors ${granularity === g ? "bg-[#4a2e1b] text-white" : "text-gray-500 hover:bg-gray-50"}`}>
+              {GRANULARITY_LABELS[g]}
             </button>
           ))}
         </div>
-        <span className="text-sm text-gray-400">
-          {period === "h1" ? "ינואר–יוני" : period === "h2" ? "יולי–דצמבר" : "כל השנה"} {year}
-        </span>
+        <span className="text-sm text-gray-400">תצוגה לפי {GRANULARITY_LABELS[granularity]} · כל נתוני {year}</span>
       </div>
 
       {/* Tabs */}
@@ -285,6 +295,7 @@ export default function FinancePage() {
         {([
           { id: "income"   as FinanceTab, label: "הכנסות",  icon: TrendingUp   },
           { id: "expenses" as FinanceTab, label: "הוצאות",  icon: TrendingDown },
+          { id: "balance"  as FinanceTab, label: "מאזן",    icon: Scale        },
         ]).map(({ id, label, icon: Icon }) => (
           <button key={id} onClick={() => setTab(id)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -298,7 +309,7 @@ export default function FinancePage() {
       {/* ── TAB: הכנסות ── */}
       {tab === "income" && (
         <>
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="bg-white rounded-xl shadow-sm p-5 border-r-4 border-green-400">
               <div className="text-sm text-gray-500 mb-1">שולם במלואו</div>
               <div className="text-2xl font-bold text-green-600">₪{totalPaid.toLocaleString()}</div>
@@ -309,88 +320,31 @@ export default function FinancePage() {
             </div>
           </div>
 
-          {/* Partner balance */}
-          <div className="bg-white rounded-xl shadow-sm p-5 mb-6 border border-[#aec6cf]/40">
-            <div className="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wide">מאזן שותפות — 50/50</div>
-            <div className="grid grid-cols-3 gap-6 mb-4">
-              {/* Uri column */}
-              <div className="space-y-2">
-                <div className="text-sm font-bold text-[#4a2e1b] text-center">אורי</div>
-                <div className="flex justify-between text-xs text-gray-500"><span>הכנסות</span><span className="text-green-600 font-medium">₪{Math.round(uriIncome).toLocaleString()}</span></div>
-                <div className="flex justify-between text-xs text-gray-500"><span>הוצאות ששילם</span><span className="text-red-500 font-medium">₪{Math.round(uriExpenses).toLocaleString()}</span></div>
-                <div className="border-t pt-1 flex justify-between text-sm font-bold text-[#4a2e1b]"><span>נטו</span><span>₪{Math.round(uriNet).toLocaleString()}</span></div>
-              </div>
-
-              {/* Transfer */}
-              <div className="flex flex-col items-center justify-center text-center">
-                {transferAmount < 100 ? (
-                  <div className="text-green-600 font-bold text-sm">✓ מאוזן</div>
-                ) : (
-                  <>
-                    <div className="text-xs text-gray-400 mb-1">להעברה</div>
-                    <div className="text-2xl font-bold text-purple-600">₪{Math.round(transferAmount).toLocaleString()}</div>
-                    <div className="text-xs text-gray-500 mt-1 font-medium">
-                      {netDiff > 0 ? "ינון → אורי" : "אורי → ינון"}
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Yinon column */}
-              <div className="space-y-2">
-                <div className="text-sm font-bold text-[#4a2e1b] text-center">ינון</div>
-                <div className="flex justify-between text-xs text-gray-500"><span>הכנסות</span><span className="text-green-600 font-medium">₪{Math.round(yinonIncome).toLocaleString()}</span></div>
-                <div className="flex justify-between text-xs text-gray-500"><span>הוצאות ששילם</span><span className="text-red-500 font-medium">₪{Math.round(yinonExpenses).toLocaleString()}</span></div>
-                <div className="border-t pt-1 flex justify-between text-sm font-bold text-[#4a2e1b]"><span>נטו</span><span>₪{Math.round(yinonNet).toLocaleString()}</span></div>
-              </div>
-            </div>
-          </div>
-
-          {/* Monthly balance */}
+          {/* Breakdown by granularity */}
           <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
-            <button
-              className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
-              onClick={() => setShowMonthly((v) => !v)}>
-              <span className="font-semibold text-gray-800">מאזן חודשי</span>
-              {showMonthly ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
-            </button>
-            {showMonthly && (
-              <div className="border-t border-gray-100">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="text-right px-5 py-2 font-medium text-gray-400 text-xs">חודש</th>
-                      <th className="text-right px-4 py-2 font-medium text-gray-400 text-xs">הכנסות</th>
-                      <th className="text-right px-4 py-2 font-medium text-gray-400 text-xs">הוצאות</th>
-                      <th className="text-right px-4 py-2 font-medium text-gray-400 text-xs">נטו</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {monthlyData.map((m) => (
-                      <tr key={m.month} className="border-t border-gray-50">
-                        <td className="px-5 py-2.5 text-gray-700">{monthLabel(m.month)}</td>
-                        <td className="px-4 py-2.5 text-green-600 font-medium">₪{Math.round(m.income).toLocaleString()}</td>
-                        <td className="px-4 py-2.5 text-red-500 font-medium">₪{Math.round(m.expenses).toLocaleString()}</td>
-                        <td className={`px-4 py-2.5 font-bold ${m.net >= 0 ? "text-green-700" : "text-red-600"}`}>
-                          ₪{Math.round(m.net).toLocaleString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr className="border-t-2 border-gray-200 bg-gray-50/50">
-                      <td className="px-5 py-2.5 font-semibold text-gray-600">סה״כ</td>
-                      <td className="px-4 py-2.5 font-bold text-green-700">₪{Math.round(monthlyData.reduce((s, m) => s + m.income, 0)).toLocaleString()}</td>
-                      <td className="px-4 py-2.5 font-bold text-red-600">₪{Math.round(monthlyData.reduce((s, m) => s + m.expenses, 0)).toLocaleString()}</td>
-                      <td className="px-4 py-2.5 font-bold text-[#4a2e1b]">₪{Math.round(monthlyData.reduce((s, m) => s + m.net, 0)).toLocaleString()}</td>
-                    </tr>
-                  </tfoot>
-                </table>
-                <p className="text-xs text-gray-400 px-5 py-2">
-                  לא כולל הכנסות/הוצאות ללא תאריך — אלו נספרות רק בסך התקופה למעלה.
-                </p>
-              </div>
-            )}
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="text-right px-5 py-2.5 font-medium text-gray-400 text-xs">{GRANULARITY_LABELS[granularity]}</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-gray-400 text-xs">הכנסות</th>
+                </tr>
+              </thead>
+              <tbody>
+                {buckets.map((b) => (
+                  <tr key={b.key} className="border-t border-gray-50">
+                    <td className="px-5 py-2.5 text-gray-700">{b.label}</td>
+                    <td className="px-4 py-2.5 text-green-600 font-semibold">₪{Math.round(b.income).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-gray-200 bg-gray-50/50">
+                  <td className="px-5 py-2.5 font-semibold text-gray-600">סה״כ</td>
+                  <td className="px-4 py-2.5 font-bold text-green-700">₪{Math.round(buckets.reduce((s, b) => s + b.income, 0)).toLocaleString()}</td>
+                </tr>
+              </tfoot>
+            </table>
+            <p className="text-xs text-gray-400 px-5 py-2">{noDateNote}</p>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -475,6 +429,33 @@ export default function FinancePage() {
             ))}
           </div>
 
+          {/* Breakdown by granularity */}
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="text-right px-5 py-2.5 font-medium text-gray-400 text-xs">{GRANULARITY_LABELS[granularity]}</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-gray-400 text-xs">הוצאות</th>
+                </tr>
+              </thead>
+              <tbody>
+                {buckets.map((b) => (
+                  <tr key={b.key} className="border-t border-gray-50">
+                    <td className="px-5 py-2.5 text-gray-700">{b.label}</td>
+                    <td className="px-4 py-2.5 text-red-500 font-semibold">₪{Math.round(b.expenses).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-gray-200 bg-gray-50/50">
+                  <td className="px-5 py-2.5 font-semibold text-gray-600">סה״כ</td>
+                  <td className="px-4 py-2.5 font-bold text-red-600">₪{Math.round(buckets.reduce((s, b) => s + b.expenses, 0)).toLocaleString()}</td>
+                </tr>
+              </tfoot>
+            </table>
+            <p className="text-xs text-gray-400 px-5 py-2">{noDateNote}</p>
+          </div>
+
           {/* Source groups */}
           {allExpenses.length === 0 ? (
             <div className="bg-white rounded-xl p-12 text-center shadow-sm">
@@ -557,6 +538,101 @@ export default function FinancePage() {
               })}
             </div>
           )}
+        </>
+      )}
+
+      {/* ── TAB: מאזן ── */}
+      {tab === "balance" && (
+        <>
+          {/* Partner balance */}
+          <div className="bg-white rounded-xl shadow-sm p-5 mb-6 border border-[#aec6cf]/40">
+            <div className="text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wide">מאזן שותפות — 50/50</div>
+            <div className="grid grid-cols-3 gap-6 mb-4">
+              {/* Uri column */}
+              <div className="space-y-2">
+                <div className="text-sm font-bold text-[#4a2e1b] text-center">אורי</div>
+                <div className="flex justify-between text-xs text-gray-500"><span>הכנסות</span><span className="text-green-600 font-medium">₪{Math.round(uriIncome).toLocaleString()}</span></div>
+                <div className="flex justify-between text-xs text-gray-500"><span>הוצאות ששילם</span><span className="text-red-500 font-medium">₪{Math.round(uriExpenses).toLocaleString()}</span></div>
+                <div className="border-t pt-1 flex justify-between text-sm font-bold text-[#4a2e1b]"><span>נטו</span><span>₪{Math.round(uriNet).toLocaleString()}</span></div>
+              </div>
+
+              {/* Transfer */}
+              <div className="flex flex-col items-center justify-center text-center">
+                {transferAmount < 100 ? (
+                  <div className="text-green-600 font-bold text-sm">✓ מאוזן</div>
+                ) : (
+                  <>
+                    <div className="text-xs text-gray-400 mb-1">להעברה</div>
+                    <div className="text-2xl font-bold text-purple-600">₪{Math.round(transferAmount).toLocaleString()}</div>
+                    <div className="text-xs text-gray-500 mt-1 font-medium">
+                      {netDiff > 0 ? "ינון → אורי" : "אורי → ינון"}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Yinon column */}
+              <div className="space-y-2">
+                <div className="text-sm font-bold text-[#4a2e1b] text-center">ינון</div>
+                <div className="flex justify-between text-xs text-gray-500"><span>הכנסות</span><span className="text-green-600 font-medium">₪{Math.round(yinonIncome).toLocaleString()}</span></div>
+                <div className="flex justify-between text-xs text-gray-500"><span>הוצאות ששילם</span><span className="text-red-500 font-medium">₪{Math.round(yinonExpenses).toLocaleString()}</span></div>
+                <div className="border-t pt-1 flex justify-between text-sm font-bold text-[#4a2e1b]"><span>נטו</span><span>₪{Math.round(yinonNet).toLocaleString()}</span></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Overall totals */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="bg-white rounded-xl shadow-sm p-5 border-r-4 border-green-400">
+              <div className="text-sm text-gray-500 mb-1">הכנסות (שולם)</div>
+              <div className="text-2xl font-bold text-green-600">₪{Math.round(buckets.reduce((s, b) => s + b.income, 0)).toLocaleString()}</div>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-5 border-r-4 border-red-400">
+              <div className="text-sm text-gray-500 mb-1">הוצאות</div>
+              <div className="text-2xl font-bold text-red-500">₪{Math.round(buckets.reduce((s, b) => s + b.expenses, 0)).toLocaleString()}</div>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-5 border-r-4 border-[#aec6cf]">
+              <div className="text-sm text-gray-500 mb-1">נטו</div>
+              <div className={`text-2xl font-bold ${buckets.reduce((s, b) => s + b.net, 0) >= 0 ? "text-green-700" : "text-red-600"}`}>
+                ₪{Math.round(buckets.reduce((s, b) => s + b.net, 0)).toLocaleString()}
+              </div>
+            </div>
+          </div>
+
+          {/* Breakdown by granularity */}
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="text-right px-5 py-2.5 font-medium text-gray-400 text-xs">{GRANULARITY_LABELS[granularity]}</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-gray-400 text-xs">הכנסות</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-gray-400 text-xs">הוצאות</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-gray-400 text-xs">נטו</th>
+                </tr>
+              </thead>
+              <tbody>
+                {buckets.map((b) => (
+                  <tr key={b.key} className="border-t border-gray-50">
+                    <td className="px-5 py-2.5 text-gray-700">{b.label}</td>
+                    <td className="px-4 py-2.5 text-green-600 font-medium">₪{Math.round(b.income).toLocaleString()}</td>
+                    <td className="px-4 py-2.5 text-red-500 font-medium">₪{Math.round(b.expenses).toLocaleString()}</td>
+                    <td className={`px-4 py-2.5 font-bold ${b.net >= 0 ? "text-green-700" : "text-red-600"}`}>
+                      ₪{Math.round(b.net).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-gray-200 bg-gray-50/50">
+                  <td className="px-5 py-2.5 font-semibold text-gray-600">סה״כ</td>
+                  <td className="px-4 py-2.5 font-bold text-green-700">₪{Math.round(buckets.reduce((s, b) => s + b.income, 0)).toLocaleString()}</td>
+                  <td className="px-4 py-2.5 font-bold text-red-600">₪{Math.round(buckets.reduce((s, b) => s + b.expenses, 0)).toLocaleString()}</td>
+                  <td className="px-4 py-2.5 font-bold text-[#4a2e1b]">₪{Math.round(buckets.reduce((s, b) => s + b.net, 0)).toLocaleString()}</td>
+                </tr>
+              </tfoot>
+            </table>
+            <p className="text-xs text-gray-400 px-5 py-2">{noDateNote}</p>
+          </div>
         </>
       )}
 

@@ -135,6 +135,9 @@ export interface Project {
   tasks: ProjectTask[];
   notes: string;
   driveLink?: string;
+  /** Existing Todoist section new tasks for this project are filed under — never auto-created. */
+  todoistSectionId?: string;
+  todoistSectionName?: string;
   createdAt: string;
 }
 
@@ -160,6 +163,9 @@ export interface InfraProject {
   createdAt: string;
   expenses: ExpenseItem[];
   tasks: InfraTask[];
+  /** Existing Todoist section new tasks for this project are filed under — never auto-created. */
+  todoistSectionId?: string;
+  todoistSectionName?: string;
 }
 
 export interface BlockContentItem {
@@ -482,7 +488,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
         title: newTask.title,
         dueDate: newTask.dueDate || undefined,
         responsible: newTask.responsible || undefined,
-        projectName: project?.orgName || undefined,
+        sectionId: project?.todoistSectionId || undefined,
         notes: newTask.notes || undefined,
       }),
     })
@@ -574,7 +580,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
         title: newTask.title,
         dueDate: newTask.dueDate || undefined,
         responsible: newTask.responsible || undefined,
-        projectName: "הקמת תשתית",
+        sectionId: project?.todoistSectionId || undefined,
         notes: newTask.notes || undefined,
       }),
     })

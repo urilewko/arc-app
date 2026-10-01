@@ -6,6 +6,7 @@ import { format, parseISO, isValid, isBefore, isToday } from "date-fns";
 import { he } from "date-fns/locale";
 import Link from "next/link";
 import { Plus, X, Check, RefreshCw } from "lucide-react";
+import TodoistSectionSelect from "@/components/TodoistSectionSelect";
 
 const TEAM = ["אורי", "ינון"];
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -55,6 +56,11 @@ export default function MyWorkPage() {
   const [person, setPerson] = useState<string>(TEAM[0]);
   const [hideCompleted, setHideCompleted] = useState(true);
   const [standalone, setStandalone] = useState<StandaloneTask[]>([]);
+  const [standaloneSectionId, setStandaloneSectionId] = useState("");
+
+  useEffect(() => {
+    setStandaloneSectionId(localStorage.getItem("arc_standalone_todoist_section_id") || "");
+  }, []);
 
   // Quick-add state
   const [newTitle, setNewTitle] = useState("");
@@ -181,7 +187,7 @@ export default function MyWorkPage() {
               title: task.title,
               dueDate: task.dueDate || undefined,
               responsible: task.responsible || undefined,
-              projectName: project.orgName,
+              sectionId: project.todoistSectionId || undefined,
               notes: task.notes || undefined,
             }),
           });
@@ -203,7 +209,7 @@ export default function MyWorkPage() {
               title: task.title,
               dueDate: task.dueDate || undefined,
               responsible: task.responsible || undefined,
-              projectName: project.name,
+              sectionId: project.todoistSectionId || undefined,
             }),
           });
           const { todoistId } = await res.json();
@@ -223,7 +229,7 @@ export default function MyWorkPage() {
             title: task.title,
             dueDate: task.dueDate || undefined,
             responsible: task.responsible || undefined,
-            projectName: "כללי",
+            sectionId: standaloneSectionId || undefined,
           }),
         });
         const { todoistId } = await res.json();
@@ -284,6 +290,19 @@ export default function MyWorkPage() {
             className="flex items-center gap-2 bg-[#1a1a1a] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#333]">
             <Plus size={15} /> משימה חדשה
           </button>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 mb-5 -mt-2">
+        <span className="text-xs text-gray-400 shrink-0">קטגוריית Todoist למשימות כלליות:</span>
+        <div className="w-56">
+          <TodoistSectionSelect
+            value={standaloneSectionId}
+            onChange={(id) => {
+              setStandaloneSectionId(id);
+              localStorage.setItem("arc_standalone_todoist_section_id", id);
+            }}
+            className="w-full border rounded-lg px-2 py-1 text-xs bg-white" />
         </div>
       </div>
 

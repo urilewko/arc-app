@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useStore, InfraProject, InfraCategory, ProductionStatus, ExpenseItem, InfraTask, TaskStatus, TaskCategory } from "@/lib/store";
 import Modal from "@/components/Modal";
+import TodoistSectionSelect from "@/components/TodoistSectionSelect";
 import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, X, CheckSquare } from "lucide-react";
 
 const CATEGORIES: InfraCategory[] = ["תשתית", "המשק", "שטח", "שיווק ומיצוב", "The Hub", "הקהילה", "אחר"];
@@ -52,6 +53,8 @@ const emptyProject = {
   notes: "",
   expenses: [] as ExpenseItem[],
   tasks: [] as InfraTask[],
+  todoistSectionId: "",
+  todoistSectionName: "",
 };
 
 const emptyTask: Omit<InfraTask, "id"> = {
@@ -79,7 +82,7 @@ export default function InfraPage() {
   const [editTaskForm, setEditTaskForm] = useState(emptyTask);
 
   const openNew = () => { setEditing(null); setForm(emptyProject); setOpen(true); };
-  const openEdit = (p: InfraProject) => { setEditing(p); setForm({ ...p, expenses: p.expenses || [], tasks: p.tasks || [] }); setOpen(true); };
+  const openEdit = (p: InfraProject) => { setEditing(p); setForm({ ...p, expenses: p.expenses || [], tasks: p.tasks || [], todoistSectionId: p.todoistSectionId || "", todoistSectionName: p.todoistSectionName || "" }); setOpen(true); };
 
   const save = () => {
     if (!form.name) return;
@@ -360,6 +363,13 @@ export default function InfraPage() {
                 <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm" value={form.dueDate}
                   onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
               </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">קטגוריית Todoist</label>
+              <TodoistSectionSelect
+                value={form.todoistSectionId || ""}
+                onChange={(id, name) => setForm({ ...form, todoistSectionId: id, todoistSectionName: name })} />
+              <p className="text-xs text-gray-400 mt-1">משימות חדשות בפרויקט הזה ייכנסו לקטגוריה שבחרת ב-Todoist</p>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">הערות</label>

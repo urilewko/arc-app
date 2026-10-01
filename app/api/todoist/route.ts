@@ -26,25 +26,23 @@ async function todoistFetch(path: string, options: RequestInit = {}) {
   return res.json();
 }
 
-// Get or create a section for a project name
-async function getOrCreateSection(sectionName: string): Promise<string> {
-  const data = await todoistFetch(`/sections?project_id=${PROJECT_ID}`);
-  const sections: { id: string; name: string }[] = data?.results || [];
-  const existing = sections.find((s) => s.name === sectionName);
-  if (existing) return existing.id;
-
-  const created = await todoistFetch("/sections", {
-    method: "POST",
-    body: JSON.stringify({ project_id: PROJECT_ID, name: sectionName, order: 99 }),
-  });
-  return created.id;
+// GET — list existing sections in the ARC project (never creates any)
+export async function GET() {
+  try {
+    const data = await todoistFetch(`/sections?project_id=${PROJECT_ID}`);
+    const sections: { id: string; name: string }[] = (data?.results || [])
+      .map((s: { id: string; name: string }) => ({ id: s.id, name: s.name }));
+    return NextResponse.json({ sections });
+  } catch (e) {
+    return NextResponse.json({ error: String(e) }, { status: 500 });
+  }
 }
 
-// POST — create task
+// POST — create task. sectionId must point to an EXISTING Todoist section —
+// this never creates new sections, by design (the user manages categories in Todoist).
 export async function POST(req: NextRequest) {
   try {
-    const { title, dueDate, responsible, projectName, notes } = await req.json();
-    const sectionId = projectName ? await getOrCreateSection(projectName) : undefined;
+    const { title, dueDate, responsible, sectionId, notes } = await req.json();
 
     const assigneeId = responsible ? ASSIGNEES[responsible] : undefined;
 

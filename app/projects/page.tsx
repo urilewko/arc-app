@@ -5,6 +5,7 @@ import {
   ProductType, ProductionStatus, TaskCategory, TaskStatus
 } from "@/lib/store";
 import Modal from "@/components/Modal";
+import TodoistSectionSelect from "@/components/TodoistSectionSelect";
 import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, CheckSquare, ExternalLink, RefreshCw } from "lucide-react";
 
 const PRODUCT_TYPES: ProductType[] = ["ריטריט", "סדנה חד פעמית", "Offsite", "קורס", "אירוע"];
@@ -48,6 +49,7 @@ const emptyProject = {
   startDate: "", endDate: "",
   productionStatus: "עוד לא התחלנו" as ProductionStatus,
   price: 0, teamMembers: [] as string[], tasks: [] as ProjectTask[], notes: "", driveLink: "",
+  todoistSectionId: "", todoistSectionName: "",
 };
 
 const emptyTask = {
@@ -119,7 +121,7 @@ export default function ProjectsPage() {
   const [syncResult, setSyncResult] = useState<string | null>(null);
 
   const openNew = () => { setEditing(null); setForm(emptyProject); setOpenModal(true); };
-  const openEdit = (p: Project) => { setEditing(p); setForm({ ...p, driveLink: p.driveLink || "" }); setOpenModal(true); };
+  const openEdit = (p: Project) => { setEditing(p); setForm({ ...p, driveLink: p.driveLink || "", todoistSectionId: p.todoistSectionId || "", todoistSectionName: p.todoistSectionName || "" }); setOpenModal(true); };
 
   const save = () => {
     if (!form.orgName) return;
@@ -185,7 +187,7 @@ export default function ProjectsPage() {
               title: task.title,
               dueDate: task.dueDate || undefined,
               responsible: task.responsible || undefined,
-              projectName: project.orgName,
+              sectionId: project.todoistSectionId || undefined,
               notes: task.notes || undefined,
             }),
           });
@@ -447,6 +449,13 @@ export default function ProjectsPage() {
               <input type="url" className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="https://drive.google.com/..."
                 value={form.driveLink || ""}
                 onChange={(e) => setForm({ ...form, driveLink: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">קטגוריית Todoist</label>
+              <TodoistSectionSelect
+                value={form.todoistSectionId || ""}
+                onChange={(id, name) => setForm({ ...form, todoistSectionId: id, todoistSectionName: name })} />
+              <p className="text-xs text-gray-400 mt-1">משימות חדשות בפרויקט הזה ייכנסו לקטגוריה שבחרת ב-Todoist</p>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">הערות</label>

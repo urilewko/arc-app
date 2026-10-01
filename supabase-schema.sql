@@ -127,6 +127,37 @@ create table if not exists recurring_expenses (
   created_at text default ''
 );
 
+-- MARKETING
+create table if not exists marketing_channels (
+  id text primary key,
+  name text default '',
+  status text default 'פעיל',
+  notes text default '',
+  created_at text default ''
+);
+
+create table if not exists marketing_campaigns (
+  id text primary key,
+  name text default '',
+  channel_id text default '',
+  start_date text default '',
+  end_date text default '',
+  budget numeric default 0,
+  status text default 'מתוכנן',
+  result_leads numeric default 0,
+  notes text default '',
+  created_at text default ''
+);
+
+create table if not exists marketing_events (
+  id text primary key,
+  date text default '',
+  title text default '',
+  channel_id text default '',
+  notes text default '',
+  created_at text default ''
+);
+
 -- DEBRIEFS
 create table if not exists debriefs (
   id text primary key,
@@ -165,6 +196,9 @@ alter table blocks enable row level security;
 alter table collaborators enable row level security;
 alter table finance_records enable row level security;
 alter table recurring_expenses enable row level security;
+alter table marketing_channels enable row level security;
+alter table marketing_campaigns enable row level security;
+alter table marketing_events enable row level security;
 alter table debriefs enable row level security;
 
 create policy "auth_all" on contacts for all to authenticated using (true) with check (true);
@@ -175,4 +209,7 @@ create policy "auth_all" on blocks for all to authenticated using (true) with ch
 create policy "auth_all" on collaborators for all to authenticated using (true) with check (true);
 create policy "auth_all" on finance_records for all to authenticated using (true) with check (true);
 create policy "auth_all" on recurring_expenses for all to authenticated using (true) with check (true);
+create policy "auth_all" on marketing_channels for all to authenticated using (true) with check (true);
+create policy "auth_all" on marketing_campaigns for all to authenticated using (true) with check (true);
+create policy "auth_all" on marketing_events for all to authenticated using (true) with check (true);
 create policy "auth_all" on debriefs for all to authenticated using (true) with check (true);

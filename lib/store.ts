@@ -248,6 +248,38 @@ export interface RecurringExpense {
   createdAt: string;
 }
 
+export type MarketingChannelStatus = "פעיל" | "בהשהיה" | "לא בשימוש";
+export interface MarketingChannel {
+  id: string;
+  name: string;
+  status: MarketingChannelStatus;
+  notes: string;
+  createdAt: string;
+}
+
+export type MarketingCampaignStatus = "מתוכנן" | "פעיל" | "הסתיים";
+export interface MarketingCampaign {
+  id: string;
+  name: string;
+  channelId: string;
+  startDate: string;
+  endDate: string;
+  budget: number;
+  status: MarketingCampaignStatus;
+  resultLeads: number;
+  notes: string;
+  createdAt: string;
+}
+
+export interface MarketingEvent {
+  id: string;
+  date: string; // "YYYY-MM-DD"
+  title: string;
+  channelId?: string;
+  notes: string;
+  createdAt: string;
+}
+
 // ── Supabase sync helpers ──────────────────────────────────────────
 type Rec = Record<string, unknown>;
 
@@ -285,6 +317,9 @@ interface ARCStore {
   financeRecords: FinanceRecord[];
   recurringExpenses: RecurringExpense[];
   debriefs: Debrief[];
+  marketingChannels: MarketingChannel[];
+  marketingCampaigns: MarketingCampaign[];
+  marketingEvents: MarketingEvent[];
 
   // UI state (not synced)
   financeYear: number;
@@ -336,6 +371,18 @@ interface ARCStore {
   updateRecurringExpense: (id: string, r: Partial<RecurringExpense>) => void;
   deleteRecurringExpense: (id: string) => void;
 
+  addMarketingChannel: (c: Omit<MarketingChannel, "id" | "createdAt">) => void;
+  updateMarketingChannel: (id: string, c: Partial<MarketingChannel>) => void;
+  deleteMarketingChannel: (id: string) => void;
+
+  addMarketingCampaign: (c: Omit<MarketingCampaign, "id" | "createdAt">) => void;
+  updateMarketingCampaign: (id: string, c: Partial<MarketingCampaign>) => void;
+  deleteMarketingCampaign: (id: string) => void;
+
+  addMarketingEvent: (e: Omit<MarketingEvent, "id" | "createdAt">) => void;
+  updateMarketingEvent: (id: string, e: Partial<MarketingEvent>) => void;
+  deleteMarketingEvent: (id: string) => void;
+
   addDebrief: (d: Omit<Debrief, "id" | "createdAt">) => void;
   updateDebrief: (id: string, d: Partial<Debrief>) => void;
   deleteDebrief: (id: string) => void;
@@ -352,6 +399,9 @@ export const useStore = create<ARCStore>()((set, get) => ({
   financeRecords: [],
   recurringExpenses: [],
   debriefs: [],
+  marketingChannels: [],
+  marketingCampaigns: [],
+  marketingEvents: [],
 
   financeYear: new Date().getFullYear(),
   financePeriod: "h1",
@@ -359,7 +409,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
   setFinancePeriod: (p) => set({ financePeriod: p }),
 
   loadAll: async () => {
-    const [contacts, leads, projects, infraProjects, blocks, collaborators, financeRecords, recurringExpenses, debriefs] =
+    const [contacts, leads, projects, infraProjects, blocks, collaborators, financeRecords, recurringExpenses, debriefs, marketingChannels, marketingCampaigns, marketingEvents] =
       await Promise.all([
         dbFetch("contacts"),
         dbFetch("leads"),
@@ -370,6 +420,9 @@ export const useStore = create<ARCStore>()((set, get) => ({
         dbFetch("finance_records"),
         dbFetch("recurring_expenses"),
         dbFetch("debriefs"),
+        dbFetch("marketing_channels"),
+        dbFetch("marketing_campaigns"),
+        dbFetch("marketing_events"),
       ]);
     set({
       contacts: contacts as unknown as Contact[],
@@ -381,6 +434,9 @@ export const useStore = create<ARCStore>()((set, get) => ({
       financeRecords: financeRecords as unknown as FinanceRecord[],
       recurringExpenses: recurringExpenses as unknown as RecurringExpense[],
       debriefs: debriefs as unknown as Debrief[],
+      marketingChannels: marketingChannels as unknown as MarketingChannel[],
+      marketingCampaigns: marketingCampaigns as unknown as MarketingCampaign[],
+      marketingEvents: marketingEvents as unknown as MarketingEvent[],
     });
   },
 
@@ -725,6 +781,49 @@ export const useStore = create<ARCStore>()((set, get) => ({
   deleteRecurringExpense: (id) => {
     set((s) => ({ recurringExpenses: s.recurringExpenses.filter((x) => x.id !== id) }));
     dbDelete("recurring_expenses", id);
+  },
+
+  // ── Marketing ──
+  addMarketingChannel: (c) => {
+    const row: MarketingChannel = { ...c, id: uid(), createdAt: new Date().toISOString() };
+    set((s) => ({ marketingChannels: [...s.marketingChannels, row] }));
+    dbInsert("marketing_channels", row as unknown as Rec);
+  },
+  updateMarketingChannel: (id, c) => {
+    set((s) => ({ marketingChannels: s.marketingChannels.map((x) => x.id === id ? { ...x, ...c } : x) }));
+    dbUpdate("marketing_channels", id, c as Rec);
+  },
+  deleteMarketingChannel: (id) => {
+    set((s) => ({ marketingChannels: s.marketingChannels.filter((x) => x.id !== id) }));
+    dbDelete("marketing_channels", id);
+  },
+
+  addMarketingCampaign: (c) => {
+    const row: MarketingCampaign = { ...c, id: uid(), createdAt: new Date().toISOString() };
+    set((s) => ({ marketingCampaigns: [...s.marketingCampaigns, row] }));
+    dbInsert("marketing_campaigns", row as unknown as Rec);
+  },
+  updateMarketingCampaign: (id, c) => {
+    set((s) => ({ marketingCampaigns: s.marketingCampaigns.map((x) => x.id === id ? { ...x, ...c } : x) }));
+    dbUpdate("marketing_campaigns", id, c as Rec);
+  },
+  deleteMarketingCampaign: (id) => {
+    set((s) => ({ marketingCampaigns: s.marketingCampaigns.filter((x) => x.id !== id) }));
+    dbDelete("marketing_campaigns", id);
+  },
+
+  addMarketingEvent: (e) => {
+    const row: MarketingEvent = { ...e, id: uid(), createdAt: new Date().toISOString() };
+    set((s) => ({ marketingEvents: [...s.marketingEvents, row] }));
+    dbInsert("marketing_events", row as unknown as Rec);
+  },
+  updateMarketingEvent: (id, e) => {
+    set((s) => ({ marketingEvents: s.marketingEvents.map((x) => x.id === id ? { ...x, ...e } : x) }));
+    dbUpdate("marketing_events", id, e as Rec);
+  },
+  deleteMarketingEvent: (id) => {
+    set((s) => ({ marketingEvents: s.marketingEvents.filter((x) => x.id !== id) }));
+    dbDelete("marketing_events", id);
   },
 
   // ── Debriefs ──

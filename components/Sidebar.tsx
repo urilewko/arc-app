@@ -19,6 +19,7 @@ import {
   X,
   ListTodo,
   ShoppingCart,
+  Megaphone,
 } from "lucide-react";
 
 const links = [
@@ -26,6 +27,7 @@ const links = [
   { href: "/my-work", label: "העבודה שלי", icon: ListTodo },
   { href: "/strategy", label: "ניהול אסטרטגי", icon: Target },
   { href: "/leads", label: "לידים", icon: TrendingUp },
+  { href: "/marketing", label: "שיווק", icon: Megaphone },
   { href: "/projects", label: "פרויקטים פעילים", icon: FolderOpen },
   { href: "/blocks", label: "The Blocks", icon: Zap },
   { href: "/finance", label: "פיננסים", icon: DollarSign },

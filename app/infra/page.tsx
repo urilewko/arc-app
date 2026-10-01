@@ -64,6 +64,8 @@ const emptyTask: Omit<InfraTask, "id"> = {
   dueDate: "",
   notes: "",
   category: "אחר",
+  todoistSectionId: "",
+  todoistSectionName: "",
 };
 
 export default function InfraPage() {
@@ -129,7 +131,11 @@ export default function InfraPage() {
   };
 
   const openEditTask = (projectId: string, task: InfraTask) => {
-    setEditTaskForm({ title: task.title, category: task.category || "אחר", status: task.status, responsible: task.responsible, dueDate: task.dueDate, notes: task.notes });
+    setEditTaskForm({
+      title: task.title, category: task.category || "אחר", status: task.status, responsible: task.responsible,
+      dueDate: task.dueDate, notes: task.notes,
+      todoistSectionId: task.todoistSectionId || "", todoistSectionName: task.todoistSectionName || "",
+    });
     setEditTaskModal({ projectId, task });
   };
   const saveEditTask = () => {
@@ -221,7 +227,7 @@ export default function InfraPage() {
                 <div className="border-t border-gray-100 bg-gray-50/50 px-5 py-4">
                   <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
                     <span className="text-sm font-semibold text-gray-600">משימות הפרויקט</span>
-                    <button onClick={() => { setTaskForm(emptyTask); setTaskModal(p.id); }}
+                    <button onClick={() => { setTaskForm({ ...emptyTask, todoistSectionId: p.todoistSectionId || "", todoistSectionName: p.todoistSectionName || "" }); setTaskModal(p.id); }}
                       className="flex items-center gap-1 text-xs text-blue-600 border border-blue-200 rounded-lg px-2.5 py-1 hover:bg-blue-50">
                       <Plus size={12} /> משימה חדשה
                     </button>
@@ -420,6 +426,12 @@ export default function InfraPage() {
               <textarea className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} value={taskForm.notes}
                 onChange={(e) => setTaskForm({ ...taskForm, notes: e.target.value })} />
             </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">קטגוריית Todoist</label>
+              <TodoistSectionSelect
+                value={taskForm.todoistSectionId || ""}
+                onChange={(id, name) => setTaskForm({ ...taskForm, todoistSectionId: id, todoistSectionName: name })} />
+            </div>
             <div className="flex gap-2 pt-2">
               <button onClick={() => saveTask(taskModal)}
                 className="flex-1 bg-[#4a2e1b] text-white py-2 rounded-lg text-sm hover:bg-[#3a2415]">הוסף משימה</button>
@@ -474,6 +486,12 @@ export default function InfraPage() {
               <label className="block text-sm font-medium mb-1">הערות</label>
               <textarea className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} value={editTaskForm.notes}
                 onChange={(e) => setEditTaskForm({ ...editTaskForm, notes: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">קטגוריית Todoist</label>
+              <TodoistSectionSelect
+                value={editTaskForm.todoistSectionId || ""}
+                onChange={(id, name) => setEditTaskForm({ ...editTaskForm, todoistSectionId: id, todoistSectionName: name })} />
             </div>
             <div className="flex gap-2 pt-2">
               <button onClick={saveEditTask}

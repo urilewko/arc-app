@@ -27,6 +27,8 @@ export interface ProjectTask {
   dueDate: string;
   notes: string;
   todoistId?: string;
+  todoistSectionId?: string;
+  todoistSectionName?: string;
 }
 export type BlockStatus = "רעיון" | "בפיתוח" | "מוכן" | "בוצע בשטח";
 export type CollabDomain = "הנחייה" | "אמנות" | "מוזיקה" | "תנועה" | "טבע" | "בישול" | "טכנולוגיה" | "אחר";
@@ -150,6 +152,8 @@ export interface InfraTask {
   notes: string;
   category: TaskCategory;
   todoistId?: string;
+  todoistSectionId?: string;
+  todoistSectionName?: string;
 }
 
 export interface InfraProject {
@@ -488,7 +492,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
         title: newTask.title,
         dueDate: newTask.dueDate || undefined,
         responsible: newTask.responsible || undefined,
-        sectionId: project?.todoistSectionId || undefined,
+        sectionId: newTask.todoistSectionId || project?.todoistSectionId || undefined,
         notes: newTask.notes || undefined,
       }),
     })
@@ -580,7 +584,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
         title: newTask.title,
         dueDate: newTask.dueDate || undefined,
         responsible: newTask.responsible || undefined,
-        sectionId: project?.todoistSectionId || undefined,
+        sectionId: newTask.todoistSectionId || project?.todoistSectionId || undefined,
         notes: newTask.notes || undefined,
       }),
     })

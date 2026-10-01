@@ -55,6 +55,7 @@ const emptyProject = {
 const emptyTask = {
   title: "", category: "תוכן" as TaskCategory,
   status: "לביצוע" as TaskStatus, responsible: "", dueDate: "", notes: "",
+  todoistSectionId: "", todoistSectionName: "",
 };
 
 function TaskRow({ task, onStatusChange, onEdit, onDelete }: {
@@ -163,7 +164,11 @@ export default function ProjectsPage() {
 
   const openEditTask = (projectId: string, task: ProjectTask) => {
     setEditTaskModal({ projectId, task });
-    setEditTaskForm({ title: task.title, category: task.category, status: task.status, responsible: task.responsible, dueDate: task.dueDate, notes: task.notes });
+    setEditTaskForm({
+      title: task.title, category: task.category, status: task.status, responsible: task.responsible,
+      dueDate: task.dueDate, notes: task.notes,
+      todoistSectionId: task.todoistSectionId || "", todoistSectionName: task.todoistSectionName || "",
+    });
   };
 
   const saveEditTask = () => {
@@ -333,7 +338,7 @@ export default function ProjectsPage() {
                       ))}
                     </div>
                     <button
-                      onClick={() => { setTaskForm(emptyTask); setTaskModal(p.id); }}
+                      onClick={() => { setTaskForm({ ...emptyTask, todoistSectionId: p.todoistSectionId || "", todoistSectionName: p.todoistSectionName || "" }); setTaskModal(p.id); }}
                       className="flex items-center gap-1.5 text-sm bg-[#1a1a1a] text-white px-3 py-1.5 rounded-lg hover:bg-[#333]">
                       <Plus size={13} /> משימה
                     </button>
@@ -515,6 +520,12 @@ export default function ProjectsPage() {
               <textarea className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} value={editTaskForm.notes}
                 onChange={(e) => setEditTaskForm({ ...editTaskForm, notes: e.target.value })} />
             </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">קטגוריית Todoist</label>
+              <TodoistSectionSelect
+                value={editTaskForm.todoistSectionId || ""}
+                onChange={(id, name) => setEditTaskForm({ ...editTaskForm, todoistSectionId: id, todoistSectionName: name })} />
+            </div>
             <div className="flex gap-2 pt-2">
               <button onClick={saveEditTask}
                 className="flex-1 bg-[#1a1a1a] text-white py-2 rounded-lg text-sm hover:bg-[#333]">שמור</button>
@@ -569,6 +580,12 @@ export default function ProjectsPage() {
               <label className="block text-sm font-medium mb-1">הערות</label>
               <textarea className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} value={taskForm.notes}
                 onChange={(e) => setTaskForm({ ...taskForm, notes: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">קטגוריית Todoist</label>
+              <TodoistSectionSelect
+                value={taskForm.todoistSectionId || ""}
+                onChange={(id, name) => setTaskForm({ ...taskForm, todoistSectionId: id, todoistSectionName: name })} />
             </div>
             <div className="flex gap-2 pt-2">
               <button onClick={() => saveTask(taskModal)}

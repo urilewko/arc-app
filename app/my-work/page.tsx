@@ -7,9 +7,11 @@ import { he } from "date-fns/locale";
 import Link from "next/link";
 import { Plus, X, Check, RefreshCw } from "lucide-react";
 import TodoistSectionSelect from "@/components/TodoistSectionSelect";
+import { useTodoistSections } from "@/lib/useTodoistSections";
 
 const TEAM = ["אורי", "ינון"];
 const uid = () => Math.random().toString(36).slice(2, 10);
+const NO_SECTION = "__none__";
 
 interface StandaloneTask {
   id: string;
@@ -18,6 +20,9 @@ interface StandaloneTask {
   dueDate: string;
   done: boolean;
   createdAt: string;
+  todoistId?: string;
+  todoistSectionId?: string;
+  todoistSectionName?: string;
 }
 
 type TaskItem = {
@@ -30,6 +35,9 @@ type TaskItem = {
   href: string;
   done: boolean;
   onToggle: () => void;
+  sectionId: string;
+  sectionName: string;
+  isStandalone?: string; // standalone task's own id, for delete
 };
 
 function safeDate(s: string) {
@@ -51,6 +59,7 @@ function dueBadge(dateStr: string) {
 
 export default function MyWorkPage() {
   const { leads, projects, infraProjects, updateProjectTask, updateInfraTask, updateLead } = useStore();
+  const { sections: todoistSections } = useTodoistSections();
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [person, setPerson] = useState<string>(TEAM[0]);
@@ -66,6 +75,8 @@ export default function MyWorkPage() {
   const [newTitle, setNewTitle] = useState("");
   const [newDue, setNewDue] = useState("");
   const [newPerson, setNewPerson] = useState(TEAM[0]);
+  const [newSectionId, setNewSectionId] = useState("");
+  const [newSectionName, setNewSectionName] = useState("");
   const [showAdd, setShowAdd] = useState(false);
 
   // Load standalone tasks
@@ -74,16 +85,49 @@ export default function MyWorkPage() {
       if (data) setStandalone(data.map((r) => ({
         id: r.id, title: r.title, responsible: r.responsible,
         dueDate: r.due_date || "", done: r.done || false, createdAt: r.created_at,
+        todoistId: r.todoist_id || undefined,
+        todoistSectionId: r.todoist_section_id || undefined,
+        todoistSectionName: r.todoist_section_name || undefined,
       })));
     });
   }, []);
 
+  useEffect(() => {
+    if (!standaloneSectionId) return;
+    const s = todoistSections.find((x) => x.id === standaloneSectionId);
+    setNewSectionId(standaloneSectionId);
+    setNewSectionName(s?.name || "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [standaloneSectionId, todoistSections.length]);
+
   const addStandalone = async () => {
     if (!newTitle.trim()) return;
-    const row = { id: uid(), title: newTitle, responsible: newPerson, due_date: newDue, done: false, created_at: new Date().toISOString() };
+    const row = {
+      id: uid(), title: newTitle, responsible: newPerson, due_date: newDue, done: false,
+      created_at: new Date().toISOString(),
+      todoist_section_id: newSectionId || null, todoist_section_name: newSectionName || null,
+    };
     await supabase.from("standalone_tasks").insert(row);
-    setStandalone((prev) => [...prev, { id: row.id, title: row.title, responsible: row.responsible, dueDate: row.due_date, done: false, createdAt: row.created_at }]);
+    const added: StandaloneTask = {
+      id: row.id, title: row.title, responsible: row.responsible, dueDate: row.due_date, done: false,
+      createdAt: row.created_at, todoistSectionId: newSectionId || undefined, todoistSectionName: newSectionName || undefined,
+    };
+    setStandalone((prev) => [...prev, added]);
     setNewTitle(""); setNewDue(""); setShowAdd(false);
+
+    // Sync to Todoist immediately
+    try {
+      const res = await fetch("/api/todoist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: added.title, dueDate: added.dueDate || undefined, responsible: added.responsible || undefined, sectionId: newSectionId || undefined }),
+      });
+      const { todoistId } = await res.json();
+      if (todoistId) {
+        await supabase.from("standalone_tasks").update({ todoist_id: todoistId }).eq("id", row.id);
+        setStandalone((prev) => prev.map((t) => t.id === row.id ? { ...t, todoistId } : t));
+      }
+    } catch { /* skip */ }
   };
 
   const toggleStandalone = async (id: string) => {
@@ -114,6 +158,9 @@ export default function MyWorkPage() {
         href: "",
         done: t.done,
         onToggle: () => toggleStandalone(t.id),
+        sectionId: t.todoistSectionId || "",
+        sectionName: t.todoistSectionName || "",
+        isStandalone: t.id,
       });
     });
 
@@ -129,6 +176,8 @@ export default function MyWorkPage() {
         href: "/leads",
         done: false,
         onToggle: () => updateLead(l.id, { nextAction: "" }),
+        sectionId: "",
+        sectionName: "",
       });
     });
 
@@ -145,6 +194,8 @@ export default function MyWorkPage() {
           href: "/projects",
           done: t.status === "הושלם",
           onToggle: () => updateProjectTask(p.id, t.id, { status: t.status === "הושלם" ? "לביצוע" : "הושלם" }),
+          sectionId: t.todoistSectionId || p.todoistSectionId || "",
+          sectionName: t.todoistSectionName || p.todoistSectionName || "",
         });
       });
     });
@@ -162,6 +213,8 @@ export default function MyWorkPage() {
           href: "/infra",
           done: t.status === "הושלם",
           onToggle: () => updateInfraTask(p.id, t.id, { status: t.status === "הושלם" ? "לביצוע" : "הושלם" }),
+          sectionId: t.todoistSectionId || p.todoistSectionId || "",
+          sectionName: t.todoistSectionName || p.todoistSectionName || "",
         });
       });
     });
@@ -187,7 +240,7 @@ export default function MyWorkPage() {
               title: task.title,
               dueDate: task.dueDate || undefined,
               responsible: task.responsible || undefined,
-              sectionId: project.todoistSectionId || undefined,
+              sectionId: task.todoistSectionId || project.todoistSectionId || undefined,
               notes: task.notes || undefined,
             }),
           });
@@ -209,7 +262,7 @@ export default function MyWorkPage() {
               title: task.title,
               dueDate: task.dueDate || undefined,
               responsible: task.responsible || undefined,
-              sectionId: project.todoistSectionId || undefined,
+              sectionId: task.todoistSectionId || project.todoistSectionId || undefined,
             }),
           });
           const { todoistId } = await res.json();
@@ -220,7 +273,7 @@ export default function MyWorkPage() {
 
     // Sync standalone tasks
     for (const task of standalone) {
-      if ((task as StandaloneTask & { todoistId?: string }).todoistId) continue;
+      if (task.todoistId) continue;
       try {
         const res = await fetch("/api/todoist", {
           method: "POST",
@@ -229,7 +282,7 @@ export default function MyWorkPage() {
             title: task.title,
             dueDate: task.dueDate || undefined,
             responsible: task.responsible || undefined,
-            sectionId: standaloneSectionId || undefined,
+            sectionId: task.todoistSectionId || standaloneSectionId || undefined,
           }),
         });
         const { todoistId } = await res.json();
@@ -247,15 +300,32 @@ export default function MyWorkPage() {
   };
 
   const visible = hideCompleted ? tasks.filter((t) => !t.done) : tasks;
-  const sorted = [...visible].sort((a, b) => {
-    const da = safeDate(a.dueDate), db = safeDate(b.dueDate);
-    if (!da && !db) return 0;
-    if (!da) return 1;
-    if (!db) return -1;
-    return da.getTime() - db.getTime();
-  });
-
   const doneCnt = tasks.filter((t) => t.done).length;
+
+  // ── Group into Todoist-style columns ────────────────────────────
+  const columns = useMemo(() => {
+    const cols = todoistSections.map((s) => ({
+      id: s.id,
+      name: s.name,
+      items: visible.filter((t) => t.sectionId === s.id)
+        .sort((a, b) => {
+          const da = safeDate(a.dueDate), db = safeDate(b.dueDate);
+          if (!da && !db) return 0;
+          if (!da) return 1;
+          if (!db) return -1;
+          return da.getTime() - db.getTime();
+        }),
+    }));
+    const unassigned = visible.filter((t) => !t.sectionId || !todoistSections.some((s) => s.id === t.sectionId))
+      .sort((a, b) => {
+        const da = safeDate(a.dueDate), db = safeDate(b.dueDate);
+        if (!da && !db) return 0;
+        if (!da) return 1;
+        if (!db) return -1;
+        return da.getTime() - db.getTime();
+      });
+    return [...cols.filter((c) => c.items.length > 0 || true), { id: NO_SECTION, name: "ללא קטגוריה", items: unassigned }];
+  }, [visible, todoistSections]);
 
   const SOURCE_COLORS: Record<string, string> = {
     ליד: "bg-cyan-100 text-cyan-700",
@@ -264,12 +334,56 @@ export default function MyWorkPage() {
     כללי: "bg-gray-100 text-gray-600",
   };
 
+  const renderCard = (task: TaskItem) => {
+    const badge = dueBadge(task.dueDate);
+    return (
+      <div key={task.id} className={`bg-white rounded-xl border shadow-sm p-3.5 group transition-opacity ${task.done ? "opacity-50" : ""}`}>
+        <div className="flex items-start gap-3">
+          <button onClick={task.onToggle}
+            className={`shrink-0 w-5 h-5 mt-0.5 rounded border-2 flex items-center justify-center transition-colors ${
+              task.done ? "bg-green-500 border-green-500" : "border-gray-300 hover:border-green-400"
+            }`}>
+            {task.done && <span className="text-white text-[10px]">✓</span>}
+          </button>
+          <div className="flex-1 min-w-0">
+            <div className={`text-sm font-medium ${task.done ? "line-through text-gray-400" : "text-gray-800"}`}>
+              {task.title}
+            </div>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${SOURCE_COLORS[task.source]}`}>
+                {task.source}
+              </span>
+              {task.href ? (
+                <Link href={task.href} className="text-[10px] text-gray-400 hover:text-blue-500 hover:underline">
+                  {task.sourceLabel} ←
+                </Link>
+              ) : task.sourceLabel && (
+                <span className="text-[10px] text-gray-400">{task.sourceLabel}</span>
+              )}
+              {badge && (
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${badge.cls}`}>
+                  {badge.label}
+                </span>
+              )}
+            </div>
+          </div>
+          {task.isStandalone && (
+            <button onClick={() => deleteStandalone(task.isStandalone!)}
+              className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 shrink-0 transition-opacity">
+              <X size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div dir="rtl">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">העבודה שלי</h1>
-          <p className="text-sm text-gray-400 mt-0.5">כל המשימות שמשויכות אליך, ממוינות לפי תאריך יעד</p>
+          <p className="text-sm text-gray-400 mt-0.5">מחולק לפי קטגוריות Todoist, כמו בלוח שלך</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex bg-white border rounded-lg overflow-hidden shadow-sm">
@@ -290,19 +404,6 @@ export default function MyWorkPage() {
             className="flex items-center gap-2 bg-[#1a1a1a] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#333]">
             <Plus size={15} /> משימה חדשה
           </button>
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2 mb-5 -mt-2">
-        <span className="text-xs text-gray-400 shrink-0">קטגוריית Todoist למשימות כלליות:</span>
-        <div className="w-56">
-          <TodoistSectionSelect
-            value={standaloneSectionId}
-            onChange={(id) => {
-              setStandaloneSectionId(id);
-              localStorage.setItem("arc_standalone_todoist_section_id", id);
-            }}
-            className="w-full border rounded-lg px-2 py-1 text-xs bg-white" />
         </div>
       </div>
 
@@ -327,6 +428,10 @@ export default function MyWorkPage() {
             <label className="block text-xs text-gray-400 mb-1">תאריך יעד</label>
             <input type="date" value={newDue} onChange={(e) => setNewDue(e.target.value)}
               className="border rounded-lg px-3 py-2 text-sm" />
+          </div>
+          <div className="min-w-[180px]">
+            <label className="block text-xs text-gray-400 mb-1">קטגוריית Todoist</label>
+            <TodoistSectionSelect value={newSectionId} onChange={(id, name) => { setNewSectionId(id); setNewSectionName(name); }} />
           </div>
           <div className="flex gap-2">
             <button onClick={addStandalone}
@@ -364,56 +469,32 @@ export default function MyWorkPage() {
         </div>
       </div>
 
-      {/* Task list */}
-      {sorted.length === 0 ? (
+      {/* Kanban board — one column per Todoist category */}
+      {tasks.length === 0 ? (
         <div className="bg-white rounded-xl p-16 text-center text-gray-400 shadow-sm">
-          {tasks.length === 0 ? `אין משימות משויכות ל${person}` : "כל המשימות הושלמו 🎉"}
+          אין משימות משויכות ל{person}
         </div>
       ) : (
-        <div className="space-y-2">
-          {sorted.map((task) => {
-            const badge = dueBadge(task.dueDate);
-            const isStandalone = task.id.startsWith("standalone-");
-            const standaloneId = isStandalone ? task.id.replace("standalone-", "") : null;
-            return (
-              <div key={task.id} className={`bg-white rounded-xl border shadow-sm px-4 py-3.5 flex items-center gap-4 group transition-opacity ${task.done ? "opacity-50" : ""}`}>
-                <button onClick={task.onToggle}
-                  className={`shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                    task.done ? "bg-green-500 border-green-500" : "border-gray-300 hover:border-green-400"
-                  }`}>
-                  {task.done && <span className="text-white text-[10px]">✓</span>}
-                </button>
-                <div className="flex-1 min-w-0">
-                  <div className={`text-sm font-medium ${task.done ? "line-through text-gray-400" : "text-gray-800"}`}>
-                    {task.title}
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          {columns.map((col) => (
+            <div key={col.id} className="w-72 shrink-0">
+              <div className="flex items-center justify-between mb-3 px-1">
+                <span className="font-semibold text-sm text-gray-700">{col.name}</span>
+                <span className="bg-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold text-gray-500 border">
+                  {col.items.length}
+                </span>
+              </div>
+              <div className="space-y-2 min-h-[60px]">
+                {col.items.length === 0 ? (
+                  <div className="border-2 border-dashed border-gray-200 rounded-xl p-5 text-center text-xs text-gray-300">
+                    אין משימות
                   </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${SOURCE_COLORS[task.source]}`}>
-                      {task.source}
-                    </span>
-                    {task.href ? (
-                      <Link href={task.href} className="text-[10px] text-gray-400 hover:text-blue-500 hover:underline">
-                        {task.sourceLabel} ←
-                      </Link>
-                    ) : task.sourceLabel && (
-                      <span className="text-[10px] text-gray-400">{task.sourceLabel}</span>
-                    )}
-                  </div>
-                </div>
-                {badge && (
-                  <span className={`text-[10px] px-2.5 py-1 rounded-full font-medium shrink-0 ${badge.cls}`}>
-                    {badge.label}
-                  </span>
-                )}
-                {isStandalone && standaloneId && (
-                  <button onClick={() => deleteStandalone(standaloneId)}
-                    className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 shrink-0 transition-opacity">
-                    <X size={14} />
-                  </button>
+                ) : (
+                  col.items.map(renderCard)
                 )}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       )}
     </div>

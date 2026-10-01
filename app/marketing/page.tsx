@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo, Fragment } from "react";
+import { useState, useMemo } from "react";
 import { useStore, MarketingChannel, MarketingCampaign, MarketingEvent, MarketingChannelStatus, MarketingCampaignStatus } from "@/lib/store";
 import Modal from "@/components/Modal";
 import {
@@ -15,11 +15,6 @@ type CalView = "day" | "week" | "month";
 const VIEW_LABELS: Record<CalView, string> = { day: "יום", week: "שבוע", month: "חודש" };
 
 const CHANNEL_STATUSES: MarketingChannelStatus[] = ["פעיל", "בהשהיה", "לא בשימוש"];
-const CHANNEL_STATUS_COLORS: Record<MarketingChannelStatus, string> = {
-  "פעיל": "bg-green-100 text-green-700",
-  "בהשהיה": "bg-orange-100 text-orange-700",
-  "לא בשימוש": "bg-gray-100 text-gray-500",
-};
 
 const CAMPAIGN_STATUSES: MarketingCampaignStatus[] = ["מתוכנן", "פעיל", "הסתיים"];
 const CAMPAIGN_STATUS_COLORS: Record<MarketingCampaignStatus, string> = {
@@ -27,6 +22,27 @@ const CAMPAIGN_STATUS_COLORS: Record<MarketingCampaignStatus, string> = {
   "פעיל": "bg-green-100 text-green-700",
   "הסתיים": "bg-gray-100 text-gray-500",
 };
+
+// Deterministic per-channel color (by id), used in both the calendar and the channel cards
+const CHANNEL_PALETTE = [
+  { bg: "bg-blue-100",   text: "text-blue-700",   dot: "bg-blue-400",   bar: "bg-blue-400" },
+  { bg: "bg-purple-100", text: "text-purple-700", dot: "bg-purple-400", bar: "bg-purple-400" },
+  { bg: "bg-emerald-100",text: "text-emerald-700",dot: "bg-emerald-400",bar: "bg-emerald-400" },
+  { bg: "bg-amber-100",  text: "text-amber-700",  dot: "bg-amber-400",  bar: "bg-amber-400" },
+  { bg: "bg-pink-100",   text: "text-pink-700",   dot: "bg-pink-400",   bar: "bg-pink-400" },
+  { bg: "bg-cyan-100",   text: "text-cyan-700",   dot: "bg-cyan-400",   bar: "bg-cyan-400" },
+  { bg: "bg-rose-100",   text: "text-rose-700",   dot: "bg-rose-400",   bar: "bg-rose-400" },
+  { bg: "bg-indigo-100", text: "text-indigo-700", dot: "bg-indigo-400", bar: "bg-indigo-400" },
+  { bg: "bg-teal-100",   text: "text-teal-700",   dot: "bg-teal-400",   bar: "bg-teal-400" },
+  { bg: "bg-orange-100", text: "text-orange-700", dot: "bg-orange-400", bar: "bg-orange-400" },
+];
+const NO_CHANNEL_COLOR = { bg: "bg-gray-100", text: "text-gray-500", dot: "bg-gray-300", bar: "bg-gray-300" };
+function channelColor(id?: string) {
+  if (!id) return NO_CHANNEL_COLOR;
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) & 0xffff;
+  return CHANNEL_PALETTE[h % CHANNEL_PALETTE.length];
+}
 
 const emptyChannel = { name: "", status: "פעיל" as MarketingChannelStatus, notes: "" };
 const emptyCampaign = {
@@ -186,6 +202,19 @@ export default function MarketingPage() {
           </div>
         </div>
 
+        {marketingChannels.length > 0 && (
+          <div className="flex flex-wrap gap-x-3 gap-y-1 mb-4">
+            {marketingChannels.map((c) => {
+              const col = channelColor(c.id);
+              return (
+                <span key={c.id} className="flex items-center gap-1 text-[11px] text-gray-500">
+                  <span className={`w-2 h-2 rounded-full ${col.dot}`} /> {c.name}
+                </span>
+              );
+            })}
+          </div>
+        )}
+
         {calView === "day" ? (
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -199,17 +228,23 @@ export default function MarketingPage() {
               {(eventsByDate[format(cursor, "yyyy-MM-dd")] || []).length === 0 ? (
                 <div className="text-center text-gray-300 text-sm py-10">אין תוכניות ליום הזה</div>
               ) : (
-                (eventsByDate[format(cursor, "yyyy-MM-dd")] || []).map((ev) => (
-                  <div key={ev.id} onClick={() => openEditEvent(ev)}
-                    className="flex items-center justify-between bg-gray-50 hover:bg-gray-100 rounded-lg px-3 py-2.5 cursor-pointer transition-colors">
-                    <div>
-                      <div className="text-sm font-medium text-gray-800">{ev.title}</div>
-                      {ev.channelId && <div className="text-xs text-gray-400 mt-0.5">{channelName(ev.channelId)}</div>}
+                (eventsByDate[format(cursor, "yyyy-MM-dd")] || []).map((ev) => {
+                  const col = channelColor(ev.channelId);
+                  return (
+                    <div key={ev.id} onClick={() => openEditEvent(ev)}
+                      className="flex items-center justify-between bg-gray-50 hover:bg-gray-100 rounded-lg px-3 py-2.5 cursor-pointer transition-colors">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${col.dot}`} />
+                        <div>
+                          <div className="text-sm font-medium text-gray-800">{ev.title}</div>
+                          {ev.channelId && <div className="text-xs text-gray-400 mt-0.5">{channelName(ev.channelId)}</div>}
+                        </div>
+                      </div>
+                      <button onClick={(e) => { e.stopPropagation(); deleteMarketingEvent(ev.id); }}
+                        className="text-gray-300 hover:text-red-500"><Trash2 size={14} /></button>
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); deleteMarketingEvent(ev.id); }}
-                      className="text-gray-300 hover:text-red-500"><Trash2 size={14} /></button>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
@@ -233,12 +268,15 @@ export default function MarketingPage() {
                     {format(day, "d")}
                   </div>
                   <div className="space-y-1">
-                    {dayEvents.slice(0, maxShow).map((ev) => (
-                      <div key={ev.id} onClick={(e) => { e.stopPropagation(); openEditEvent(ev); }}
-                        className="text-[10px] bg-[#eef1e7] text-[#4a2e1b] rounded px-1.5 py-0.5 truncate hover:bg-[#e2e6d8]">
-                        {ev.title}
-                      </div>
-                    ))}
+                    {dayEvents.slice(0, maxShow).map((ev) => {
+                      const col = channelColor(ev.channelId);
+                      return (
+                        <div key={ev.id} onClick={(e) => { e.stopPropagation(); openEditEvent(ev); }}
+                          className={`text-[10px] ${col.bg} ${col.text} rounded px-1.5 py-0.5 truncate hover:opacity-80`}>
+                          {ev.title}
+                        </div>
+                      );
+                    })}
                     {dayEvents.length > maxShow && (
                       <div className="text-[10px] text-gray-400">+{dayEvents.length - maxShow} עוד</div>
                     )}
@@ -264,63 +302,67 @@ export default function MarketingPage() {
           אין עדיין ערוצים. לחץ &quot;ערוץ חדש&quot; כדי להתחיל.
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="text-right px-4 py-3 font-medium text-gray-500">ערוץ</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-500">סטטוס</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-500">לידים</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-500">המרה</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-500">הערות</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {marketingChannels.map((c) => {
-                const stats = channelStats(c.name);
-                const isOpen = expandedChannel === c.id;
-                return (
-                  <Fragment key={c.id}>
-                    <tr className="border-b last:border-0 hover:bg-gray-50 cursor-pointer"
-                      onClick={() => setExpandedChannel(isOpen ? null : c.id)}>
-                      <td className="px-4 py-3 font-medium">{c.name}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${CHANNEL_STATUS_COLORS[c.status]}`}>{c.status}</span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-700 font-semibold">{stats.total}</td>
-                      <td className="px-4 py-3 text-gray-500">{stats.total ? `${stats.rate}%` : "—"}</td>
-                      <td className="px-4 py-3 text-gray-500 max-w-[200px] truncate">{c.notes}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-2 justify-end">
-                          <button onClick={(e) => { e.stopPropagation(); openEditChannel(c); }} className="text-gray-400 hover:text-gray-700"><Pencil size={15} /></button>
-                          <button onClick={(e) => { e.stopPropagation(); deleteMarketingChannel(c.id); }} className="text-gray-400 hover:text-red-600"><Trash2 size={15} /></button>
-                          {isOpen ? <ChevronUp size={15} className="text-gray-300" /> : <ChevronDown size={15} className="text-gray-300" />}
-                        </div>
-                      </td>
-                    </tr>
-                    {isOpen && (
-                      <tr className="bg-gray-50/60 border-b">
-                        <td colSpan={6} className="px-4 py-3">
-                          {stats.items.length === 0 ? (
-                            <div className="text-xs text-gray-400">אין עדיין לידים מהערוץ הזה</div>
-                          ) : (
-                            <div className="flex flex-wrap gap-2">
-                              {stats.items.map((l) => (
-                                <span key={l.id} className="text-xs bg-white border rounded-full px-2.5 py-1 text-gray-600">
-                                  {l.orgName} · {l.status}
-                                </span>
-                              ))}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 items-start">
+          {CHANNEL_STATUSES.map((status) => {
+            const inStatus = marketingChannels.filter((c) => c.status === status);
+            return (
+              <div key={status}>
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <span className="font-semibold text-sm text-gray-700">{status}</span>
+                  <span className="bg-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold text-gray-500 border">
+                    {inStatus.length}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {inStatus.length === 0 ? (
+                    <div className="border-2 border-dashed border-gray-200 rounded-xl p-5 text-center text-xs text-gray-300">
+                      אין ערוצים
+                    </div>
+                  ) : (
+                    inStatus.map((c) => {
+                      const stats = channelStats(c.name);
+                      const isOpen = expandedChannel === c.id;
+                      const col = channelColor(c.id);
+                      return (
+                        <div key={c.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                          <div className={`h-1.5 ${col.bar}`} />
+                          <div className="p-3.5 cursor-pointer" onClick={() => setExpandedChannel(isOpen ? null : c.id)}>
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="font-medium text-sm text-gray-800">{c.name}</div>
+                              <div className="flex gap-1.5 shrink-0">
+                                <button onClick={(e) => { e.stopPropagation(); openEditChannel(c); }} className="text-gray-300 hover:text-gray-600"><Pencil size={13} /></button>
+                                <button onClick={(e) => { e.stopPropagation(); deleteMarketingChannel(c.id); }} className="text-gray-300 hover:text-red-500"><Trash2 size={13} /></button>
+                              </div>
                             </div>
-                          )}
-                        </td>
-                      </tr>
-                    )}
-                  </Fragment>
-                );
-              })}
-            </tbody>
-          </table>
+                            <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                              <span className="font-semibold text-gray-700">{stats.total}</span> לידים
+                              {stats.total > 0 && <span>· {stats.rate}% המרה</span>}
+                            </div>
+                            {c.notes && <div className="text-xs text-gray-400 mt-1.5 line-clamp-2">{c.notes}</div>}
+                            {isOpen && (
+                              <div className="mt-2.5 pt-2.5 border-t border-gray-100">
+                                {stats.items.length === 0 ? (
+                                  <div className="text-xs text-gray-400">אין עדיין לידים מהערוץ הזה</div>
+                                ) : (
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {stats.items.map((l) => (
+                                      <span key={l.id} className="text-[11px] bg-gray-50 border rounded-full px-2 py-0.5 text-gray-600">
+                                        {l.orgName} · {l.status}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -390,15 +432,21 @@ export default function MarketingPage() {
             {dayModalEvents.length === 0 ? (
               <div className="text-center text-gray-400 text-sm py-4">אין תוכניות ליום הזה</div>
             ) : (
-              dayModalEvents.map((ev) => (
-                <div key={ev.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
-                  <button className="text-right flex-1" onClick={() => { setDayModalDate(null); openEditEvent(ev); }}>
-                    <div className="text-sm font-medium text-gray-800">{ev.title}</div>
-                    {ev.channelId && <div className="text-xs text-gray-400">{channelName(ev.channelId)}</div>}
-                  </button>
-                  <button onClick={() => deleteMarketingEvent(ev.id)} className="text-gray-300 hover:text-red-500"><Trash2 size={14} /></button>
-                </div>
-              ))
+              dayModalEvents.map((ev) => {
+                const col = channelColor(ev.channelId);
+                return (
+                  <div key={ev.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                    <button className="flex items-center gap-2 text-right flex-1" onClick={() => { setDayModalDate(null); openEditEvent(ev); }}>
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${col.dot}`} />
+                      <span>
+                        <div className="text-sm font-medium text-gray-800">{ev.title}</div>
+                        {ev.channelId && <div className="text-xs text-gray-400">{channelName(ev.channelId)}</div>}
+                      </span>
+                    </button>
+                    <button onClick={() => deleteMarketingEvent(ev.id)} className="text-gray-300 hover:text-red-500"><Trash2 size={14} /></button>
+                  </div>
+                );
+              })
             )}
             <button onClick={() => openNewEvent(dayModalDate)}
               className="w-full flex items-center justify-center gap-1.5 text-sm border-2 border-dashed border-gray-200 text-gray-500 rounded-lg py-2.5 hover:border-gray-300 mt-2">

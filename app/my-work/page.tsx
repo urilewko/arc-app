@@ -59,7 +59,7 @@ function dueBadge(dateStr: string) {
 
 export default function MyWorkPage() {
   const { leads, projects, infraProjects, updateProjectTask, updateInfraTask, updateLead } = useStore();
-  const { sections: todoistSections } = useTodoistSections();
+  const { sections: todoistSections, loading: sectionsLoading, refresh: refreshSections } = useTodoistSections();
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [person, setPerson] = useState<string>(TEAM[0]);
@@ -395,6 +395,11 @@ export default function MyWorkPage() {
             ))}
           </div>
           {syncResult && <span className="text-xs text-green-600 font-medium">{syncResult}</span>}
+          <button onClick={refreshSections} disabled={sectionsLoading} title="רענן קטגוריות מ-Todoist"
+            className="flex items-center gap-2 border border-gray-300 text-gray-600 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50">
+            <RefreshCw size={14} className={sectionsLoading ? "animate-spin" : ""} />
+            קטגוריות
+          </button>
           <button onClick={syncAllToTodoist} disabled={syncing}
             className="flex items-center gap-2 border border-gray-300 text-gray-600 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50">
             <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />

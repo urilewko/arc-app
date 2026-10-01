@@ -5,9 +5,16 @@ import { supabase } from "@/lib/supabase";
 import { format, parseISO, isValid, isBefore, isToday } from "date-fns";
 import { he } from "date-fns/locale";
 import Link from "next/link";
-import { Plus, X, Check, RefreshCw } from "lucide-react";
+import { Plus, X, Check, RefreshCw, Pencil } from "lucide-react";
 import TodoistSectionSelect from "@/components/TodoistSectionSelect";
 import { useTodoistSections } from "@/lib/useTodoistSections";
+import Modal from "@/components/Modal";
+import {
+  DndContext, DragEndEvent, DragOverlay, DragStartEvent,
+  PointerSensor, useSensor, useSensors, closestCorners, useDroppable,
+} from "@dnd-kit/core";
+import { useDraggable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 
 const TEAM = ["אורי", "ינון"];
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -25,6 +32,8 @@ interface StandaloneTask {
   todoistSectionName?: string;
 }
 
+type TaskKind = "standalone" | "lead" | "project" | "infra";
+
 type TaskItem = {
   id: string;
   title: string;
@@ -38,6 +47,10 @@ type TaskItem = {
   sectionId: string;
   sectionName: string;
   isStandalone?: string; // standalone task's own id, for delete
+  kind: TaskKind;
+  projectId?: string; // for project/infra tasks
+  rawId?: string; // underlying task id (project/infra/standalone), for edit/move
+  editable: boolean;
 };
 
 function safeDate(s: string) {
@@ -161,6 +174,9 @@ export default function MyWorkPage() {
         sectionId: t.todoistSectionId || "",
         sectionName: t.todoistSectionName || "",
         isStandalone: t.id,
+        kind: "standalone",
+        rawId: t.id,
+        editable: true,
       });
     });
 
@@ -178,6 +194,8 @@ export default function MyWorkPage() {
         onToggle: () => updateLead(l.id, { nextAction: "" }),
         sectionId: "",
         sectionName: "",
+        kind: "lead",
+        editable: false,
       });
     });
 
@@ -196,6 +214,10 @@ export default function MyWorkPage() {
           onToggle: () => updateProjectTask(p.id, t.id, { status: t.status === "הושלם" ? "לביצוע" : "הושלם" }),
           sectionId: t.todoistSectionId || p.todoistSectionId || "",
           sectionName: t.todoistSectionName || p.todoistSectionName || "",
+          kind: "project",
+          projectId: p.id,
+          rawId: t.id,
+          editable: true,
         });
       });
     });
@@ -215,6 +237,10 @@ export default function MyWorkPage() {
           onToggle: () => updateInfraTask(p.id, t.id, { status: t.status === "הושלם" ? "לביצוע" : "הושלם" }),
           sectionId: t.todoistSectionId || p.todoistSectionId || "",
           sectionName: t.todoistSectionName || p.todoistSectionName || "",
+          kind: "infra",
+          projectId: p.id,
+          rawId: t.id,
+          editable: true,
         });
       });
     });
@@ -222,6 +248,86 @@ export default function MyWorkPage() {
     return items;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leads, projects, infraProjects, person, standalone]);
+
+  // Move a task to a different Todoist category — drag-and-drop or edit modal
+  const moveTaskToSection = (task: TaskItem, sectionId: string, sectionName: string) => {
+    if (task.sectionId === sectionId) return;
+    if (task.kind === "standalone" && task.rawId) {
+      supabase.from("standalone_tasks").update({ todoist_section_id: sectionId || null, todoist_section_name: sectionName || null }).eq("id", task.rawId).then(() => {});
+      setStandalone((prev) => prev.map((t) => t.id === task.rawId ? { ...t, todoistSectionId: sectionId, todoistSectionName: sectionName } : t));
+      const st = standalone.find((t) => t.id === task.rawId);
+      if (st?.todoistId) {
+        fetch("/api/todoist", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ todoistId: st.todoistId, sectionId }),
+        }).catch(() => {});
+      }
+    } else if (task.kind === "project" && task.projectId && task.rawId) {
+      updateProjectTask(task.projectId, task.rawId, { todoistSectionId: sectionId, todoistSectionName: sectionName });
+    } else if (task.kind === "infra" && task.projectId && task.rawId) {
+      updateInfraTask(task.projectId, task.rawId, { todoistSectionId: sectionId, todoistSectionName: sectionName });
+    }
+  };
+
+  // ── Edit modal ───────────────────────────────────────────────────
+  const [editingTask, setEditingTask] = useState<TaskItem | null>(null);
+  const [editForm, setEditForm] = useState({ title: "", dueDate: "", responsible: "", sectionId: "", sectionName: "" });
+
+  const openEditTask = (task: TaskItem) => {
+    if (!task.editable) return;
+    setEditingTask(task);
+    setEditForm({ title: task.title, dueDate: task.dueDate, responsible: task.responsible, sectionId: task.sectionId, sectionName: task.sectionName });
+  };
+
+  const saveEditTask = () => {
+    if (!editingTask || !editForm.title.trim()) return;
+    if (editForm.sectionId !== editingTask.sectionId) {
+      moveTaskToSection(editingTask, editForm.sectionId, editForm.sectionName);
+    }
+    if (editingTask.kind === "standalone" && editingTask.rawId) {
+      supabase.from("standalone_tasks").update({
+        title: editForm.title, responsible: editForm.responsible, due_date: editForm.dueDate || null,
+      }).eq("id", editingTask.rawId).then(() => {});
+      setStandalone((prev) => prev.map((t) => t.id === editingTask.rawId
+        ? { ...t, title: editForm.title, responsible: editForm.responsible, dueDate: editForm.dueDate }
+        : t));
+      const st = standalone.find((t) => t.id === editingTask.rawId);
+      if (st?.todoistId) {
+        fetch("/api/todoist", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ todoistId: st.todoistId, title: editForm.title, dueDate: editForm.dueDate, responsible: editForm.responsible }),
+        }).catch(() => {});
+      }
+    } else if (editingTask.kind === "project" && editingTask.projectId && editingTask.rawId) {
+      updateProjectTask(editingTask.projectId, editingTask.rawId, {
+        title: editForm.title, dueDate: editForm.dueDate, responsible: editForm.responsible,
+      });
+    } else if (editingTask.kind === "infra" && editingTask.projectId && editingTask.rawId) {
+      updateInfraTask(editingTask.projectId, editingTask.rawId, {
+        title: editForm.title, dueDate: editForm.dueDate, responsible: editForm.responsible,
+      });
+    }
+    setEditingTask(null);
+  };
+
+  // ── Drag and drop ───────────────────────────────────────────────
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const handleDragStart = (e: DragStartEvent) => setActiveId(e.active.id as string);
+  const handleDragEnd = (e: DragEndEvent) => {
+    setActiveId(null);
+    const { active, over } = e;
+    if (!over) return;
+    const task = tasks.find((t) => t.id === active.id);
+    if (!task || !task.editable) return;
+    const targetColId = over.id as string;
+    const targetSectionId = targetColId === NO_SECTION ? "" : targetColId;
+    const targetSection = todoistSections.find((s) => s.id === targetSectionId);
+    moveTaskToSection(task, targetSectionId, targetSection?.name || "");
+  };
 
   const syncAllToTodoist = async () => {
     setSyncing(true);
@@ -334,12 +440,16 @@ export default function MyWorkPage() {
     כללי: "bg-gray-100 text-gray-600",
   };
 
-  const renderCard = (task: TaskItem) => {
+  const renderCardInner = (task: TaskItem, dragHandleProps?: React.HTMLAttributes<HTMLDivElement>) => {
     const badge = dueBadge(task.dueDate);
     return (
-      <div key={task.id} className={`bg-white rounded-xl border shadow-sm p-3.5 group transition-opacity ${task.done ? "opacity-50" : ""}`}>
+      <div
+        className={`bg-white rounded-xl border shadow-sm p-3.5 group transition-opacity ${task.done ? "opacity-50" : ""} ${task.editable ? "cursor-pointer hover:border-gray-300" : ""}`}
+        onClick={() => openEditTask(task)}
+        {...(task.editable ? dragHandleProps : {})}
+      >
         <div className="flex items-start gap-3">
-          <button onClick={task.onToggle}
+          <button onClick={(e) => { e.stopPropagation(); task.onToggle(); }}
             className={`shrink-0 w-5 h-5 mt-0.5 rounded border-2 flex items-center justify-center transition-colors ${
               task.done ? "bg-green-500 border-green-500" : "border-gray-300 hover:border-green-400"
             }`}>
@@ -354,7 +464,7 @@ export default function MyWorkPage() {
                 {task.source}
               </span>
               {task.href ? (
-                <Link href={task.href} className="text-[10px] text-gray-400 hover:text-blue-500 hover:underline">
+                <Link href={task.href} onClick={(e) => e.stopPropagation()} className="text-[10px] text-gray-400 hover:text-blue-500 hover:underline">
                   {task.sourceLabel} ←
                 </Link>
               ) : task.sourceLabel && (
@@ -367,8 +477,11 @@ export default function MyWorkPage() {
               )}
             </div>
           </div>
+          {task.editable && (
+            <Pencil size={13} className="opacity-0 group-hover:opacity-100 text-gray-300 shrink-0 transition-opacity mt-1" />
+          )}
           {task.isStandalone && (
-            <button onClick={() => deleteStandalone(task.isStandalone!)}
+            <button onClick={(e) => { e.stopPropagation(); deleteStandalone(task.isStandalone!); }}
               className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 shrink-0 transition-opacity">
               <X size={14} />
             </button>
@@ -377,6 +490,27 @@ export default function MyWorkPage() {
       </div>
     );
   };
+
+  function DraggableCard({ task }: { task: TaskItem }) {
+    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: task.id, disabled: !task.editable });
+    const style: React.CSSProperties = { transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.3 : 1 };
+    return (
+      <div ref={setNodeRef} style={style}>
+        {renderCardInner(task, { ...attributes, ...listeners })}
+      </div>
+    );
+  }
+
+  function DroppableColumn({ id, children }: { id: string; children: React.ReactNode }) {
+    const { setNodeRef, isOver } = useDroppable({ id });
+    return (
+      <div ref={setNodeRef} className={`space-y-2 min-h-[60px] rounded-xl transition-colors ${isOver ? "bg-blue-50/60 ring-1 ring-blue-200" : ""}`}>
+        {children}
+      </div>
+    );
+  }
+
+  const activeTask = activeId ? tasks.find((t) => t.id === activeId) : null;
 
   return (
     <div dir="rtl">
@@ -474,33 +608,82 @@ export default function MyWorkPage() {
         </div>
       </div>
 
-      {/* Kanban board — one column per Todoist category */}
+      {/* Kanban board — one column per Todoist category. Drag a card to change its category. */}
       {tasks.length === 0 ? (
         <div className="bg-white rounded-xl p-16 text-center text-gray-400 shadow-sm">
           אין משימות משויכות ל{person}
         </div>
       ) : (
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {columns.map((col) => (
-            <div key={col.id} className="w-72 shrink-0">
-              <div className="flex items-center justify-between mb-3 px-1">
-                <span className="font-semibold text-sm text-gray-700">{col.name}</span>
-                <span className="bg-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold text-gray-500 border">
-                  {col.items.length}
-                </span>
+        <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          <div className="flex gap-4 overflow-x-auto pb-4">
+            {columns.map((col) => (
+              <div key={col.id} className="w-72 shrink-0">
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <span className="font-semibold text-sm text-gray-700">{col.name}</span>
+                  <span className="bg-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold text-gray-500 border">
+                    {col.items.length}
+                  </span>
+                </div>
+                <DroppableColumn id={col.id}>
+                  {col.items.length === 0 ? (
+                    <div className="border-2 border-dashed border-gray-200 rounded-xl p-5 text-center text-xs text-gray-300">
+                      גרור לכאן
+                    </div>
+                  ) : (
+                    col.items.map((task) => <DraggableCard key={task.id} task={task} />)
+                  )}
+                </DroppableColumn>
               </div>
-              <div className="space-y-2 min-h-[60px]">
-                {col.items.length === 0 ? (
-                  <div className="border-2 border-dashed border-gray-200 rounded-xl p-5 text-center text-xs text-gray-300">
-                    אין משימות
-                  </div>
-                ) : (
-                  col.items.map(renderCard)
-                )}
+            ))}
+          </div>
+          <DragOverlay>
+            {activeTask && <div className="rotate-1 opacity-90 w-72">{renderCardInner(activeTask)}</div>}
+          </DragOverlay>
+        </DndContext>
+      )}
+
+      {/* Edit task modal */}
+      {editingTask && (
+        <Modal title="עריכת משימה" onClose={() => setEditingTask(null)}>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium mb-1">כותרת *</label>
+              <input className="w-full border rounded-lg px-3 py-2 text-sm" value={editForm.title}
+                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">אחראי</label>
+                <select className="w-full border rounded-lg px-3 py-2 text-sm" value={editForm.responsible}
+                  onChange={(e) => setEditForm({ ...editForm, responsible: e.target.value })}>
+                  {TEAM.map((n) => <option key={n}>{n}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">תאריך יעד</label>
+                <input type="date" className="w-full border rounded-lg px-3 py-2 text-sm" value={editForm.dueDate}
+                  onChange={(e) => setEditForm({ ...editForm, dueDate: e.target.value })} />
               </div>
             </div>
-          ))}
-        </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">קטגוריית Todoist</label>
+              <TodoistSectionSelect
+                value={editForm.sectionId}
+                onChange={(id, name) => setEditForm({ ...editForm, sectionId: id, sectionName: name })} />
+            </div>
+            {editingTask.sourceLabel && (
+              <p className="text-xs text-gray-400">
+                מתוך: {editingTask.source} — {editingTask.sourceLabel}
+              </p>
+            )}
+            <div className="flex gap-2 pt-2">
+              <button onClick={saveEditTask}
+                className="flex-1 bg-[#1a1a1a] text-white py-2 rounded-lg text-sm hover:bg-[#333]">שמור</button>
+              <button onClick={() => setEditingTask(null)}
+                className="flex-1 border py-2 rounded-lg text-sm hover:bg-gray-50">ביטול</button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );

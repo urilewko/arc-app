@@ -66,15 +66,32 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// PATCH — complete or reopen
+// PATCH — complete/reopen, move to a different (existing) section, and/or edit content
 export async function PATCH(req: NextRequest) {
   try {
-    const { todoistId, completed } = await req.json();
-    if (completed) {
-      await todoistFetch(`/tasks/${todoistId}/close`, { method: "POST" });
-    } else {
-      await todoistFetch(`/tasks/${todoistId}/reopen`, { method: "POST" });
+    const { todoistId, completed, sectionId, title, dueDate, responsible } = await req.json();
+
+    if (completed !== undefined) {
+      await todoistFetch(`/tasks/${todoistId}/${completed ? "close" : "reopen"}`, { method: "POST" });
     }
+
+    if (sectionId !== undefined) {
+      await todoistFetch(`/tasks/${todoistId}/move`, {
+        method: "POST",
+        body: JSON.stringify({ section_id: sectionId || null }),
+      });
+    }
+
+    if (title !== undefined || dueDate !== undefined || responsible !== undefined) {
+      const assigneeId = responsible ? ASSIGNEES[responsible] : undefined;
+      const body: Record<string, unknown> = {
+        ...(title !== undefined ? { content: title } : {}),
+        ...(dueDate !== undefined ? { due_date: dueDate || null } : {}),
+        ...(assigneeId ? { assignee_id: assigneeId } : {}),
+      };
+      await todoistFetch(`/tasks/${todoistId}`, { method: "POST", body: JSON.stringify(body) });
+    }
+
     return NextResponse.json({ ok: true });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });

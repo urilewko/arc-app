@@ -521,14 +521,26 @@ export const useStore = create<ARCStore>()((set, get) => ({
           : p
       ),
     }));
-    // Sync completion status to Todoist
-    if (prevTask?.todoistId && task.status !== undefined && task.status !== prevTask.status) {
-      const completed = task.status === "הושלם";
-      fetch("/api/todoist", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ todoistId: prevTask.todoistId, completed }),
-      }).catch(() => {});
+    // Sync changes to Todoist (completion, section move, content)
+    if (prevTask?.todoistId) {
+      const patch: Record<string, unknown> = { todoistId: prevTask.todoistId };
+      let hasPatch = false;
+      if (task.status !== undefined && task.status !== prevTask.status) {
+        patch.completed = task.status === "הושלם"; hasPatch = true;
+      }
+      if (task.todoistSectionId !== undefined && task.todoistSectionId !== prevTask.todoistSectionId) {
+        patch.sectionId = task.todoistSectionId; hasPatch = true;
+      }
+      if (task.title !== undefined && task.title !== prevTask.title) { patch.title = task.title; hasPatch = true; }
+      if (task.dueDate !== undefined && task.dueDate !== prevTask.dueDate) { patch.dueDate = task.dueDate; hasPatch = true; }
+      if (task.responsible !== undefined && task.responsible !== prevTask.responsible) { patch.responsible = task.responsible; hasPatch = true; }
+      if (hasPatch) {
+        fetch("/api/todoist", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(patch),
+        }).catch(() => {});
+      }
     }
     const project = get().projects.find((p) => p.id === projectId);
     if (project) dbUpdate("projects", projectId, { tasks: project.tasks } as Rec);
@@ -613,12 +625,25 @@ export const useStore = create<ARCStore>()((set, get) => ({
           : p
       ),
     }));
-    if (prevTask?.todoistId && task.status !== undefined && task.status !== prevTask.status) {
-      fetch("/api/todoist", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ todoistId: prevTask.todoistId, completed: task.status === "הושלם" }),
-      }).catch(() => {});
+    if (prevTask?.todoistId) {
+      const patch: Record<string, unknown> = { todoistId: prevTask.todoistId };
+      let hasPatch = false;
+      if (task.status !== undefined && task.status !== prevTask.status) {
+        patch.completed = task.status === "הושלם"; hasPatch = true;
+      }
+      if (task.todoistSectionId !== undefined && task.todoistSectionId !== prevTask.todoistSectionId) {
+        patch.sectionId = task.todoistSectionId; hasPatch = true;
+      }
+      if (task.title !== undefined && task.title !== prevTask.title) { patch.title = task.title; hasPatch = true; }
+      if (task.dueDate !== undefined && task.dueDate !== prevTask.dueDate) { patch.dueDate = task.dueDate; hasPatch = true; }
+      if (task.responsible !== undefined && task.responsible !== prevTask.responsible) { patch.responsible = task.responsible; hasPatch = true; }
+      if (hasPatch) {
+        fetch("/api/todoist", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(patch),
+        }).catch(() => {});
+      }
     }
     const project = get().infraProjects.find((p) => p.id === projectId);
     if (project) dbUpdate("infra_projects", projectId, { tasks: project.tasks } as Rec);

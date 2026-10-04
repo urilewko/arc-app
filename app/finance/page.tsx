@@ -557,9 +557,14 @@ export default function FinancePage() {
                                 <td className="px-4 py-2.5 text-gray-400 text-xs">{e.date || "—"}</td>
                                 {group.key === "כללי" && (
                                   <td className="px-4 py-2.5">
-                                    <button
-                                      onClick={() => { const r = financeRecords.find((x) => x.id === e.id); if (r) openEdit(r); }}
-                                      className="text-gray-300 hover:text-gray-600"><Pencil size={13} /></button>
+                                    <div className="flex gap-2 justify-end">
+                                      <button
+                                        onClick={() => { const r = financeRecords.find((x) => x.id === e.id); if (r) openEdit(r); }}
+                                        className="text-gray-300 hover:text-gray-600"><Pencil size={13} /></button>
+                                      <button
+                                        onClick={() => deleteFinanceRecord(e.id)}
+                                        className="text-gray-300 hover:text-red-500"><Trash2 size={13} /></button>
+                                    </div>
                                   </td>
                                 )}
                                 {group.key === "קבוע" && (

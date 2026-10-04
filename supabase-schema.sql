@@ -178,6 +178,7 @@ create table if not exists debriefs (
   org_work_score numeric default 0,
   org_value_score numeric default 0,
   payment_received numeric default 0,
+  payment_received_by text default '',
   expenses jsonb default '[]',
   photo_album_link text default '',
   quotes_link text default '',

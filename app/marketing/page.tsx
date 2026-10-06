@@ -1,9 +1,9 @@
 "use client";
 import { useState, useMemo } from "react";
-import { useStore, MarketingChannel, MarketingCampaign, MarketingEvent, MarketingChannelStatus, MarketingCampaignStatus } from "@/lib/store";
+import { useStore, MarketingChannel, MarketingCampaign, MarketingEvent, MarketingChannelStatus, MarketingCampaignStatus, MarketingIdeaStatus, CampaignChannelPlan } from "@/lib/store";
 import Modal from "@/components/Modal";
 import {
-  Plus, Pencil, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Megaphone,
+  Plus, Pencil, Trash2, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Megaphone, CalendarPlus, Lightbulb,
 } from "lucide-react";
 import {
   format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, addMonths, addWeeks,
@@ -57,15 +57,25 @@ function buildColorMap(channels: { id: string; createdAt: string }[]) {
 }
 
 const emptyChannel = { name: "", status: "פעיל" as MarketingChannelStatus, notes: "" };
+const IDEA_STATUSES: MarketingIdeaStatus[] = ["רעיון", "בתכנון", "בוצע"];
+const IDEA_STATUS_COLORS: Record<MarketingIdeaStatus, string> = {
+  "רעיון": "bg-gray-100 text-gray-500",
+  "בתכנון": "bg-amber-100 text-amber-700",
+  "בוצע": "bg-green-100 text-green-700",
+};
+const campaignChannelsOf = (c: MarketingCampaign): CampaignChannelPlan[] =>
+  c.channels?.length ? c.channels : c.channelId ? [{ channelId: c.channelId, plan: "" }] : [];
+
 const emptyCampaign = {
-  name: "", channelId: "", startDate: "", endDate: "", budget: 0,
+  name: "", channels: [] as CampaignChannelPlan[], startDate: "", endDate: "", budget: 0,
   status: "מתוכנן" as MarketingCampaignStatus, resultLeads: 0, notes: "",
 };
 const emptyEvent = { date: "", title: "", channelId: "", notes: "" };
 
 export default function MarketingPage() {
   const {
-    leads, marketingChannels, marketingCampaigns, marketingEvents,
+    leads, marketingChannels, marketingCampaigns, marketingEvents, marketingIdeas,
+    addMarketingIdea, updateMarketingIdea, deleteMarketingIdea,
     addMarketingChannel, updateMarketingChannel, deleteMarketingChannel,
     addMarketingCampaign, updateMarketingCampaign, deleteMarketingCampaign,
     addMarketingEvent, updateMarketingEvent, deleteMarketingEvent,
@@ -87,6 +97,7 @@ export default function MarketingPage() {
   const [editingChannel, setEditingChannel] = useState<MarketingChannel | null>(null);
   const [channelForm, setChannelForm] = useState(emptyChannel);
   const [expandedChannel, setExpandedChannel] = useState<string | null>(null);
+  const [ideaDrafts, setIdeaDrafts] = useState<Record<string, string>>({});
 
   // ── Campaigns state ──────────────────────────────────────────────
   const [campaignsOpen, setCampaignsOpen] = useState(false);
@@ -174,7 +185,7 @@ export default function MarketingPage() {
   const openEditCampaign = (c: MarketingCampaign) => {
     setEditingCampaign(c);
     setCampaignForm({
-      name: c.name, channelId: c.channelId, startDate: c.startDate, endDate: c.endDate,
+      name: c.name, channels: campaignChannelsOf(c), startDate: c.startDate, endDate: c.endDate,
       budget: c.budget, status: c.status, resultLeads: c.resultLeads, notes: c.notes,
     });
     setCampaignOpen(true);
@@ -184,6 +195,32 @@ export default function MarketingPage() {
     if (editingCampaign) updateMarketingCampaign(editingCampaign.id, campaignForm);
     else addMarketingCampaign(campaignForm);
     setCampaignOpen(false);
+  };
+  const addIdea = (channelId: string) => {
+    const text = (ideaDrafts[channelId] || "").trim();
+    if (!text) return;
+    addMarketingIdea({ channelId, text, status: "רעיון" });
+    setIdeaDrafts((d) => ({ ...d, [channelId]: "" }));
+  };
+  const cycleIdeaStatus = (id: string, cur: MarketingIdeaStatus) => {
+    const next = IDEA_STATUSES[(IDEA_STATUSES.indexOf(cur) + 1) % IDEA_STATUSES.length];
+    updateMarketingIdea(id, { status: next });
+  };
+  const ideaToCalendar = (channelId: string, title: string) => {
+    setEditingEvent(null);
+    setEventForm({ ...emptyEvent, date: format(new Date(), "yyyy-MM-dd"), title, channelId });
+    setEventOpen(true);
+  };
+  const toggleCampaignChannel = (channelId: string) => {
+    setCampaignForm((f) => ({
+      ...f,
+      channels: f.channels.some((x) => x.channelId === channelId)
+        ? f.channels.filter((x) => x.channelId !== channelId)
+        : [...f.channels, { channelId, plan: "" }],
+    }));
+  };
+  const setCampaignPlan = (channelId: string, plan: string) => {
+    setCampaignForm((f) => ({ ...f, channels: f.channels.map((x) => x.channelId === channelId ? { ...x, plan } : x) }));
   };
   const channelName = (id: string) => marketingChannels.find((c) => c.id === id)?.name || "—";
 
@@ -354,8 +391,47 @@ export default function MarketingPage() {
                               {stats.total > 0 && <span>· {stats.rate}% המרה</span>}
                             </div>
                             {c.notes && <div className="text-xs text-gray-400 mt-1.5 line-clamp-2">{c.notes}</div>}
-                            {isOpen && (
-                              <div className="mt-2.5 pt-2.5 border-t border-gray-100">
+                            {(() => {
+                              const camps = marketingCampaigns.filter((k) => campaignChannelsOf(k).some((x) => x.channelId === c.id));
+                              const ideasCount = marketingIdeas.filter((i) => i.channelId === c.id).length;
+                              return (
+                                <div className="flex flex-wrap gap-1.5 mt-2">
+                                  <span className="flex items-center gap-1 text-[11px] text-gray-400"><Lightbulb size={11} /> {ideasCount} רעיונות</span>
+                                  {camps.map((k) => (
+                                    <span key={k.id} className={`text-[10px] px-1.5 py-0.5 rounded-full ${col.bg} ${col.text}`}>{k.name}</span>
+                                  ))}
+                                </div>
+                              );
+                            })()}
+                          </div>
+                          {isOpen && (
+                            <div className="px-3.5 pb-3.5 pt-3 border-t border-gray-100 space-y-3" onClick={(e) => e.stopPropagation()}>
+                              {/* Ideas */}
+                              <div>
+                                <div className="text-xs font-semibold text-gray-500 mb-1.5 flex items-center gap-1"><Lightbulb size={12} /> רעיונות ודרכי פעולה</div>
+                                <input
+                                  value={ideaDrafts[c.id] || ""}
+                                  onChange={(e) => setIdeaDrafts((d) => ({ ...d, [c.id]: e.target.value }))}
+                                  onKeyDown={(e) => e.key === "Enter" && addIdea(c.id)}
+                                  placeholder="כתוב רעיון ולחץ Enter..."
+                                  className="w-full border rounded-lg px-2.5 py-1.5 text-xs mb-2" />
+                                <div className="space-y-1">
+                                  {marketingIdeas.filter((i) => i.channelId === c.id).map((i) => (
+                                    <div key={i.id} className="group flex items-start gap-2 bg-gray-50 rounded-lg px-2 py-1.5">
+                                      <button onClick={() => cycleIdeaStatus(i.id, i.status)} title="לחץ להחלפת סטטוס"
+                                        className={`shrink-0 text-[10px] px-1.5 py-0.5 rounded-full mt-0.5 ${IDEA_STATUS_COLORS[i.status]}`}>{i.status}</button>
+                                      <span className={`flex-1 text-xs ${i.status === "בוצע" ? "text-gray-400 line-through" : "text-gray-700"}`}>{i.text}</span>
+                                      <button onClick={() => ideaToCalendar(c.id, i.text)} title="הוסף ללוח השנה"
+                                        className="shrink-0 text-gray-300 hover:text-blue-500"><CalendarPlus size={13} /></button>
+                                      <button onClick={() => deleteMarketingIdea(i.id)}
+                                        className="shrink-0 text-gray-300 hover:text-red-500"><Trash2 size={12} /></button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                              {/* Leads from this channel */}
+                              <div>
+                                <div className="text-xs font-semibold text-gray-500 mb-1.5">לידים מהערוץ</div>
                                 {stats.items.length === 0 ? (
                                   <div className="text-xs text-gray-400">אין עדיין לידים מהערוץ הזה</div>
                                 ) : (
@@ -368,8 +444,8 @@ export default function MarketingPage() {
                                   </div>
                                 )}
                               </div>
-                            )}
-                          </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })
@@ -402,39 +478,43 @@ export default function MarketingPage() {
             {marketingCampaigns.length === 0 ? (
               <div className="text-center text-gray-400 text-sm py-6">אין עדיין קמפיינים</div>
             ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-xs text-gray-400">
-                    <th className="text-right py-2 font-medium">שם</th>
-                    <th className="text-right py-2 font-medium">ערוץ</th>
-                    <th className="text-right py-2 font-medium">תאריכים</th>
-                    <th className="text-right py-2 font-medium">תקציב</th>
-                    <th className="text-right py-2 font-medium">סטטוס</th>
-                    <th className="text-right py-2 font-medium">לידים בפועל</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {marketingCampaigns.map((c) => (
-                    <tr key={c.id} className="border-t border-gray-50">
-                      <td className="py-2.5 font-medium">{c.name}</td>
-                      <td className="py-2.5 text-gray-500">{channelName(c.channelId)}</td>
-                      <td className="py-2.5 text-gray-500 text-xs">{c.startDate} – {c.endDate}</td>
-                      <td className="py-2.5 text-gray-500">{c.budget ? `₪${c.budget.toLocaleString()}` : "—"}</td>
-                      <td className="py-2.5">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${CAMPAIGN_STATUS_COLORS[c.status]}`}>{c.status}</span>
-                      </td>
-                      <td className="py-2.5 font-semibold text-gray-700">{c.resultLeads || "—"}</td>
-                      <td className="py-2.5">
-                        <div className="flex gap-2 justify-end">
-                          <button onClick={() => openEditCampaign(c)} className="text-gray-300 hover:text-gray-600"><Pencil size={13} /></button>
-                          <button onClick={() => deleteMarketingCampaign(c.id)} className="text-gray-300 hover:text-red-500"><Trash2 size={13} /></button>
+              <div className="space-y-3">
+                {marketingCampaigns.map((c) => (
+                  <div key={c.id} className="border border-gray-200 rounded-xl p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-gray-800">{c.name}</span>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${CAMPAIGN_STATUS_COLORS[c.status]}`}>{c.status}</span>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        <div className="text-xs text-gray-400 mt-1 flex gap-3 flex-wrap">
+                          {(c.startDate || c.endDate) && <span>{c.startDate || "?"} – {c.endDate || "?"}</span>}
+                          {c.budget > 0 && <span>₪{c.budget.toLocaleString()}</span>}
+                          {c.resultLeads > 0 && <span className="font-semibold text-gray-600">{c.resultLeads} לידים</span>}
+                        </div>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <button onClick={() => openEditCampaign(c)} className="text-gray-300 hover:text-gray-600"><Pencil size={14} /></button>
+                        <button onClick={() => deleteMarketingCampaign(c.id)} className="text-gray-300 hover:text-red-500"><Trash2 size={14} /></button>
+                      </div>
+                    </div>
+                    {c.notes && <div className="text-xs text-gray-500 mt-2">{c.notes}</div>}
+                    {campaignChannelsOf(c).length > 0 && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3">
+                        {campaignChannelsOf(c).map((x) => {
+                          const col = channelColor(x.channelId);
+                          return (
+                            <div key={x.channelId} className={`rounded-lg p-2.5 ${col.bg}`}>
+                              <div className={`text-xs font-semibold ${col.text}`}>{channelName(x.channelId)}</div>
+                              <div className="text-xs text-gray-600 mt-0.5 whitespace-pre-wrap">{x.plan || <span className="text-gray-400">אין תוכנית עדיין</span>}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         )}
@@ -552,13 +632,34 @@ export default function MarketingPage() {
                 onChange={(e) => setCampaignForm({ ...campaignForm, name: e.target.value })} />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">ערוץ</label>
-              <select className="w-full border rounded-lg px-3 py-2 text-sm" value={campaignForm.channelId}
-                onChange={(e) => setCampaignForm({ ...campaignForm, channelId: e.target.value })}>
-                <option value="">—</option>
-                {marketingChannels.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <label className="block text-sm font-medium mb-1">ערוצים בקמפיין</label>
+              {marketingChannels.length === 0 ? (
+                <div className="text-xs text-gray-400">הוסף קודם ערוצים</div>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {marketingChannels.map((ch) => {
+                    const on = campaignForm.channels.some((x) => x.channelId === ch.id);
+                    const col = channelColor(ch.id);
+                    return (
+                      <button key={ch.id} type="button" onClick={() => toggleCampaignChannel(ch.id)}
+                        className={`px-2.5 py-1 rounded-full text-xs border transition-colors ${on ? `${col.bg} ${col.text} border-transparent font-medium` : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"}`}>
+                        {ch.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
+            {campaignForm.channels.map((x) => {
+              const col = channelColor(x.channelId);
+              return (
+                <div key={x.channelId}>
+                  <label className={`block text-xs font-semibold mb-1 ${col.text}`}>מה קורה ב{channelName(x.channelId)}?</label>
+                  <textarea className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} value={x.plan}
+                    onChange={(e) => setCampaignPlan(x.channelId, e.target.value)} />
+                </div>
+              );
+            })}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium mb-1">תאריך התחלה</label>

@@ -258,16 +258,32 @@ export interface MarketingChannel {
 }
 
 export type MarketingCampaignStatus = "מתוכנן" | "פעיל" | "הסתיים";
+export interface CampaignChannelPlan {
+  channelId: string;
+  plan: string;
+}
+
 export interface MarketingCampaign {
   id: string;
   name: string;
-  channelId: string;
+  /** Legacy single-channel field — superseded by `channels`. */
+  channelId?: string;
+  channels: CampaignChannelPlan[];
   startDate: string;
   endDate: string;
   budget: number;
   status: MarketingCampaignStatus;
   resultLeads: number;
   notes: string;
+  createdAt: string;
+}
+
+export type MarketingIdeaStatus = "רעיון" | "בתכנון" | "בוצע";
+export interface MarketingIdea {
+  id: string;
+  channelId: string;
+  text: string;
+  status: MarketingIdeaStatus;
   createdAt: string;
 }
 
@@ -320,6 +336,7 @@ interface ARCStore {
   marketingChannels: MarketingChannel[];
   marketingCampaigns: MarketingCampaign[];
   marketingEvents: MarketingEvent[];
+  marketingIdeas: MarketingIdea[];
 
   // UI state (not synced)
   financeYear: number;
@@ -379,6 +396,10 @@ interface ARCStore {
   updateMarketingCampaign: (id: string, c: Partial<MarketingCampaign>) => void;
   deleteMarketingCampaign: (id: string) => void;
 
+  addMarketingIdea: (i: Omit<MarketingIdea, "id" | "createdAt">) => void;
+  updateMarketingIdea: (id: string, i: Partial<MarketingIdea>) => void;
+  deleteMarketingIdea: (id: string) => void;
+
   addMarketingEvent: (e: Omit<MarketingEvent, "id" | "createdAt">) => void;
   updateMarketingEvent: (id: string, e: Partial<MarketingEvent>) => void;
   deleteMarketingEvent: (id: string) => void;
@@ -402,6 +423,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
   marketingChannels: [],
   marketingCampaigns: [],
   marketingEvents: [],
+  marketingIdeas: [],
 
   financeYear: new Date().getFullYear(),
   financePeriod: "h1",
@@ -409,7 +431,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
   setFinancePeriod: (p) => set({ financePeriod: p }),
 
   loadAll: async () => {
-    const [contacts, leads, projects, infraProjects, blocks, collaborators, financeRecords, recurringExpenses, debriefs, marketingChannels, marketingCampaigns, marketingEvents] =
+    const [contacts, leads, projects, infraProjects, blocks, collaborators, financeRecords, recurringExpenses, debriefs, marketingChannels, marketingCampaigns, marketingEvents, marketingIdeas] =
       await Promise.all([
         dbFetch("contacts"),
         dbFetch("leads"),
@@ -423,6 +445,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
         dbFetch("marketing_channels"),
         dbFetch("marketing_campaigns"),
         dbFetch("marketing_events"),
+        dbFetch("marketing_ideas"),
       ]);
     set({
       contacts: contacts as unknown as Contact[],
@@ -437,6 +460,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
       marketingChannels: marketingChannels as unknown as MarketingChannel[],
       marketingCampaigns: marketingCampaigns as unknown as MarketingCampaign[],
       marketingEvents: marketingEvents as unknown as MarketingEvent[],
+      marketingIdeas: marketingIdeas as unknown as MarketingIdea[],
     });
   },
 
@@ -810,6 +834,20 @@ export const useStore = create<ARCStore>()((set, get) => ({
   deleteMarketingCampaign: (id) => {
     set((s) => ({ marketingCampaigns: s.marketingCampaigns.filter((x) => x.id !== id) }));
     dbDelete("marketing_campaigns", id);
+  },
+
+  addMarketingIdea: (i) => {
+    const row: MarketingIdea = { ...i, id: uid(), createdAt: new Date().toISOString() };
+    set((s) => ({ marketingIdeas: [...s.marketingIdeas, row] }));
+    dbInsert("marketing_ideas", row as unknown as Rec);
+  },
+  updateMarketingIdea: (id, i) => {
+    set((s) => ({ marketingIdeas: s.marketingIdeas.map((x) => x.id === id ? { ...x, ...i } : x) }));
+    dbUpdate("marketing_ideas", id, i as Rec);
+  },
+  deleteMarketingIdea: (id) => {
+    set((s) => ({ marketingIdeas: s.marketingIdeas.filter((x) => x.id !== id) }));
+    dbDelete("marketing_ideas", id);
   },
 
   addMarketingEvent: (e) => {

@@ -140,12 +140,21 @@ create table if not exists marketing_campaigns (
   id text primary key,
   name text default '',
   channel_id text default '',
+  channels jsonb default '[]',
   start_date text default '',
   end_date text default '',
   budget numeric default 0,
   status text default 'מתוכנן',
   result_leads numeric default 0,
   notes text default '',
+  created_at text default ''
+);
+
+create table if not exists marketing_ideas (
+  id text primary key,
+  channel_id text default '',
+  text text default '',
+  status text default 'רעיון',
   created_at text default ''
 );
 
@@ -200,6 +209,7 @@ alter table recurring_expenses enable row level security;
 alter table marketing_channels enable row level security;
 alter table marketing_campaigns enable row level security;
 alter table marketing_events enable row level security;
+alter table marketing_ideas enable row level security;
 alter table debriefs enable row level security;
 
 create policy "auth_all" on contacts for all to authenticated using (true) with check (true);
@@ -213,4 +223,5 @@ create policy "auth_all" on recurring_expenses for all to authenticated using (t
 create policy "auth_all" on marketing_channels for all to authenticated using (true) with check (true);
 create policy "auth_all" on marketing_campaigns for all to authenticated using (true) with check (true);
 create policy "auth_all" on marketing_events for all to authenticated using (true) with check (true);
+create policy "auth_all" on marketing_ideas for all to authenticated using (true) with check (true);
 create policy "auth_all" on debriefs for all to authenticated using (true) with check (true);

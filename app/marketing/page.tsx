@@ -37,11 +37,23 @@ const CHANNEL_PALETTE = [
   { bg: "bg-orange-100", text: "text-orange-700", dot: "bg-orange-400", bar: "bg-orange-400" },
 ];
 const NO_CHANNEL_COLOR = { bg: "bg-gray-100", text: "text-gray-500", dot: "bg-gray-300", bar: "bg-gray-300" };
-function channelColor(id?: string) {
-  if (!id) return NO_CHANNEL_COLOR;
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) & 0xffff;
-  return CHANNEL_PALETTE[h % CHANNEL_PALETTE.length];
+// Each channel gets its own palette slot: preferred slot comes from a hash of its id
+// (stable), and if another channel already took it we move to the next free one, so
+// colors never collide until there are more channels than palette entries.
+function buildColorMap(channels: { id: string; createdAt: string }[]) {
+  const map: Record<string, (typeof CHANNEL_PALETTE)[number]> = {};
+  const taken = new Set<number>();
+  [...channels].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).forEach((c) => {
+    let h = 0;
+    for (let i = 0; i < c.id.length; i++) h = (h * 31 + c.id.charCodeAt(i)) & 0xffff;
+    let slot = h % CHANNEL_PALETTE.length;
+    if (taken.size < CHANNEL_PALETTE.length) {
+      while (taken.has(slot)) slot = (slot + 1) % CHANNEL_PALETTE.length;
+      taken.add(slot);
+    }
+    map[c.id] = CHANNEL_PALETTE[slot];
+  });
+  return map;
 }
 
 const emptyChannel = { name: "", status: "פעיל" as MarketingChannelStatus, notes: "" };
@@ -58,6 +70,9 @@ export default function MarketingPage() {
     addMarketingCampaign, updateMarketingCampaign, deleteMarketingCampaign,
     addMarketingEvent, updateMarketingEvent, deleteMarketingEvent,
   } = useStore();
+
+  const colorMap = useMemo(() => buildColorMap(marketingChannels), [marketingChannels]);
+  const channelColor = (id?: string) => (id && colorMap[id]) || NO_CHANNEL_COLOR;
 
   // ── Calendar state ──────────────────────────────────────────────
   const [calView, setCalView] = useState<CalView>("month");

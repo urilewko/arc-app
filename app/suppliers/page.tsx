@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Search, Plus, Trash2, ChevronDown, ChevronUp, Phone, Mail, Pencil, Download } from "lucide-react";
 import Modal from "@/components/Modal";
 import { supabase } from "@/lib/supabase";
+import { reportDbError } from "@/lib/dbErrors";
 import {
   VENUE_CATEGORY, VenueEditor, VenueSummary, VenueBadges,
   ISRAEL_ZONES, type IsraelZone, type SupplierDetails,
@@ -108,18 +109,18 @@ export default function SuppliersPage() {
     if (!form.name) return;
     if (editing) {
       const patch = toSnake(form as unknown as Record<string, unknown>);
-      await supabase.from("suppliers").update(patch).eq("id", editing.id);
+      { const { error } = await supabase.from("suppliers").update(patch).eq("id", editing.id); if (error) reportDbError("suppliers", "update", error.message); }
       setSuppliers((prev) => prev.map((s) => s.id === editing.id ? { ...s, ...form } : s));
     } else {
       const row = { ...toSnake(form as unknown as Record<string, unknown>), id: uid(), created_at: new Date().toISOString() };
-      await supabase.from("suppliers").insert(row);
+      { const { error } = await supabase.from("suppliers").insert(row); if (error) reportDbError("suppliers", "insert", error.message); }
       setSuppliers((prev) => [...prev, toCamel(row) as unknown as Supplier]);
     }
     setOpen(false);
   };
 
   const remove = async (id: string) => {
-    await supabase.from("suppliers").delete().eq("id", id);
+    { const { error } = await supabase.from("suppliers").delete().eq("id", id); if (error) reportDbError("suppliers", "delete", error.message); }
     setSuppliers((prev) => prev.filter((s) => s.id !== id));
   };
 

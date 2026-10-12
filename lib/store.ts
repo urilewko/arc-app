@@ -1,6 +1,7 @@
 "use client";
 import { create } from "zustand";
 import { supabase, toSnake, toCamel } from "./supabase";
+import { reportDbError } from "./dbErrors";
 
 export type LeadStatus =
   | "פנייה יזומה"
@@ -302,17 +303,17 @@ type Rec = Record<string, unknown>;
 
 async function dbInsert(table: string, row: Rec) {
   const { error } = await supabase.from(table).insert(toSnake(row));
-  if (error) console.error(`insert ${table}:`, error.message);
+  if (error) reportDbError(table, "insert", error.message);
 }
 
 async function dbUpdate(table: string, id: string, patch: Rec) {
   const { error } = await supabase.from(table).update(toSnake(patch)).eq("id", id);
-  if (error) console.error(`update ${table}:`, error.message);
+  if (error) reportDbError(table, "update", error.message);
 }
 
 async function dbDelete(table: string, id: string) {
   const { error } = await supabase.from(table).delete().eq("id", id);
-  if (error) console.error(`delete ${table}:`, error.message);
+  if (error) reportDbError(table, "delete", error.message);
 }
 
 async function dbFetch(table: string): Promise<Rec[]> {

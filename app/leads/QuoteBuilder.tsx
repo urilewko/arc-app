@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Lead, useStore } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
+import { reportDbError } from "@/lib/dbErrors";
 import { ChevronLeft, Plus, Trash2, Download, FileCode, Eye, Package, Zap, Link } from "lucide-react";
 
 // ─── Brand ───────────────────────────────────────────────────────────────────
@@ -325,7 +326,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
   const addVersion = () => {
     const newV: QuoteVersion = { id: uid(), label: `הצעה #${versions.length + 1}`, createdAt: todayStr(), data: defaultQuote() };
     setVersions(prev => [...prev, newV]);
-    supabase.from("quotes").insert({ id: newV.id, lead_id: lead.id, label: newV.label, data: newV.data }).then(() => {});
+    supabase.from("quotes").insert({ id: newV.id, lead_id: lead.id, label: newV.label, data: newV.data }).then(({ error }) => { if (error) reportDbError("quotes", "insert", error.message); });
     // stay on current version — user clicks the new tab when ready
   };
 
@@ -334,7 +335,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     const toDelete = versions[idx];
     setVersions(prev => prev.filter((_, i) => i !== idx));
     setActiveIdx(prev => (idx <= prev && prev > 0) ? prev - 1 : Math.min(prev, versions.length - 2));
-    supabase.from("quotes").delete().eq("id", toDelete.id).then(() => {});
+    supabase.from("quotes").delete().eq("id", toDelete.id).then(({ error }) => { if (error) reportDbError("quotes", "delete", error.message); });
   };
 
   // ── package helpers ──

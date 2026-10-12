@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
 import DataLoader from "@/components/DataLoader";
+import DbErrorToast from "@/components/DbErrorToast";
 
 export const metadata: Metadata = {
   title: "ARC — ניהול חברה",
@@ -24,6 +25,7 @@ export default function RootLayout({
         <DataLoader>
           <Sidebar />
           <main className="flex-1 overflow-auto p-6 pt-16 md:pt-6">{children}</main>
+          <DbErrorToast />
         </DataLoader>
       </body>
     </html>

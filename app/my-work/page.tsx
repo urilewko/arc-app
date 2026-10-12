@@ -2,6 +2,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useStore } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
+import { reportDbError } from "@/lib/dbErrors";
 import { format, parseISO, isValid, isBefore, isToday } from "date-fns";
 import { he } from "date-fns/locale";
 import Link from "next/link";
@@ -120,7 +121,7 @@ export default function MyWorkPage() {
       created_at: new Date().toISOString(),
       todoist_section_id: newSectionId || null, todoist_section_name: newSectionName || null,
     };
-    await supabase.from("standalone_tasks").insert(row);
+    { const { error } = await supabase.from("standalone_tasks").insert(row); if (error) reportDbError("standalone_tasks", "insert", error.message); }
     const added: StandaloneTask = {
       id: row.id, title: row.title, responsible: row.responsible, dueDate: row.due_date, done: false,
       createdAt: row.created_at, todoistSectionId: newSectionId || undefined, todoistSectionName: newSectionName || undefined,
@@ -137,7 +138,7 @@ export default function MyWorkPage() {
       });
       const { todoistId } = await res.json();
       if (todoistId) {
-        await supabase.from("standalone_tasks").update({ todoist_id: todoistId }).eq("id", row.id);
+        { const { error } = await supabase.from("standalone_tasks").update({ todoist_id: todoistId }).eq("id", row.id); if (error) reportDbError("standalone_tasks", "update", error.message); }
         setStandalone((prev) => prev.map((t) => t.id === row.id ? { ...t, todoistId } : t));
       }
     } catch { /* skip */ }
@@ -147,12 +148,12 @@ export default function MyWorkPage() {
     const task = standalone.find((t) => t.id === id);
     if (!task) return;
     const done = !task.done;
-    await supabase.from("standalone_tasks").update({ done }).eq("id", id);
+    { const { error } = await supabase.from("standalone_tasks").update({ done }).eq("id", id); if (error) reportDbError("standalone_tasks", "update", error.message); }
     setStandalone((prev) => prev.map((t) => t.id === id ? { ...t, done } : t));
   };
 
   const deleteStandalone = async (id: string) => {
-    await supabase.from("standalone_tasks").delete().eq("id", id);
+    { const { error } = await supabase.from("standalone_tasks").delete().eq("id", id); if (error) reportDbError("standalone_tasks", "delete", error.message); }
     setStandalone((prev) => prev.filter((t) => t.id !== id));
   };
 
@@ -253,7 +254,7 @@ export default function MyWorkPage() {
   const moveTaskToSection = (task: TaskItem, sectionId: string, sectionName: string) => {
     if (task.sectionId === sectionId) return;
     if (task.kind === "standalone" && task.rawId) {
-      supabase.from("standalone_tasks").update({ todoist_section_id: sectionId || null, todoist_section_name: sectionName || null }).eq("id", task.rawId).then(() => {});
+      supabase.from("standalone_tasks").update({ todoist_section_id: sectionId || null, todoist_section_name: sectionName || null }).eq("id", task.rawId).then(({ error }) => { if (error) reportDbError("standalone_tasks", "update", error.message); });
       setStandalone((prev) => prev.map((t) => t.id === task.rawId ? { ...t, todoistSectionId: sectionId, todoistSectionName: sectionName } : t));
       const st = standalone.find((t) => t.id === task.rawId);
       if (st?.todoistId) {
@@ -288,7 +289,7 @@ export default function MyWorkPage() {
     if (editingTask.kind === "standalone" && editingTask.rawId) {
       supabase.from("standalone_tasks").update({
         title: editForm.title, responsible: editForm.responsible, due_date: editForm.dueDate || null,
-      }).eq("id", editingTask.rawId).then(() => {});
+      }).eq("id", editingTask.rawId).then(({ error }) => { if (error) reportDbError("standalone_tasks", "update", error.message); });
       setStandalone((prev) => prev.map((t) => t.id === editingTask.rawId
         ? { ...t, title: editForm.title, responsible: editForm.responsible, dueDate: editForm.dueDate }
         : t));
@@ -393,7 +394,7 @@ export default function MyWorkPage() {
         });
         const { todoistId } = await res.json();
         if (todoistId) {
-          await supabase.from("standalone_tasks").update({ todoist_id: todoistId }).eq("id", task.id);
+          { const { error } = await supabase.from("standalone_tasks").update({ todoist_id: todoistId }).eq("id", task.id); if (error) reportDbError("standalone_tasks", "update", error.message); }
           setStandalone((prev) => prev.map((t) => t.id === task.id ? { ...t, todoistId } : t));
           synced++;
         }

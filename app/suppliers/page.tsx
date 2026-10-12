@@ -13,33 +13,19 @@ import { useEffect } from "react";
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-const CATEGORIES = [
-  "צילום ווידאו",
-  "מזון ושתייה",
-  "לוגיסטיקה והובלה",
-  "ציוד ותפאורה",
-  "מוזיקה ו-DJ",
-  "הדפסה ועיצוב",
-  "טכנולוגיה",
-  "מרחבים ומקומות",
-  "ניקיון ואחזקה",
-  "אחר",
-];
-
 const PAYMENT_TERMS = ["מזומן", "העברה בנקאית", "30 יום", "60 יום", "אחר"];
 
-const CAT_COLORS: Record<string, string> = {
-  "צילום ווידאו":     "bg-violet-100 text-violet-700",
-  "מזון ושתייה":      "bg-orange-100 text-orange-700",
-  "לוגיסטיקה והובלה": "bg-blue-100 text-blue-700",
-  "ציוד ותפאורה":     "bg-amber-100 text-amber-700",
-  "מוזיקה ו-DJ":      "bg-pink-100 text-pink-700",
-  "הדפסה ועיצוב":     "bg-teal-100 text-teal-700",
-  "טכנולוגיה":        "bg-cyan-100 text-cyan-700",
-  "מרחבים ומקומות":   "bg-green-100 text-green-700",
-  "ניקיון ואחזקה":    "bg-gray-100 text-gray-600",
-  "אחר":              "bg-gray-100 text-gray-600",
-};
+const CAT_PALETTE = [
+  "bg-violet-100 text-violet-700", "bg-orange-100 text-orange-700", "bg-blue-100 text-blue-700",
+  "bg-amber-100 text-amber-700", "bg-pink-100 text-pink-700", "bg-teal-100 text-teal-700",
+  "bg-cyan-100 text-cyan-700", "bg-green-100 text-green-700", "bg-rose-100 text-rose-700", "bg-indigo-100 text-indigo-700",
+];
+function catColor(name: string) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0xffff;
+  return CAT_PALETTE[h % CAT_PALETTE.length];
+}
+
 
 interface Supplier {
   id: string;
@@ -57,7 +43,7 @@ interface Supplier {
 }
 
 const empty: Omit<Supplier, "id" | "createdAt"> = {
-  name: "", category: "אחר", contactName: "",
+  name: "", category: "", contactName: "",
   phone: "", email: "", paymentTerms: "",
   priceRange: "", rating: 0, notes: "", details: {},
 };
@@ -107,6 +93,7 @@ export default function SuppliersPage() {
 
   const save = async () => {
     if (!form.name) return;
+    form.category = form.category.trim() || "ללא קטגוריה";
     if (editing) {
       const patch = toSnake(form as unknown as Record<string, unknown>);
       { const { error } = await supabase.from("suppliers").update(patch).eq("id", editing.id); if (error) reportDbError("suppliers", "update", error.message); }
@@ -209,6 +196,8 @@ export default function SuppliersPage() {
     setImporting(false);
   };
 
+  const categories = Array.from(new Set(suppliers.map((s) => s.category).filter(Boolean)));
+
   const filtered = suppliers.filter((s) => {
     const matchSearch = s.name.includes(search) || s.contactName.includes(search) || s.category.includes(search);
     const matchCat = catFilter === "הכל" || s.category === catFilter;
@@ -246,7 +235,7 @@ export default function SuppliersPage() {
             placeholder="חיפוש ספק..." className="w-full border rounded-lg px-4 py-2 text-sm pr-9 bg-white" />
         </div>
         <div className="flex gap-2 flex-wrap">
-          {["הכל", ...CATEGORIES].map((c) => (
+          {["הכל", ...categories].map((c) => (
             <button key={c} onClick={() => setCatFilter(c)}
               className={`px-3 py-1 rounded-full text-xs border transition-colors ${
                 catFilter === c ? "bg-[#1a1a1a] text-white border-[#1a1a1a]" : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"}`}>
@@ -271,7 +260,7 @@ export default function SuppliersPage() {
 
       {/* Stats */}
       <div className="flex gap-3 mb-5">
-        {CATEGORIES.filter((c) => suppliers.some((s) => s.category === c)).map((c) => (
+        {categories.map((c) => (
           <div key={c} className="bg-white rounded-xl px-4 py-2 shadow-sm border border-gray-100 text-center">
             <div className="text-lg font-black text-gray-800">{suppliers.filter((s) => s.category === c).length}</div>
             <div className="text-[10px] text-gray-400">{c}</div>
@@ -297,7 +286,7 @@ export default function SuppliersPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-sm">{s.name}</span>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${CAT_COLORS[s.category] || CAT_COLORS["אחר"]}`}>{s.category}</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${catColor(s.category)}`}>{s.category}</span>
                     {s.rating > 0 && (
                       <span className="text-[10px] text-amber-500">{"★".repeat(s.rating)}{"☆".repeat(5 - s.rating)}</span>
                     )}
@@ -351,10 +340,12 @@ export default function SuppliersPage() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">קטגוריה</label>
-              <select className="w-full border rounded-lg px-3 py-2 text-sm" value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}>
-                {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-              </select>
+              <input list="supplier-categories" className="w-full border rounded-lg px-3 py-2 text-sm" value={form.category}
+                placeholder="בחר קטגוריה קיימת או הקלד חדשה"
+                onChange={(e) => setForm({ ...form, category: e.target.value })} />
+              <datalist id="supplier-categories">
+                {categories.map((c) => <option key={c} value={c} />)}
+              </datalist>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>

@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { supabase, toSnake, toCamel } from "./supabase";
 
 export type LeadStatus =
+  | "פנייה יזומה"
   | "שיחה ראשונית"
   | "מחכים להצעת ערך"
   | "מחכים להצעת מחיר"

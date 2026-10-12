@@ -14,6 +14,7 @@ import { CSS } from "@dnd-kit/utilities";
 const PRODUCT_TYPES = ["ריטריט", "סדנה חד פעמית", "Offsite", "קורס", "אירוע"];
 
 const STATUSES: LeadStatus[] = [
+  "פנייה יזומה",
   "שיחה ראשונית",
   "מחכים להצעת ערך",
   "מחכים להצעת מחיר",
@@ -25,6 +26,7 @@ const STATUSES: LeadStatus[] = [
 ];
 
 const PIPELINE_STATUSES: LeadStatus[] = [
+  "פנייה יזומה",
   "שיחה ראשונית",
   "מחכים להצעת ערך",
   "מחכים להצעת מחיר",
@@ -34,6 +36,7 @@ const PIPELINE_STATUSES: LeadStatus[] = [
 ];
 
 const STATUS_COLORS: Record<LeadStatus, string> = {
+  "פנייה יזומה": "bg-slate-100 text-slate-700 border-slate-200",
   "שיחה ראשונית": "bg-blue-100 text-blue-700 border-blue-200",
   "מחכים להצעת ערך": "bg-cyan-100 text-cyan-700 border-cyan-200",
   "מחכים להצעת מחיר": "bg-purple-100 text-purple-700 border-purple-200",
@@ -45,6 +48,7 @@ const STATUS_COLORS: Record<LeadStatus, string> = {
 };
 
 const STATUS_HEADER_COLORS: Record<LeadStatus, string> = {
+  "פנייה יזומה": "bg-slate-50 border-slate-200",
   "שיחה ראשונית": "bg-blue-50 border-blue-200",
   "מחכים להצעת ערך": "bg-cyan-50 border-cyan-200",
   "מחכים להצעת מחיר": "bg-purple-50 border-purple-200",
@@ -375,7 +379,7 @@ export default function LeadsPage() {
         <DndContext sensors={sensors} collisionDetection={closestCorners}
           onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="pb-4">
-            <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(8, minmax(0, 1fr))" }}>
+            <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(9, minmax(0, 1fr))" }}>
               {[...PIPELINE_STATUSES, "נסגר" as LeadStatus, "נפל" as LeadStatus].map((status) => {
                 const statusLeads = activeLeads.filter((l) => l.status === status);
                 const totalValue = statusLeads.reduce((s, l) => s + (l.dealValue || 0), 0);

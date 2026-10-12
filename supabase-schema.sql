@@ -29,6 +29,8 @@ create table if not exists leads (
   due_date text default '',
   activity_date text default '',
   notes text default '',
+  trust_level text,
+  archived boolean default false,
   created_at text default ''
 );
 

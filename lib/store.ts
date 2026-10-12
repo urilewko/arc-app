@@ -8,7 +8,7 @@ export type LeadStatus =
   | "מחכים להצעת ערך"
   | "מחכים להצעת מחיר"
   | "פגישה"
-  | "משא ומתן"
+  | "סגירות אחרונות"
   | "ping"
   | "נסגר"
   | "נפל";
@@ -450,7 +450,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
       ]);
     set({
       contacts: contacts as unknown as Contact[],
-      leads: leads as unknown as Lead[],
+      leads: (leads as unknown as Lead[]).map((l) => (l.status as string) === "משא ומתן" ? { ...l, status: "סגירות אחרונות" } : l),
       projects: projects as unknown as Project[],
       infraProjects: infraProjects as unknown as InfraProject[],
       blocks: blocks as unknown as Block[],

@@ -380,8 +380,12 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
       const res = await fetch("/api/translate-quote", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
       });
-      const data = await res.json();
-      if (!res.ok || !data.translation) throw new Error(data.error || "Translation failed");
+      const raw = await res.text();
+      let data: { translation?: unknown; error?: string } = {};
+      try { data = JSON.parse(raw); } catch { /* non-JSON (e.g. timeout page) */ }
+      if (!res.ok || !data.translation) {
+        throw new Error(data.error || (res.status === 504 || !raw ? "התרגום לקח יותר מדי זמן — נסה שוב" : `שגיאת תרגום (${res.status})`));
+      }
       setQ((prev) => ({ ...prev, en: data.translation as QuoteEnglish }));
       setLang("en");
     } catch (e) {

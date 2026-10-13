@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// Long quotes can take 20-40s to translate; the default serverless timeout is too short.
+export const maxDuration = 60;
+
 // Translates the free-text fields of a Hebrew price quote into English.
 // The client sends only the translatable pieces; ids are echoed back so they can be matched.
 export async function POST(req: NextRequest) {

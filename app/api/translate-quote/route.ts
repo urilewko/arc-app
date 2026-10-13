@@ -36,7 +36,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Anthropic ${res.status}: ${text}` }, { status: 502 });
     }
     const data = await res.json();
-    const text: string = data?.content?.[0]?.text ?? "";
+    const blocks: { type: string; text?: string }[] = data?.content ?? [];
+    const text: string = blocks.filter((b) => b.type === "text").map((b) => b.text ?? "").join("");
+    if (!text.trim()) throw new Error("Empty translation response");
     const cleaned = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
     const translated = JSON.parse(cleaned);
     return NextResponse.json({ translation: translated });

@@ -266,7 +266,8 @@ export function buildQuoteHTML(
     .sig-block{page-break-inside:avoid;page-break-before:avoid;}
     .compact-header{padding:10px 44px 14px !important;}
     .compact-body{padding:16px 44px 20px !important}
-    .sig-block{margin-top:90px !important;}
+    .sig-block{margin-top:36px !important;padding-top:22px !important;}
+    .sig-block .sig-gap{height:92px !important;}
     tfoot.footer-space{display:table-footer-group;}
     tfoot.footer-space td{height:76px;}
   }
@@ -382,13 +383,13 @@ export function buildQuoteHTML(
     <div class="sig-block" style="margin-top:52px;padding-top:32px;border-top:1px solid #e8e3de;display:grid;grid-template-columns:1fr 1fr;gap:48px;font-family:${F};">
       <div>
         <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:8px;font-family:${F};">${tr("חתימת הלקוח")}</div>
-        <div style="height:90px;"></div>
+        <div class="sig-gap" style="height:90px;"></div>
         <div style="border-bottom:2px solid ${BRAND_TEXT};opacity:0.25;margin-bottom:8px;"></div>
         <div style="font-size:11px;color:${BRAND_TEXT};font-family:${F};">${tr("שם, תפקיד ותאריך")}</div>
       </div>
       <div>
         <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:8px;font-family:${F};">${tr("חתימת ARC")}</div>
-        <div style="height:90px;display:flex;align-items:center;justify-content:center;">
+        <div class="sig-gap" style="height:90px;display:flex;align-items:center;justify-content:center;">
           <div style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid ${BRAND_BG};border-radius:8px;padding:6px 12px;gap:3px;opacity:0.85;">
             <div style="font-size:13px;">✓</div>
             <div style="font-size:15px;font-weight:700;letter-spacing:0.5px;color:${BRAND_TEXT};font-family:${F};">${tr("חתום דיגיטלית")}</div>

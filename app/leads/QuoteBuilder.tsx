@@ -425,16 +425,20 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
   html,body{font-family:${F};background:${BRAND_PAPER};color:${BRAND_TEXT};direction:rtl;}
   table.doc{width:100%;max-width:720px;margin:32px auto;background:${BRAND_PAPER};box-shadow:0 4px 40px rgba(46,87,117,0.12);border-radius:2px;border-collapse:collapse;}
   @media(max-width:760px){table.doc{margin:0;border-radius:0;box-shadow:none;}}
-  @page{margin:0 0 58px 0;size:A4 portrait;}
+  @page{margin:0;size:A4 portrait;}
   thead{display:none;}
+  tfoot.footer-space{display:none;}
   @media print{
-    html,body{background:${BRAND_PAPER};margin:0;padding:0;zoom:0.88;}
+    html,body{background:${BRAND_PAPER};margin:0;padding:0;zoom:1.18;}
     table.doc{margin:0;box-shadow:none;max-width:100%;width:100%;border-radius:0;}
     .print-footer{position:fixed;bottom:0;left:0;right:0;width:100%;background:${BRAND_BG};display:flex;justify-content:space-between;align-items:center;padding:12px 44px;font-family:${F};z-index:10;}
     .sig-block{page-break-inside:avoid;page-break-before:avoid;}
     .compact-header{padding:10px 44px 14px !important;}
     .compact-section{padding:16px 44px !important;}
     .compact-body{padding:16px 44px 20px !important;}
+    .sig-block{margin-top:90px !important;}
+    tfoot.footer-space{display:table-footer-group;}
+    tfoot.footer-space td{height:76px;}
   }
 </style>
 </head>
@@ -580,6 +584,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
   </div>
 
   </td></tr></tbody>
+  <tfoot class="footer-space"><tr><td></td></tr></tfoot>
 </table>
 
 <!-- FOOTER: fixed in print (every page bottom), in-flow on screen -->

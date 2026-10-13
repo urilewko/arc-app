@@ -179,14 +179,18 @@ export function buildQuoteHTML(
   table.doc{width:100%;max-width:720px;margin:32px auto;background:${BRAND_PAPER};box-shadow:0 4px 40px rgba(46,87,117,0.12);border-radius:2px;border-collapse:collapse;}
   @media(max-width:760px){table.doc{margin:0;border-radius:0;box-shadow:none;}}
   thead{display:none;}
-  @page{margin:0 0 58px 0;size:A4 portrait;}
+  tfoot.footer-space{display:none;}
+  @page{margin:0;size:A4 portrait;}
   @media print{
-    html,body{background:${BRAND_PAPER};margin:0;padding:0;zoom:0.88;}
+    html,body{background:${BRAND_PAPER};margin:0;padding:0;zoom:1.18;}
     table.doc{margin:0;box-shadow:none;max-width:100%;width:100%;border-radius:0;}
     .print-footer{position:fixed;bottom:0;left:0;right:0;width:100%;background:${BRAND_BG};display:flex;justify-content:space-between;align-items:center;padding:12px 44px;font-family:${F};z-index:10;}
     .sig-block{page-break-inside:avoid;page-break-before:avoid;}
     .compact-header{padding:10px 44px 14px !important;}
-    .compact-body{padding:16px 44px 20px !important;}
+    .compact-body{padding:16px 44px 20px !important}
+    .sig-block{margin-top:90px !important;}
+    tfoot.footer-space{display:table-footer-group;}
+    tfoot.footer-space td{height:76px;}
   }
 </style>
 </head>
@@ -320,14 +324,15 @@ export function buildQuoteHTML(
 
   </div>
   </td></tr></tbody>
+  <tfoot class="footer-space"><tr><td></td></tr></tfoot>
 </table>
 
 <div class="print-footer" style="background:${BRAND_BG};display:flex;justify-content:space-between;align-items:center;direction:rtl;padding:16px 44px;font-family:${F};">
   <div>
-    <div style="font-size:17px;font-weight:700;color:${BRAND_TEXT};letter-spacing:3px;font-family:${F};">ARC</div>
-    <div style="font-size:10px;color:${BRAND_MUTED};letter-spacing:2px;text-transform:uppercase;margin-top:2px;font-family:${F};">Irreplaceable Experiences</div>
+    <div style="font-size:17px;font-weight:700;color:${BRAND_ON_BG};letter-spacing:3px;font-family:${F};">ARC</div>
+    <div style="font-size:10px;color:${BRAND_ON_BG};opacity:0.75;letter-spacing:2px;text-transform:uppercase;margin-top:2px;font-family:${F};">Irreplaceable Experiences</div>
   </div>
-  <div style="text-align:left;font-size:11px;color:${BRAND_MUTED};line-height:1.9;font-family:${F};">
+  <div style="text-align:left;font-size:11px;color:${BRAND_ON_BG};line-height:1.9;font-family:${F};">
     <div>Office@arc-exp.com</div>
     <div>052-6108102</div>
   </div>

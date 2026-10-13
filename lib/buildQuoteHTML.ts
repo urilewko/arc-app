@@ -328,8 +328,7 @@ export function buildQuoteHTML(
     <div style="font-size:10px;color:${BRAND_MUTED};letter-spacing:2px;text-transform:uppercase;margin-top:2px;font-family:${F};">Irreplaceable Experiences</div>
   </div>
   <div style="text-align:left;font-size:11px;color:${BRAND_MUTED};line-height:1.9;font-family:${F};">
-    <div style="font-weight:600;color:${BRAND_ON_BG};">אורי לבקוביץ</div>
-    <div>uri@arc-exp.com</div>
+    <div>Office@arc-exp.com</div>
     <div>052-6108102</div>
   </div>
 </div>

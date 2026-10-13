@@ -589,8 +589,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     <div style="font-size:10px;color:${BRAND_ON_BG};opacity:0.7;letter-spacing:2px;text-transform:uppercase;margin-top:2px;font-family:${F};">Irreplaceable Experiences</div>
   </div>
   <div style="text-align:left;font-size:11px;color:${BRAND_ON_BG};opacity:0.8;line-height:1.9;font-family:${F};">
-    <div style="font-weight:600;color:${BRAND_ON_BG};opacity:1;">אורי לבקוביץ</div>
-    <div>uri@arc-exp.com</div>
+    <div>Office@arc-exp.com</div>
     <div>052-6108102</div>
   </div>
 </div>
@@ -1248,8 +1247,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
                 <div style={{ fontSize: 10, color: BRAND_ON_BG, opacity: 0.7, letterSpacing: 2, textTransform: "uppercase", marginTop: 2 }}>Irreplaceable Experiences</div>
               </div>
               <div style={{ textAlign: "left", fontSize: 11, color: BRAND_ON_BG, lineHeight: 1.9, opacity: 0.8 }}>
-                <div style={{ fontWeight: 600 }}>אורי לבקוביץ</div>
-                <div>uri@arc-exp.com</div>
+                <div>Office@arc-exp.com</div>
                 <div>052-6108102</div>
               </div>
             </div>

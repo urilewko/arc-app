@@ -42,11 +42,14 @@ export async function GET(
     }
   }
 
-  const host = new URL(_req.url).origin;
+  const reqUrl = new URL(_req.url);
+  const lang = reqUrl.searchParams.get("lang") === "en" ? "en" : "he";
+  const host = reqUrl.origin;
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || host;
   const html = buildQuoteHTML(q, {
     logoUrl: `${baseUrl}/arc-logo.png`,
     selectedBlock,
+    lang,
   });
 
   return new Response(html, {

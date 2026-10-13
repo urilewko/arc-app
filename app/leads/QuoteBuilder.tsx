@@ -3,7 +3,8 @@ import { useState, useEffect, useRef } from "react";
 import { Lead, useStore } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
 import { reportDbError } from "@/lib/dbErrors";
-import { ChevronLeft, Plus, Trash2, Download, FileCode, Eye, Package, Zap, Link } from "lucide-react";
+import { ChevronLeft, Plus, Trash2, Download, FileCode, Eye, Package, Zap, Link, Languages } from "lucide-react";
+import { buildQuoteHTML, type QuoteEnglish, type QuoteLang } from "@/lib/buildQuoteHTML";
 
 // ─── Brand ───────────────────────────────────────────────────────────────────
 const BRAND_BG     = "#2e5775";
@@ -67,6 +68,7 @@ interface QuoteData {
   // block
   selectedBlockId: string;
   blockLinks: BrandLink[];
+  en?: QuoteEnglish;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -351,6 +353,50 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
 
   // ── block helpers ──
   const selectedBlock = blocks.find((b) => b.id === q.selectedBlockId);
+
+  // ── English version ────────────────────────────────────────────────
+  const [lang, setLang] = useState<QuoteLang>("he");
+  const [translating, setTranslating] = useState(false);
+  const [translateError, setTranslateError] = useState("");
+
+  const translateQuote = async () => {
+    setTranslating(true);
+    setTranslateError("");
+    try {
+      const payload = {
+        productType: q.productType, location: q.location, intro: q.intro, includes: q.includes,
+        notes: q.notes, cancellationPolicy: q.cancellationPolicy, paymentTerms: q.paymentTerms,
+        workshops: (q.workshops ?? []).map((w) => ({ id: w.id, title: w.title, description: w.description, notes: w.notes })),
+        items: (q.items ?? []).map((it) => ({ id: it.id, description: it.description })),
+        packages: (q.packages ?? []).map((pk) => ({
+          id: pk.id, name: pk.name, description: pk.description,
+          items: pk.items.map((it) => ({ id: it.id, description: it.description })),
+        })),
+        blockLinks: (q.blockLinks ?? []).map((l) => ({ id: l.id, label: l.label })),
+        block: selectedBlock
+          ? { name: selectedBlock.name, tagline: selectedBlock.tagline, description: selectedBlock.description, duration: selectedBlock.duration, groupSize: selectedBlock.groupSize }
+          : undefined,
+      };
+      const res = await fetch("/api/translate-quote", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.translation) throw new Error(data.error || "Translation failed");
+      setQ((prev) => ({ ...prev, en: data.translation as QuoteEnglish }));
+      setLang("en");
+    } catch (e) {
+      setTranslateError(String(e instanceof Error ? e.message : e));
+    }
+    setTranslating(false);
+  };
+
+  const englishHtml = lang === "en" && q.en
+    ? buildQuoteHTML(q, {
+        logoUrl: typeof window !== "undefined" ? `${window.location.origin}/arc-logo.png` : "/arc-logo.png",
+        selectedBlock: selectedBlock ? { id: selectedBlock.id, name: selectedBlock.name, tagline: selectedBlock.tagline, description: selectedBlock.description, duration: selectedBlock.duration, groupSize: selectedBlock.groupSize } : null,
+        lang: "en",
+      })
+    : "";
   const applyBlock = (blockId: string) => {
     const b = blocks.find((bl) => bl.id === blockId);
     if (!b) { setQ((prev) => ({ ...prev, selectedBlockId: "" })); return; }
@@ -605,7 +651,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
   const handlePrint = () => {
     const quoteId = versions[safeIdx]?.id;
     const base = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
-    const url = quoteId ? `${base}/quote/${quoteId}` : null;
+    const url = quoteId ? `${base}/quote/${quoteId}${lang === "en" ? "?lang=en" : ""}` : null;
     if (url) {
       const win = window.open(url, "_blank");
       if (!win) return;
@@ -639,7 +685,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     const quoteId = versions[safeIdx]?.id;
     if (!quoteId) return;
     const base = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
-    await navigator.clipboard.writeText(`${base}/quote/${quoteId}`);
+    await navigator.clipboard.writeText(`${base}/quote/${quoteId}${lang === "en" ? "?lang=en" : ""}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -691,6 +737,20 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
               <Eye size={13} /> תצוגה
             </button>
           </div>
+          <div className="flex bg-white/20 rounded-lg overflow-hidden text-sm">
+            <button onClick={() => setLang("he")}
+              className={`px-3 py-2 ${lang === "he" ? "bg-white/30 text-white" : "text-white/60 hover:text-white"}`}>עב</button>
+            <button onClick={() => (q.en ? setLang("en") : translateQuote())} disabled={translating}
+              className={`flex items-center gap-1.5 px-3 py-2 ${lang === "en" ? "bg-white/30 text-white" : "text-white/60 hover:text-white"} disabled:opacity-60`}>
+              <Languages size={13} /> {translating ? "מתרגם..." : "EN"}
+            </button>
+          </div>
+          {lang === "en" && (
+            <button onClick={translateQuote} disabled={translating} title="תרגם מחדש אחרי עריכות"
+              className="text-xs text-white/70 hover:text-white underline disabled:opacity-60">
+              {translating ? "מתרגם..." : "תרגם מחדש"}
+            </button>
+          )}
           <button onClick={handleCopyLink}
             className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white text-sm px-3 py-2 rounded-lg transition-colors">
             <Link size={14} /> {copied ? "הועתק!" : "שלח הצעה"}
@@ -1049,7 +1109,13 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
         {/* ── PREVIEW PANEL ── */}
         <div className={`flex-1 overflow-y-auto p-6 ${tab === "edit" ? "hidden md:block" : ""}`}
           style={{ background: BRAND_PAPER, fontFamily: FONT }}>
-          <div className="max-w-[740px] mx-auto shadow-2xl" style={{ background: BRAND_PAPER, fontFamily: FONT }}>
+          {translateError && (
+            <div className="max-w-[740px] mx-auto mb-3 bg-red-50 text-red-600 text-sm rounded-lg px-4 py-2">{translateError}</div>
+          )}
+          {lang === "en" && englishHtml && (
+            <iframe title="English preview" srcDoc={englishHtml} className="w-full max-w-[740px] mx-auto block shadow-2xl bg-white" style={{ height: 1400, border: 0 }} />
+          )}
+          <div className={`max-w-[740px] mx-auto shadow-2xl ${lang === "en" && englishHtml ? "hidden" : ""}`} style={{ background: BRAND_PAPER, fontFamily: FONT }}>
 
             {/* Header */}
             <div style={{ background: BRAND_BG, padding: "20px 48px 18px", direction: "rtl", fontFamily: FONT }}>

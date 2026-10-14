@@ -4,7 +4,7 @@ import { Lead, useStore } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
 import { reportDbError } from "@/lib/dbErrors";
 import { ChevronLeft, Plus, Trash2, Download, FileCode, Eye, Package, Zap, Link, Languages } from "lucide-react";
-import { buildQuoteHTML, type QuoteEnglish, type QuoteLang } from "@/lib/buildQuoteHTML";
+import { buildQuoteHTML, FIXED_TEXT_GROUPS, defaultFixedText, type QuoteEnglish, type QuoteLang, type QuoteLabels } from "@/lib/buildQuoteHTML";
 
 // ─── Brand ───────────────────────────────────────────────────────────────────
 const BRAND_BG     = "#2e5775";
@@ -69,6 +69,7 @@ interface QuoteData {
   selectedBlockId: string;
   blockLinks: BrandLink[];
   en?: QuoteEnglish;
+  labels?: QuoteLabels;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -212,6 +213,18 @@ function itemsTableHTML(items: QuoteItem[]): string {
         </div>
       </div>
     </div>`;
+}
+
+function QuotePreviewFrame({ html }: { html: string }) {
+  const ref = useRef<HTMLIFrameElement>(null);
+  const fit = () => {
+    const doc = ref.current?.contentDocument;
+    if (doc) ref.current!.style.height = `${doc.documentElement.scrollHeight + 8}px`;
+  };
+  return (
+    <iframe ref={ref} title="Quote preview" srcDoc={html} onLoad={fit}
+      className="w-full max-w-[740px] mx-auto block shadow-2xl" style={{ height: 1200, border: 0, background: BRAND_PAPER }} />
+  );
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -394,13 +407,11 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     setTranslating(false);
   };
 
-  const englishHtml = lang === "en" && q.en
-    ? buildQuoteHTML(q, {
-        logoUrl: typeof window !== "undefined" ? `${window.location.origin}/arc-logo.png` : "/arc-logo.png",
-        selectedBlock: selectedBlock ? { id: selectedBlock.id, name: selectedBlock.name, tagline: selectedBlock.tagline, description: selectedBlock.description, duration: selectedBlock.duration, groupSize: selectedBlock.groupSize } : null,
-        lang: "en",
-      })
-    : "";
+  const previewHtml = buildQuoteHTML(q, {
+    logoUrl: typeof window !== "undefined" ? `${window.location.origin}/arc-logo.png` : "/arc-logo.png",
+    selectedBlock: selectedBlock ? { id: selectedBlock.id, name: selectedBlock.name, tagline: selectedBlock.tagline, description: selectedBlock.description, duration: selectedBlock.duration, groupSize: selectedBlock.groupSize } : null,
+    lang: lang === "en" && q.en ? "en" : "he",
+  });
   const applyBlock = (blockId: string) => {
     const b = blocks.find((bl) => bl.id === blockId);
     if (!b) { setQ((prev) => ({ ...prev, selectedBlockId: "" })); return; }
@@ -426,233 +437,6 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
   const vat   = Math.round(sub * 0.18);
   const total = sub + vat;
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // HTML generation
-  // ──────────────────────────────────────────────────────────────────────────
-  const buildHTML = (forPrint = false) => {
-    void forPrint;
-    const activeLinks = q.blockLinks.filter((l) => l.url);
-    const F = FONT;
-    const packagesHTML = q.packages.map((pkg) => {
-      const pkgSub = calcItems(pkg.items);
-      const pkgVat = Math.round(pkgSub * 0.18);
-      return `
-      <div style="border:2px solid ${pkg.isRecommended ? BRAND_ACCENT : "#e5e0db"};border-radius:12px;overflow:hidden;font-family:${F};page-break-inside:avoid;">
-        ${pkg.isRecommended
-          ? `<div style="background:${BRAND_ACCENT};color:white;text-align:center;font-size:11px;font-weight:700;letter-spacing:1px;padding:6px;text-transform:uppercase;font-family:${F};">מומלץ</div>`
-          : `<div style="height:29px;background:#d4c9bc;"></div>`}
-        <div style="padding:20px 18px;">
-          <div style="font-size:16px;font-weight:700;color:${BRAND_TEXT};margin-bottom:6px;font-family:${F};">${pkg.name}</div>
-          ${pkg.description ? `<div style="font-size:12px;color:${BRAND_TEXT};margin-bottom:14px;font-family:${F};">${pkg.description}</div>` : ""}
-          ${pkg.items.map((it) => `
-            <div style="display:flex;justify-content:space-between;font-size:12px;color:${BRAND_TEXT};padding:5px 0;border-bottom:1px solid #f0ece8;font-family:${F};">
-              <span>${it.description || "—"}${it.quantity > 1 ? ` ×${it.quantity}` : ""}</span>
-              <span style="font-weight:600;">${fmt(it.quantity * it.unitPrice)}</span>
-            </div>`).join("")}
-          <div style="margin-top:14px;padding-top:10px;border-top:2px solid ${BRAND_TEXT};font-family:${F};">
-            <div style="display:flex;justify-content:space-between;font-size:11px;color:${BRAND_TEXT};margin-bottom:3px;">
-              <span>לפני מע״מ</span><span>${fmt(pkgSub)}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:${BRAND_TEXT};">
-              <span>סה״כ + מע״מ</span><span>${fmt(pkgSub + pkgVat)}</span>
-            </div>
-          </div>
-        </div>
-      </div>`;
-    }).join("");
-
-    return `<!DOCTYPE html>
-<html dir="rtl" lang="he">
-<head>
-<meta charset="UTF-8"/>
-<title>הצעת מחיר — ${q.orgName}</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
-<style>
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
-  html,body{font-family:${F};background:${BRAND_PAPER};color:${BRAND_TEXT};direction:rtl;}
-  table.doc{width:100%;max-width:720px;margin:32px auto;background:${BRAND_PAPER};box-shadow:0 4px 40px rgba(46,87,117,0.12);border-radius:2px;border-collapse:collapse;}
-  @media(max-width:760px){table.doc{margin:0;border-radius:0;box-shadow:none;}}
-  @page{margin:0;size:A4 portrait;}
-  thead{display:none;}
-  tfoot.footer-space{display:none;}
-  @media print{
-    html,body{background:${BRAND_PAPER};margin:0;padding:0;zoom:1.18;}
-    table.doc{margin:0;box-shadow:none;max-width:100%;width:100%;border-radius:0;}
-    .print-footer{position:fixed;bottom:0;left:0;right:0;width:100%;background:${BRAND_BG};display:flex;justify-content:space-between;align-items:center;padding:12px 44px;font-family:${F};z-index:10;}
-    .sig-block{page-break-inside:avoid;page-break-before:avoid;}
-    .compact-header{padding:10px 44px 14px !important;}
-    .compact-section{padding:16px 44px !important;}
-    .compact-body{padding:16px 44px 20px !important;}
-    .sig-block{margin-top:36px !important;padding-top:22px !important;}
-    .sig-block .sig-gap{height:92px !important;}
-    tfoot.footer-space{display:table-footer-group;}
-    tfoot.footer-space td{height:76px;}
-  }
-</style>
-</head>
-<body>
-<table class="doc">
-
-  <!-- THIN HEADER — repeats on every page via thead -->
-  <thead>
-    <tr><td style="padding:0;">
-      <div style="background:${BRAND_BG};height:44px;display:flex;align-items:center;padding:0 44px;justify-content:space-between;direction:rtl;font-family:${F};">
-        <div style="font-size:15px;font-weight:700;color:${BRAND_ON_BG};letter-spacing:3px;font-family:${F};">ARC</div>
-        <div style="font-size:9px;color:${BRAND_ON_BG};opacity:0.6;letter-spacing:2px;text-transform:uppercase;font-family:${F};">Irreplaceable Experiences</div>
-      </div>
-    </td></tr>
-  </thead>
-
-
-  <!-- CONTENT -->
-  <tbody><tr><td style="padding:0;">
-
-    <!-- THICK HEADER (page 1) — sits right after the thin thead bar -->
-    <div class="compact-header" style="background:${BRAND_BG};padding:16px 44px 20px;direction:rtl;font-family:${F};">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <div style="text-align:left;font-family:${F};">
-          <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_ON_BG};opacity:0.6;">הצעת מחיר</div>
-        </div>
-        <div>${buildLogoTag(logoDataUrl)}</div>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:flex-end;">
-        <div>
-          <div style="font-size:26px;font-weight:700;color:${BRAND_ON_BG};font-family:${F};">${q.orgName || "שם הארגון"}</div>
-          ${q.contactName ? `<div style="font-size:13px;color:${BRAND_ON_BG};margin-top:4px;font-family:${F};">${q.contactName}</div>` : ""}
-          ${q.productType ? `<div style="font-size:11px;color:${BRAND_ON_BG};letter-spacing:1px;text-transform:uppercase;margin-top:6px;font-family:${F};">${q.productType}</div>` : ""}
-        </div>
-        <div style="text-align:left;font-size:12px;color:${BRAND_ON_BG};line-height:2;font-family:${F};">
-          <div><strong style="color:${BRAND_ON_BG};">תאריך הצעה:</strong> ${formatDate(q.quoteDate)}</div>
-          <div><strong style="color:${BRAND_ON_BG};">תוקף עד:</strong> ${formatDate(q.validUntil)}</div>
-          ${q.eventDate ? `<div><strong style="color:${BRAND_ON_BG};">תאריך אירוע:</strong> ${formatDate(q.eventDate)}</div>` : ""}
-          ${q.participants ? `<div><strong style="color:${BRAND_ON_BG};">משתתפים:</strong> ${q.participants}</div>` : ""}
-          ${q.location ? `<div><strong style="color:${BRAND_ON_BG};">מיקום:</strong> ${q.location}</div>` : ""}
-        </div>
-      </div>
-    </div>
-
-  <!-- BODY -->
-  <div class="compact-body content-pad" style="padding:36px 44px;direction:rtl;font-family:${F};">
-
-    ${q.intro ? `<p style="font-size:14px;line-height:1.85;color:${BRAND_TEXT};margin-bottom:40px;white-space:pre-line;font-family:${F};">${q.intro}</p>` : ""}
-
-    ${(q.workshops ?? []).length > 0 ? `
-    <div style="margin-bottom:40px;font-family:${F};">
-      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:16px;border-bottom:2px solid ${BRAND_BG};padding-bottom:6px;font-family:${F};">תוכנית הפעילות</div>
-      ${(q.workshops ?? []).map((ws, i) => `
-      <div style="margin-bottom:20px;padding:18px 22px;background:#d4c9bc;border-radius:10px;border-right:4px solid ${BRAND_BG};font-family:${F};">
-        <div style="font-size:15px;font-weight:700;color:${BRAND_TEXT};margin-bottom:8px;font-family:${F};">${i + 1}. ${ws.title || "סדנה"}</div>
-        ${ws.description ? `<div style="font-size:13px;color:${BRAND_TEXT};line-height:1.8;white-space:pre-line;font-family:${F};">${ws.description}</div>` : ""}
-        ${ws.notes ? `<div style="margin-top:10px;font-size:12px;color:${BRAND_TEXT};font-style:italic;font-family:${F};">📌 ${ws.notes}</div>` : ""}
-      </div>`).join("")}
-    </div>` : ""}
-
-    ${selectedBlock && selectedBlock.description ? `
-    <div style="background:#d4c9bc;border-right:4px solid ${BRAND_BG};padding:20px 24px;border-radius:0 10px 10px 0;margin-bottom:36px;font-family:${F};">
-      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_BG};margin-bottom:8px;font-family:${F};">⚡ על החוויה</div>
-      <div style="font-size:15px;font-weight:700;color:${BRAND_TEXT};margin-bottom:6px;font-family:${F};">${selectedBlock.name}</div>
-      ${selectedBlock.tagline ? `<div style="font-size:13px;color:${BRAND_TEXT};font-style:italic;margin-bottom:10px;font-family:${F};">"${selectedBlock.tagline}"</div>` : ""}
-      <div style="font-size:13px;color:${BRAND_TEXT};line-height:1.75;font-family:${F};">${selectedBlock.description}</div>
-      ${selectedBlock.duration || selectedBlock.groupSize ? `
-      <div style="display:flex;gap:20px;margin-top:12px;font-size:12px;color:${BRAND_TEXT};font-family:${F};">
-        ${selectedBlock.duration ? `<span>⏱ ${selectedBlock.duration}</span>` : ""}
-        ${selectedBlock.groupSize ? `<span>👥 ${selectedBlock.groupSize}</span>` : ""}
-      </div>` : ""}
-    </div>` : ""}
-
-    <!-- SERVICES -->
-    <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:14px;font-family:${F};border-bottom:2px solid ${BRAND_BG};padding-bottom:6px;">
-      ${q.mode === "packages" ? "אפשרויות לבחירה" : "פירוט השירותים"}
-    </div>
-
-    ${q.mode === "single"
-      ? itemsTableHTML(q.items)
-      : `<div style="display:flex;flex-direction:column;gap:16px;">${packagesHTML}</div>`
-    }
-
-    ${q.includes ? `
-    <div style="margin-top:36px;">
-      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:12px;border-bottom:2px solid ${BRAND_BG};padding-bottom:6px;font-family:${F};">מה כלול</div>
-      <div style="font-size:13px;color:${BRAND_TEXT};line-height:1.8;white-space:pre-line;font-family:${F};">${q.includes}</div>
-    </div>` : ""}
-
-    ${q.notes ? `
-    <div style="background:#d4c9bc;border-right:3px solid ${BRAND_BG};padding:16px 20px;margin-top:36px;font-size:13px;color:${BRAND_TEXT};line-height:1.75;white-space:pre-line;border-radius:0 8px 8px 0;font-family:${F};">
-      <strong style="color:${BRAND_TEXT};">הערות:</strong><br/>${q.notes}
-    </div>` : ""}
-
-    <!-- TERMS GRID -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:28px;font-family:${F};">
-      ${q.paymentTerms ? `
-      <div style="background:#d4c9bc;border-radius:8px;padding:14px 16px;">
-        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:6px;font-family:${F};">תנאי תשלום</div>
-        <div style="font-size:12px;color:${BRAND_TEXT};line-height:1.7;font-family:${F};">${q.paymentTerms}</div>
-      </div>` : ""}
-      ${q.cancellationPolicy ? `
-      <div style="background:#d4c9bc;border-radius:8px;padding:14px 16px;">
-        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:6px;font-family:${F};">מדיניות ביטול</div>
-        <div style="font-size:12px;color:${BRAND_TEXT};line-height:1.7;font-family:${F};">${q.cancellationPolicy}</div>
-      </div>` : ""}
-    </div>
-
-    ${activeLinks.length > 0 ? `
-    <div style="margin-top:36px;">
-      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:12px;border-bottom:2px solid ${BRAND_BG};padding-bottom:6px;font-family:${F};">חומרים נוספים</div>
-      <div style="display:flex;flex-wrap:wrap;gap:10px;">
-        ${activeLinks.map((l) => `
-        <a href="${l.url}" target="_blank"
-           style="display:inline-flex;align-items:center;gap:6px;background:#d4c9bc;border:1px solid ${BRAND_BG};border-radius:8px;padding:8px 14px;font-size:13px;color:${BRAND_TEXT};text-decoration:none;font-weight:600;font-family:${F};">
-          🔗 ${l.label || l.url}
-        </a>`).join("")}
-      </div>
-    </div>` : ""}
-
-    <!-- SIGNATURE -->
-    <div class="sig-block" style="margin-top:52px;padding-top:32px;border-top:1px solid #e8e3de;display:grid;grid-template-columns:1fr 1fr;gap:48px;font-family:${F};">
-      <div>
-        <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:8px;font-family:${F};">חתימת הלקוח</div>
-        <div class="sig-gap" style="height:90px;"></div>
-        <div style="border-bottom:2px solid ${BRAND_TEXT};opacity:0.25;margin-bottom:8px;"></div>
-        <div style="font-size:11px;color:${BRAND_TEXT};font-family:${F};">שם, תפקיד ותאריך</div>
-      </div>
-      <div>
-        <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:8px;font-family:${F};">חתימת ARC</div>
-        <div class="sig-gap" style="height:90px;display:flex;align-items:center;justify-content:center;">
-          <div style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid ${BRAND_BG};border-radius:8px;padding:6px 12px;gap:3px;opacity:0.85;">
-            <div style="font-size:13px;">✓</div>
-            <div style="font-size:15px;font-weight:700;letter-spacing:0.5px;color:${BRAND_TEXT};font-family:${F};">חתום דיגיטלית</div>
-            <div style="font-size:9px;color:${BRAND_TEXT};font-family:${F};">${new Date().toLocaleDateString("he-IL")}</div>
-          </div>
-        </div>
-        <div style="border-bottom:2px solid ${BRAND_TEXT};opacity:0.25;margin-bottom:8px;"></div>
-        <div style="font-size:11px;color:${BRAND_TEXT};font-family:${F};">אורי לבקוביץ, ARC</div>
-      </div>
-    </div>
-
-  </div>
-
-  </td></tr></tbody>
-  <tfoot class="footer-space"><tr><td></td></tr></tfoot>
-</table>
-
-<!-- FOOTER: fixed in print (every page bottom), in-flow on screen -->
-<div class="print-footer" style="background:${BRAND_BG};display:flex;justify-content:space-between;align-items:center;direction:rtl;padding:16px 44px;font-family:${F};">
-  <div>
-    <div style="font-size:17px;font-weight:700;color:${BRAND_ON_BG};letter-spacing:3px;font-family:${F};">ARC</div>
-    <div style="font-size:10px;color:${BRAND_ON_BG};opacity:0.7;letter-spacing:2px;text-transform:uppercase;margin-top:2px;font-family:${F};">Irreplaceable Experiences</div>
-  </div>
-  <div style="text-align:left;font-size:11px;color:${BRAND_ON_BG};opacity:0.8;line-height:1.9;font-family:${F};">
-    <div>Office@arc-exp.com</div>
-    <div>052-6108102</div>
-  </div>
-</div>
-</body>
-</html>`;
-  };
-
   const handlePrint = () => {
     const quoteId = versions[safeIdx]?.id;
     const base = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
@@ -664,7 +448,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
       win.addEventListener("load", () => setTimeout(() => win.print(), 500));
     } else {
       // fallback — no saved quote yet
-      const html = buildHTML(true);
+      const html = previewHtml;
       const win = window.open("", "_blank", "width=900,height=720");
       if (!win) return;
       win.document.write(html);
@@ -672,17 +456,6 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
       win.focus();
       setTimeout(() => win.print(), 500);
     }
-  };
-
-  const handleDownloadHTML = () => {
-    const html = buildHTML(false);
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `הצעת-מחיר-${q.orgName}-${q.quoteDate}.html`;
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   const [copied, setCopied] = useState(false);
@@ -1105,6 +878,46 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
                   <textarea className="w-full border rounded-lg px-3 py-2 text-sm resize-y" rows={2} style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
                     value={q.cancellationPolicy} onChange={(e) => setQ({ ...q, cancellationPolicy: e.target.value })} />
                 </div>
+
+                {/* Every fixed text on the document — headings, labels, signature and footer */}
+                <div className="pt-2 border-t border-gray-200">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">טקסטים קבועים במסמך</label>
+                    <span className="text-[11px] text-gray-400">עורך את הגרסה: {lang === "en" ? "English" : "עברית"}</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mb-3">כותרות, תוויות, חתימות ותחתית. השאר ריק כדי להשתמש בברירת המחדל.</p>
+                  {FIXED_TEXT_GROUPS.map((g) => (
+                    <details key={g.title} className="mb-2 rounded-lg border border-gray-200 bg-white">
+                      <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-gray-600">{g.title}</summary>
+                      <div className="px-3 pb-3 space-y-2">
+                        {g.keys.map((key) => {
+                          const active: QuoteLang = lang === "en" && q.en ? "en" : "he";
+                          const value = q.labels?.[active]?.[key] ?? "";
+                          return (
+                            <div key={key} className="flex items-center gap-2">
+                              <input className="flex-1 border rounded-lg px-3 py-1.5 text-sm"
+                                dir={active === "en" ? "ltr" : "rtl"}
+                                placeholder={defaultFixedText(key, active)}
+                                value={value}
+                                onChange={(e) => setQ((prev) => ({
+                                  ...prev,
+                                  labels: { ...prev.labels, [active]: { ...prev.labels?.[active], [key]: e.target.value } },
+                                }))} />
+                              {value && (
+                                <button title="החזר לברירת מחדל" className="text-xs text-gray-400 hover:text-gray-700"
+                                  onClick={() => setQ((prev) => {
+                                    const cur = { ...prev.labels?.[active] };
+                                    delete cur[key];
+                                    return { ...prev, labels: { ...prev.labels, [active]: cur } };
+                                  })}>איפוס</button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </details>
+                  ))}
+                </div>
               </>
             )}
 
@@ -1117,218 +930,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
           {translateError && (
             <div className="max-w-[740px] mx-auto mb-3 bg-red-50 text-red-600 text-sm rounded-lg px-4 py-2">{translateError}</div>
           )}
-          {lang === "en" && englishHtml && (
-            <iframe title="English preview" srcDoc={englishHtml} className="w-full max-w-[740px] mx-auto block shadow-2xl bg-white" style={{ height: 1400, border: 0 }} />
-          )}
-          <div className={`max-w-[740px] mx-auto shadow-2xl ${lang === "en" && englishHtml ? "hidden" : ""}`} style={{ background: BRAND_PAPER, fontFamily: FONT }}>
-
-            {/* Header */}
-            <div style={{ background: BRAND_BG, padding: "20px 48px 18px", direction: "rtl", fontFamily: FONT }}>
-              <div className="flex justify-between items-center mb-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/arc-logo.png" alt="ARC" style={{ height: 32, width: "auto", maxWidth: 140, objectFit: "contain", display: "block", filter: "brightness(0) saturate(100%) invert(93%) sepia(10%) saturate(300%) hue-rotate(330deg) brightness(102%)" }} />
-                <div style={{ textAlign: "left", fontFamily: FONT }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: BRAND_ON_BG, opacity: 0.6 }}>הצעת מחיר</div>
-                </div>
-              </div>
-              <div className="flex justify-between items-end">
-                <div>
-                  <div style={{ fontSize: 22, fontWeight: 700, color: BRAND_ON_BG, fontFamily: FONT }}>{q.orgName || "שם הארגון"}</div>
-                  {q.contactName && <div style={{ fontSize: 13, color: BRAND_ON_BG, marginTop: 2, opacity: 0.75, fontFamily: FONT }}>{q.contactName}</div>}
-                  {q.productType && <div style={{ fontSize: 11, color: BRAND_ON_BG, opacity: 0.6, letterSpacing: 1, textTransform: "uppercase", marginTop: 5, fontFamily: FONT }}>{q.productType}</div>}
-                </div>
-                <div style={{ textAlign: "left", fontSize: 12, color: BRAND_ON_BG, opacity: 0.8, lineHeight: 1.9, fontFamily: FONT }}>
-                  <div><strong>תאריך הצעה:</strong> {formatDate(q.quoteDate)}</div>
-                  <div><strong>תוקף:</strong> {formatDate(q.validUntil)}</div>
-                  {q.eventDate && <div><strong>תאריך אירוע:</strong> {formatDate(q.eventDate)}</div>}
-                  {q.participants && <div><strong>משתתפים:</strong> {q.participants}</div>}
-                  {q.location && <div><strong>מיקום:</strong> {q.location}</div>}
-                </div>
-              </div>
-            </div>
-
-            {/* Body */}
-            <div style={{ padding: "44px 52px", direction: "rtl", fontFamily: FONT }}>
-
-              {q.intro && <p style={{ fontSize: 13.5, lineHeight: 1.85, color: BRAND_TEXT, marginBottom: 36, whiteSpace: "pre-wrap", wordBreak: "break-word", overflowWrap: "break-word", fontFamily: FONT }}>{q.intro}</p>}
-
-              {/* Workshops */}
-              {(q.workshops ?? []).length > 0 && (
-                <div style={{ marginBottom: 36, fontFamily: FONT }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: BRAND_TEXT, marginBottom: 14, borderBottom: `2px solid ${BRAND_BG}`, paddingBottom: 5 }}>תוכנית הפעילות</div>
-                  {(q.workshops ?? []).map((ws, i) => (
-                    <div key={ws.id} style={{ marginBottom: 16, padding: "16px 20px", background: "#d4c9bc", borderRadius: 10, borderRight: `4px solid ${BRAND_BG}` }}>
-                      <div style={{ fontSize: 14, fontWeight: 700, color: BRAND_TEXT, marginBottom: 6 }}>{i + 1}. {ws.title || "סדנה"}</div>
-                      {ws.description && <div style={{ fontSize: 13, color: BRAND_TEXT, lineHeight: 1.8, whiteSpace: "pre-line" }}>{ws.description}</div>}
-                      {ws.notes && <div style={{ marginTop: 8, fontSize: 12, color: BRAND_TEXT, fontStyle: "italic" }}>📌 {ws.notes}</div>}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Block info */}
-              {selectedBlock && selectedBlock.description && (
-                <div style={{ background: "#d4c9bc", borderRight: `4px solid ${BRAND_BG}`, padding: "18px 22px", borderRadius: "0 10px 10px 0", marginBottom: 32, fontFamily: FONT }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: BRAND_TEXT, marginBottom: 6 }}>⚡ על החוויה</div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: BRAND_TEXT, marginBottom: 4 }}>{selectedBlock.name}</div>
-                  {selectedBlock.tagline && <div style={{ fontSize: 12, color: BRAND_TEXT, fontStyle: "italic", marginBottom: 8 }}>"{selectedBlock.tagline}"</div>}
-                  <div style={{ fontSize: 13, color: BRAND_TEXT, lineHeight: 1.75 }}>{selectedBlock.description}</div>
-                  <div className="flex gap-4 mt-2" style={{ fontSize: 12, color: BRAND_TEXT }}>
-                    {selectedBlock.duration && <span>⏱ {selectedBlock.duration}</span>}
-                    {selectedBlock.groupSize && <span>👥 {selectedBlock.groupSize}</span>}
-                  </div>
-                </div>
-              )}
-
-              {/* Section label */}
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: BRAND_TEXT, marginBottom: 12, borderBottom: `2px solid ${BRAND_BG}`, paddingBottom: 5, fontFamily: FONT }}>
-                {q.mode === "packages" ? "אפשרויות לבחירה" : "פירוט השירותים"}
-              </div>
-
-              {q.mode === "single" ? (
-                <>
-                  <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 8, fontFamily: FONT }}>
-                    <thead>
-                      <tr>
-                        {(["תיאור", "כמות", "מחיר יחידה", "סה״כ"] as const).map((h, i) => (
-                          <th key={h} style={{ textAlign: i === 0 ? "right" : i === 1 ? "center" : "left", fontSize: 11, fontWeight: 600, color: BRAND_TEXT, padding: "7px 10px", borderBottom: `2px solid ${BRAND_BG}`, width: i === 0 ? "50%" : i === 1 ? "15%" : "17.5%", fontFamily: FONT }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {q.items.map((it) => (
-                        <tr key={it.id}>
-                          <td style={{ padding: "11px 10px", fontSize: 13, borderBottom: "1px solid #f0ece8", fontWeight: 600, color: BRAND_TEXT }}>{it.description || "—"}</td>
-                          <td style={{ padding: "11px 10px", fontSize: 13, borderBottom: "1px solid #f0ece8", textAlign: "center", color: "#777" }}>{it.quantity}</td>
-                          <td style={{ padding: "11px 10px", fontSize: 13, borderBottom: "1px solid #f0ece8", textAlign: "left", color: "#777" }}>{fmt(it.unitPrice)}</td>
-                          <td style={{ padding: "11px 10px", fontSize: 13, borderBottom: "1px solid #f0ece8", textAlign: "left", fontWeight: 700, color: BRAND_TEXT }}>{fmt(it.quantity * it.unitPrice)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  <div className="flex justify-end">
-                    <div style={{ width: 260, fontFamily: FONT }}>
-                      <div className="flex justify-between" style={{ fontSize: 12, color: BRAND_TEXT, padding: "4px 0" }}><span>לפני מע״מ</span><span>{fmt(sub)}</span></div>
-                      <div className="flex justify-between" style={{ fontSize: 12, color: BRAND_TEXT, padding: "4px 0" }}><span>מע״מ 18%</span><span>{fmt(vat)}</span></div>
-                      <div className="flex justify-between" style={{ fontSize: 18, fontWeight: 700, color: BRAND_TEXT, borderTop: `2px solid ${BRAND_TEXT}`, paddingTop: 10, marginTop: 4 }}>
-                        <span>סה״כ לתשלום</span><span>{fmt(total)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="flex flex-col gap-4">
-                  {q.packages.map((pkg) => {
-                    const pkgSub = calcItems(pkg.items);
-                    const pkgTotal = pkgSub + Math.round(pkgSub * 0.18);
-                    return (
-                      <div key={pkg.id} className="rounded-xl overflow-hidden" style={{ border: `2px solid ${pkg.isRecommended ? BRAND_BG : "#e5e0db"}`, fontFamily: FONT }}>
-                        {pkg.isRecommended
-                          ? <div className="text-center text-xs font-bold py-1.5 tracking-widest" style={{ background: BRAND_BG, color: BRAND_TEXT }}>מומלץ</div>
-                          : <div style={{ height: 28, background: "#d4c9bc" }} />}
-                        <div style={{ padding: "16px 14px" }}>
-                          <div style={{ fontSize: 15, fontWeight: 700, color: BRAND_TEXT, marginBottom: 4 }}>{pkg.name}</div>
-                          {pkg.description && <div style={{ fontSize: 11, color: BRAND_TEXT, marginBottom: 12 }}>{pkg.description}</div>}
-                          {pkg.items.map((it) => (
-                            <div key={it.id} className="flex justify-between" style={{ fontSize: 12, color: BRAND_TEXT, padding: "4px 0", borderBottom: "1px solid #f0ece8" }}>
-                              <span>{it.description || "—"}{it.quantity > 1 ? ` ×${it.quantity}` : ""}</span>
-                              <span style={{ fontWeight: 600 }}>{fmt(it.quantity * it.unitPrice)}</span>
-                            </div>
-                          ))}
-                          <div style={{ marginTop: 12, paddingTop: 8, borderTop: `2px solid ${BRAND_TEXT}` }}>
-                            <div className="flex justify-between" style={{ fontSize: 11, color: BRAND_TEXT, marginBottom: 2 }}><span>לפני מע״מ</span><span>{fmt(pkgSub)}</span></div>
-                            <div className="flex justify-between" style={{ fontSize: 15, fontWeight: 700, color: BRAND_TEXT }}><span>סה״כ + מע״מ</span><span>{fmt(pkgTotal)}</span></div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Includes */}
-              {q.includes && (
-                <div style={{ marginTop: 32, fontFamily: FONT }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: BRAND_TEXT, marginBottom: 10, borderBottom: `2px solid ${BRAND_BG}`, paddingBottom: 5 }}>מה כלול</div>
-                  <div style={{ fontSize: 13, color: BRAND_TEXT, lineHeight: 1.8, whiteSpace: "pre-line" }}>{q.includes}</div>
-                </div>
-              )}
-
-              {/* Notes */}
-              {q.notes && (
-                <div style={{ background: "#d4c9bc", borderRight: `3px solid ${BRAND_BG}`, padding: "14px 18px", marginTop: 28, fontSize: 13, color: BRAND_TEXT, lineHeight: 1.75, whiteSpace: "pre-line", borderRadius: "0 8px 8px 0", fontFamily: FONT }}>
-                  <strong style={{ color: BRAND_TEXT }}>הערות:</strong><br />{q.notes}
-                </div>
-              )}
-
-              {/* Terms grid */}
-              {(q.paymentTerms || q.cancellationPolicy) && (
-                <div className="grid grid-cols-2 gap-4 mt-6">
-                  {q.paymentTerms && (
-                    <div style={{ background: "#d4c9bc", borderRadius: 8, padding: "13px 15px", fontFamily: FONT }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: BRAND_TEXT, marginBottom: 5 }}>תנאי תשלום</div>
-                      <div style={{ fontSize: 12, color: BRAND_TEXT, lineHeight: 1.7 }}>{q.paymentTerms}</div>
-                    </div>
-                  )}
-                  {q.cancellationPolicy && (
-                    <div style={{ background: "#d4c9bc", borderRadius: 8, padding: "13px 15px", fontFamily: FONT }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: BRAND_TEXT, marginBottom: 5 }}>מדיניות ביטול</div>
-                      <div style={{ fontSize: 12, color: BRAND_TEXT, lineHeight: 1.7 }}>{q.cancellationPolicy}</div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Links */}
-              {q.blockLinks.filter((l) => l.url).length > 0 && (
-                <div style={{ marginTop: 32, fontFamily: FONT }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", color: BRAND_TEXT, marginBottom: 10, borderBottom: `2px solid ${BRAND_BG}`, paddingBottom: 5 }}>חומרים נוספים</div>
-                  <div className="flex flex-wrap gap-2">
-                    {q.blockLinks.filter((l) => l.url).map((l) => (
-                      <span key={l.id} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#d4c9bc", border: `1px solid ${BRAND_BG}`, borderRadius: 8, padding: "7px 14px", fontSize: 12, color: BRAND_TEXT, fontWeight: 600, fontFamily: FONT }}>
-                        🔗 {l.label || l.url}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Signature */}
-              <div style={{ marginTop: 48, paddingTop: 28, borderTop: "1px solid #e8e3de", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48, fontFamily: FONT }}>
-                <div>
-                  <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", color: BRAND_TEXT, marginBottom: 8 }}>חתימת הלקוח</div>
-                  <div style={{ height: 90 }} />
-                  <div style={{ borderBottom: `2px solid ${BRAND_TEXT}`, opacity: 0.25, marginBottom: 8 }} />
-                  <div style={{ fontSize: 11, color: BRAND_TEXT }}>שם, תפקיד ותאריך</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", color: BRAND_TEXT, marginBottom: 8 }}>חתימת ARC</div>
-                  <div style={{ height: 90, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", justifyContent: "center", border: `2px solid ${BRAND_BG}`, borderRadius: 8, padding: "6px 12px", gap: 3, opacity: 0.85 }}>
-                      <div style={{ fontSize: 13 }}>✓</div>
-                      <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: 0.5, color: BRAND_TEXT }}>חתום דיגיטלית</div>
-                      <div style={{ fontSize: 9, color: BRAND_TEXT }}>{new Date().toLocaleDateString("he-IL")}</div>
-                    </div>
-                  </div>
-                  <div style={{ borderBottom: `2px solid ${BRAND_TEXT}`, opacity: 0.25, marginBottom: 8 }} />
-                  <div style={{ fontSize: 11, color: BRAND_TEXT }}>אורי לבקוביץ, ARC</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div style={{ background: BRAND_BG, padding: "22px 52px", display: "flex", justifyContent: "space-between", alignItems: "center", direction: "rtl", fontFamily: FONT }}>
-              <div>
-                <div style={{ fontSize: 17, fontWeight: 700, color: BRAND_ON_BG, letterSpacing: 3 }}>ARC</div>
-                <div style={{ fontSize: 10, color: BRAND_ON_BG, opacity: 0.7, letterSpacing: 2, textTransform: "uppercase", marginTop: 2 }}>Irreplaceable Experiences</div>
-              </div>
-              <div style={{ textAlign: "left", fontSize: 11, color: BRAND_ON_BG, lineHeight: 1.9, opacity: 0.8 }}>
-                <div>Office@arc-exp.com</div>
-                <div>052-6108102</div>
-              </div>
-            </div>
-
-          </div>
+          <QuotePreviewFrame html={previewHtml} />
         </div>
       </div>
     </div>

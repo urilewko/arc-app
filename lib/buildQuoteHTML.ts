@@ -59,7 +59,11 @@ export interface QuoteData {
   blockLinks: BrandLink[];
   /** English translation of the free-text fields (matched by id), filled by the translate button. */
   en?: QuoteEnglish;
+  /** User overrides for every fixed text on the document, per language, keyed by the default Hebrew text. */
+  labels?: QuoteLabels;
 }
+
+export type QuoteLabels = { he?: Record<string, string>; en?: Record<string, string> };
 
 export interface QuoteEnglish {
   productType?: string;
@@ -111,6 +115,16 @@ const EN_LABELS: Record<string, string> = {
   "מומלץ": "Recommended",
   "סה״כ + מע״מ": "Total incl. VAT",
 };
+/** Every fixed text on the quote that can be edited from the builder (key = default Hebrew text). */
+export const FIXED_TEXT_GROUPS: { title: string; keys: string[] }[] = [
+  { title: "כותרת עליונה", keys: ["הצעת מחיר", "תאריך הצעה:", "תוקף עד:", "תאריך אירוע:", "משתתפים:", "מיקום:", "שם הארגון"] },
+  { title: "כותרות קטעים", keys: ["תוכנית הפעילות", "⚡ על החוויה", "אפשרויות לבחירה", "פירוט השירותים", "מה כלול", "הערות:", "תנאי תשלום", "מדיניות ביטול", "חומרים נוספים"] },
+  { title: "טבלת מחירים", keys: ["תיאור", "כמות", "מחיר יחידה", "סה״כ", "לפני מע״מ", "מע״מ (18%)", "סה״כ לתשלום", "מומלץ", "סה״כ + מע״מ"] },
+  { title: "חתימות", keys: ["חתימת הלקוח", "שם, תפקיד ותאריך", "חתימת ARC", "חתום דיגיטלית", "אורי לבקוביץ, ARC"] },
+  { title: "תחתית", keys: ["ARC", "Irreplaceable Experiences", "Office@arc-exp.com", "052-6108102"] },
+];
+export const defaultFixedText = (key: string, lang: QuoteLang) => (lang === "en" ? (EN_LABELS[key] ?? key) : key);
+
 const EN_MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 
@@ -192,7 +206,7 @@ export function buildQuoteHTML(
   const F = FONT;
   const en = lang === "en" ? qIn.en : undefined;
   const money = (n: number) => (lang === "en" ? `NIS ${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}` : fmt(n));
-  const tr = (he: string) => (lang === "en" ? (EN_LABELS[he] ?? he) : he);
+  const tr = (he: string) => qIn.labels?.[lang]?.[he]?.trim() || defaultFixedText(he, lang);
   const byId = <T extends { id: string }>(list: T[] | undefined, id: string) => list?.find((x) => x.id === id);
   const q: QuoteData = !en ? qIn : {
     ...qIn,
@@ -279,8 +293,8 @@ export function buildQuoteHTML(
   <thead>
     <tr><td style="padding:0;">
       <div style="background:${BRAND_BG};height:44px;display:flex;align-items:center;padding:0 44px;justify-content:space-between;direction:rtl;font-family:${F};">
-        <div style="font-size:15px;font-weight:700;color:${BRAND_ON_BG};letter-spacing:3px;font-family:${F};">ARC</div>
-        <div style="font-size:9px;color:${BRAND_ON_BG};opacity:0.6;letter-spacing:2px;text-transform:uppercase;font-family:${F};">Irreplaceable Experiences</div>
+        <div style="font-size:15px;font-weight:700;color:${BRAND_ON_BG};letter-spacing:3px;font-family:${F};">${tr("ARC")}</div>
+        <div style="font-size:9px;color:${BRAND_ON_BG};opacity:0.6;letter-spacing:2px;text-transform:uppercase;font-family:${F};">${tr("Irreplaceable Experiences")}</div>
       </div>
     </td></tr>
   </thead>
@@ -409,12 +423,12 @@ export function buildQuoteHTML(
 
 <div class="print-footer" style="background:${BRAND_BG};display:flex;justify-content:space-between;align-items:center;direction:rtl;padding:16px 44px;font-family:${F};">
   <div>
-    <div style="font-size:17px;font-weight:700;color:${BRAND_ON_BG};letter-spacing:3px;font-family:${F};">ARC</div>
-    <div style="font-size:10px;color:${BRAND_ON_BG};opacity:0.75;letter-spacing:2px;text-transform:uppercase;margin-top:2px;font-family:${F};">Irreplaceable Experiences</div>
+    <div style="font-size:17px;font-weight:700;color:${BRAND_ON_BG};letter-spacing:3px;font-family:${F};">${tr("ARC")}</div>
+    <div style="font-size:10px;color:${BRAND_ON_BG};opacity:0.75;letter-spacing:2px;text-transform:uppercase;margin-top:2px;font-family:${F};">${tr("Irreplaceable Experiences")}</div>
   </div>
   <div style="text-align:left;font-size:11px;color:${BRAND_ON_BG};line-height:1.9;font-family:${F};">
-    <div>Office@arc-exp.com</div>
-    <div>052-6108102</div>
+    <div>${tr("Office@arc-exp.com")}</div>
+    <div>${tr("052-6108102")}</div>
   </div>
 </div>
 </body>

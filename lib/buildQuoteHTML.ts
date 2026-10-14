@@ -144,7 +144,7 @@ function buildLogoTag(logoUrl: string, color = "#e7ded2") {
   return `<img src="${logoUrl}" alt="ARC" style="height:32px;width:auto;max-width:140px;object-fit:contain;display:block;filter:${filter};" />`;
 }
 
-function itemsTableHTML(items: QuoteItem[], tr: (he: string) => string = (x) => x): string {
+function itemsTableHTML(items: QuoteItem[], tr: (he: string) => string = (x) => x, money: (n: number) => string = fmt): string {
   const sub = calcItems(items);
   const vat = Math.round(sub * 0.18);
   const total = sub + vat;
@@ -164,21 +164,21 @@ function itemsTableHTML(items: QuoteItem[], tr: (he: string) => string = (x) => 
         <tr>
           <td style="padding:13px 12px;font-size:13px;border-bottom:1px solid #f0ece8;font-weight:600;color:${BRAND_TEXT};font-family:${F};">${it.description || "—"}</td>
           <td style="padding:13px 12px;font-size:13px;border-bottom:1px solid #f0ece8;text-align:center;color:#777;font-family:${F};">${it.quantity}</td>
-          <td style="padding:13px 12px;font-size:13px;border-bottom:1px solid #f0ece8;text-align:left;color:#777;font-family:${F};">${fmt(it.unitPrice)}</td>
-          <td style="padding:13px 12px;font-size:13px;border-bottom:1px solid #f0ece8;text-align:left;font-weight:700;color:${BRAND_TEXT};font-family:${F};">${fmt(it.quantity * it.unitPrice)}</td>
+          <td style="padding:13px 12px;font-size:13px;border-bottom:1px solid #f0ece8;text-align:left;color:#777;font-family:${F};">${money(it.unitPrice)}</td>
+          <td style="padding:13px 12px;font-size:13px;border-bottom:1px solid #f0ece8;text-align:left;font-weight:700;color:${BRAND_TEXT};font-family:${F};">${money(it.quantity * it.unitPrice)}</td>
         </tr>`).join("")}
       </tbody>
     </table>
     <div style="display:flex;justify-content:flex-end;margin-top:8px;">
       <div style="width:280px;font-family:${F};">
         <div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;color:#888;">
-          <span>${tr("לפני מע״מ")}</span><span>${fmt(sub)}</span>
+          <span>${tr("לפני מע״מ")}</span><span>${money(sub)}</span>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;color:#888;">
-          <span>${tr("מע״מ (18%)")}</span><span>${fmt(vat)}</span>
+          <span>${tr("מע״מ (18%)")}</span><span>${money(vat)}</span>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:19px;font-weight:700;color:${BRAND_TEXT};border-top:2px solid ${BRAND_TEXT};padding-top:12px;margin-top:6px;">
-          <span>${tr("סה״כ לתשלום")}</span><span>${fmt(total)}</span>
+          <span>${tr("סה״כ לתשלום")}</span><span>${money(total)}</span>
         </div>
       </div>
     </div>`;
@@ -191,6 +191,7 @@ export function buildQuoteHTML(
 ): string {
   const F = FONT;
   const en = lang === "en" ? qIn.en : undefined;
+  const money = (n: number) => (lang === "en" ? `NIS ${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}` : fmt(n));
   const tr = (he: string) => (lang === "en" ? (EN_LABELS[he] ?? he) : he);
   const byId = <T extends { id: string }>(list: T[] | undefined, id: string) => list?.find((x) => x.id === id);
   const q: QuoteData = !en ? qIn : {
@@ -228,14 +229,14 @@ export function buildQuoteHTML(
         ${pkg.items.map((it) => `
           <div style="display:flex;justify-content:space-between;font-size:12px;color:${BRAND_TEXT};padding:5px 0;border-bottom:1px solid #f0ece8;font-family:${F};">
             <span>${it.description || "—"}${it.quantity > 1 ? ` ×${it.quantity}` : ""}</span>
-            <span style="font-weight:600;">${fmt(it.quantity * it.unitPrice)}</span>
+            <span style="font-weight:600;">${money(it.quantity * it.unitPrice)}</span>
           </div>`).join("")}
         <div style="margin-top:14px;padding-top:10px;border-top:2px solid ${BRAND_TEXT};font-family:${F};">
           <div style="display:flex;justify-content:space-between;font-size:11px;color:#999;margin-bottom:3px;">
-            <span>${tr("לפני מע״מ")}</span><span>${fmt(pkgSub)}</span>
+            <span>${tr("לפני מע״מ")}</span><span>${money(pkgSub)}</span>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:${BRAND_TEXT};">
-            <span>${tr("סה״כ + מע״מ")}</span><span>${fmt(pkgSub + pkgVat)}</span>
+            <span>${tr("סה״כ + מע״מ")}</span><span>${money(pkgSub + pkgVat)}</span>
           </div>
         </div>
       </div>
@@ -340,7 +341,7 @@ export function buildQuoteHTML(
     </div>
 
     ${q.mode === "single"
-      ? itemsTableHTML(q.items ?? [], tr)
+      ? itemsTableHTML(q.items ?? [], tr, money)
       : `<div style="display:flex;flex-direction:column;gap:16px;">${packagesHTML}</div>`
     }
 

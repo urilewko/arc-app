@@ -237,3 +237,14 @@ create policy "auth_all" on marketing_events for all to authenticated using (tru
 create policy "auth_all" on event_checklist_items for all to authenticated using (true) with check (true);
 create policy "auth_all" on marketing_ideas for all to authenticated using (true) with check (true);
 create policy "auth_all" on debriefs for all to authenticated using (true) with check (true);
+
+-- TEAM MEMBERS (people shown in Facilitator/Enabler circles)
+create table if not exists team_members (
+  id text primary key,
+  name text default '',
+  photo_url text default '',
+  position numeric default 0,
+  created_at text default ''
+);
+alter table team_members enable row level security;
+create policy "auth_all" on team_members for all to authenticated using (true) with check (true);

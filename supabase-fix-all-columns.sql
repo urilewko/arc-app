@@ -160,3 +160,16 @@ alter table projects add column if not exists checklist_done jsonb;
 create table if not exists event_checklist_items (id text primary key, text text default '', position numeric default 0, created_at text default '');
 alter table event_checklist_items enable row level security;
 create policy "auth_all" on event_checklist_items for all to authenticated using (true) with check (true);
+
+-- TEAM MEMBERS
+create table if not exists team_members (
+  id text primary key,
+  name text default '',
+  photo_url text default '',
+  position numeric default 0,
+  created_at text default ''
+);
+alter table team_members enable row level security;
+do $$ begin
+  create policy "auth_all" on team_members for all to authenticated using (true) with check (true);
+exception when duplicate_object then null; end $$;

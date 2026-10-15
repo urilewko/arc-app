@@ -150,6 +150,14 @@ export interface Project {
   createdAt: string;
 }
 
+export interface TeamMember {
+  id: string;
+  name: string;
+  photoUrl: string;
+  position: number;
+  createdAt: string;
+}
+
 export interface ChecklistItem {
   id: string;
   text: string;
@@ -352,6 +360,7 @@ interface ARCStore {
   marketingEvents: MarketingEvent[];
   marketingIdeas: MarketingIdea[];
   checklistItems: ChecklistItem[];
+  teamMembers: TeamMember[];
 
   // UI state (not synced)
   financeYear: number;
@@ -411,6 +420,10 @@ interface ARCStore {
   updateMarketingCampaign: (id: string, c: Partial<MarketingCampaign>) => void;
   deleteMarketingCampaign: (id: string) => void;
 
+  addTeamMember: (m: Partial<TeamMember> & { name: string }) => void;
+  updateTeamMember: (id: string, patch: Partial<TeamMember>) => void;
+  deleteTeamMember: (id: string) => void;
+
   addChecklistItem: (text: string) => void;
   updateChecklistItem: (id: string, patch: Partial<ChecklistItem>) => void;
   deleteChecklistItem: (id: string) => void;
@@ -444,6 +457,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
   marketingEvents: [],
   marketingIdeas: [],
   checklistItems: [],
+  teamMembers: [],
 
   financeYear: new Date().getFullYear(),
   financePeriod: "h1",
@@ -451,7 +465,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
   setFinancePeriod: (p) => set({ financePeriod: p }),
 
   loadAll: async () => {
-    const [contacts, leads, projects, infraProjects, blocks, collaborators, financeRecords, recurringExpenses, debriefs, marketingChannels, marketingCampaigns, marketingEvents, marketingIdeas, checklistItems] =
+    const [contacts, leads, projects, infraProjects, blocks, collaborators, financeRecords, recurringExpenses, debriefs, marketingChannels, marketingCampaigns, marketingEvents, marketingIdeas, checklistItems, teamMembers] =
       await Promise.all([
         dbFetch("contacts"),
         dbFetch("leads"),
@@ -467,6 +481,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
         dbFetch("marketing_events"),
         dbFetch("marketing_ideas"),
         dbFetch("event_checklist_items"),
+        dbFetch("team_members"),
       ]);
     set({
       contacts: contacts as unknown as Contact[],
@@ -483,6 +498,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
       marketingEvents: marketingEvents as unknown as MarketingEvent[],
       marketingIdeas: marketingIdeas as unknown as MarketingIdea[],
       checklistItems: (checklistItems as unknown as ChecklistItem[]).sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
+      teamMembers: (teamMembers as unknown as TeamMember[]).sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
     });
   },
 
@@ -856,6 +872,25 @@ export const useStore = create<ARCStore>()((set, get) => ({
   deleteMarketingCampaign: (id) => {
     set((s) => ({ marketingCampaigns: s.marketingCampaigns.filter((x) => x.id !== id) }));
     dbDelete("marketing_campaigns", id);
+  },
+
+  addTeamMember: (m) => {
+    const list = get().teamMembers;
+    const row: TeamMember = {
+      id: m.id || uid(), name: m.name, photoUrl: m.photoUrl || "",
+      position: m.position ?? (list.length ? Math.max(...list.map((x) => x.position ?? 0)) + 1 : 0),
+      createdAt: new Date().toISOString(),
+    };
+    set((s) => ({ teamMembers: [...s.teamMembers, row].sort((a, b) => a.position - b.position) }));
+    dbInsert("team_members", row as unknown as Rec);
+  },
+  updateTeamMember: (id, patch) => {
+    set((s) => ({ teamMembers: s.teamMembers.map((x) => x.id === id ? { ...x, ...patch } : x) }));
+    dbUpdate("team_members", id, patch as Rec);
+  },
+  deleteTeamMember: (id) => {
+    set((s) => ({ teamMembers: s.teamMembers.filter((x) => x.id !== id) }));
+    dbDelete("team_members", id);
   },
 
   addChecklistItem: (text) => {

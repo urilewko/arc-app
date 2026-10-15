@@ -6,7 +6,7 @@ import {
 } from "@/lib/store";
 import Modal from "@/components/Modal";
 import TodoistSectionSelect from "@/components/TodoistSectionSelect";
-import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, CheckSquare, ExternalLink, RefreshCw, ListChecks, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, CheckSquare, ExternalLink, RefreshCw, ListChecks, ArrowUp, ArrowDown, Camera } from "lucide-react";
 
 const PRODUCT_TYPES: ProductType[] = ["ריטריט", "סדנה חד פעמית", "Offsite", "קורס", "אירוע"];
 const PRODUCTION_STATUSES: ProductionStatus[] = ["עוד לא התחלנו", "בעבודה", "בוצע"];
@@ -103,6 +103,27 @@ function TaskRow({ task, onStatusChange, onEdit, onDelete }: {
   );
 }
 
+const DEFAULT_TEAM = [
+  { id: "uri", name: "אורי", photoUrl: "/team/uri.jpg", position: 0, createdAt: "" },
+  { id: "yinon", name: "ינון", photoUrl: "/team/yinon.jpg", position: 1, createdAt: "" },
+];
+
+// Center-crop and shrink an uploaded photo so it can live in the DB as a small data URL.
+function resizePhoto(file: File, size = 160): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement("canvas");
+      c.width = c.height = size;
+      const side = Math.min(img.width, img.height);
+      c.getContext("2d")!.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size);
+      resolve(c.toDataURL("image/jpeg", 0.85));
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
 const initialsOf = (name: string) => {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "";
@@ -110,13 +131,18 @@ const initialsOf = (name: string) => {
   return Array.from(parts[0])[0] + Array.from(parts[1])[0];
 };
 
-function RoleCircle({ label, name, tone, onClick }: { label: string; name?: string; tone: string; onClick: () => void }) {
+function RoleCircle({ label, name, photo, tone, onClick }: { label: string; name?: string; photo?: string; tone: string; onClick: () => void }) {
   return (
     <button onClick={(e) => { e.stopPropagation(); onClick(); }} title={name ? `${label}: ${name}` : `לא מאויש — ${label}`}
       className="flex flex-col items-center gap-1 group">
-      <span className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold transition-transform group-hover:scale-105 ${
-        name ? `${tone} text-white shadow-md ring-2 ring-white` : "border-2 border-dashed border-gray-300 text-gray-300"}`}>
-        {name ? initialsOf(name) : "+"}
+      <span className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold overflow-hidden transition-transform group-hover:scale-105 ${
+        name ? `${tone} text-white shadow-md ring-[3px] ${tone.replace("bg-", "ring-")}` : "border-2 border-dashed border-gray-300 text-gray-300"}`}>
+        {name ? (
+          photo
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={photo} alt={name} className="w-full h-full object-cover" />
+            : initialsOf(name)
+        ) : "+"}
       </span>
       <span className="text-[10px] font-semibold text-gray-500 leading-none">{label}</span>
     </button>
@@ -127,7 +153,8 @@ export default function ProjectsPage() {
   const { projects, addProject, updateProject, deleteProject,
           addProjectTask, updateProjectTask, deleteProjectTask,
           financeRecords, addFinanceRecord,
-          collaborators, checklistItems, addChecklistItem, updateChecklistItem, deleteChecklistItem } = useStore();
+          collaborators, checklistItems, addChecklistItem, updateChecklistItem, deleteChecklistItem,
+          teamMembers, addTeamMember, updateTeamMember, deleteTeamMember } = useStore();
 
   const [openModal, setOpenModal] = useState(false);
   const [editing, setEditing] = useState<Project | null>(null);
@@ -142,7 +169,15 @@ export default function ProjectsPage() {
   const [staffing, setStaffing] = useState<{ id: string; orgName: string; facilitator: string; enabler: string } | null>(null);
   const [checklistEditor, setChecklistEditor] = useState(false);
   const [newCheckText, setNewCheckText] = useState("");
-  const peopleOptions = Array.from(new Set(["אורי", "ינון", ...collaborators.map((c) => c.name)].filter(Boolean)));
+  const team = teamMembers.length ? teamMembers : DEFAULT_TEAM;
+  const photoOf = (name?: string) => (name ? team.find((m) => m.name.trim() === name.trim())?.photoUrl : undefined);
+  const [teamEditor, setTeamEditor] = useState(false);
+  const [newPerson, setNewPerson] = useState("");
+  // First edit of the built-in team saves it to the DB so later edits persist.
+  const seedTeam = () => {
+    if (teamMembers.length === 0) DEFAULT_TEAM.forEach((m) => addTeamMember({ id: m.id, name: m.name, photoUrl: m.photoUrl, position: m.position }));
+  };
+  const peopleOptions = Array.from(new Set([...team.map((m) => m.name), ...collaborators.map((c) => c.name)].filter(Boolean)));
   const toggleCheck = (p: Project, itemId: string) => {
     const done = new Set(p.checklistDone || []);
     if (done.has(itemId)) done.delete(itemId); else done.add(itemId);
@@ -358,9 +393,9 @@ export default function ProjectsPage() {
                   )}
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                  <RoleCircle label="Facilitator" name={p.facilitator} tone="bg-[#2e5775]"
+                  <RoleCircle label="Facilitator" name={p.facilitator} photo={photoOf(p.facilitator)} tone="bg-[#2e5775]"
                     onClick={() => setStaffing({ id: p.id, orgName: p.orgName, facilitator: p.facilitator || "", enabler: p.enabler || "" })} />
-                  <RoleCircle label="Enabler" name={p.enabler} tone="bg-[#987859]"
+                  <RoleCircle label="Enabler" name={p.enabler} photo={photoOf(p.enabler)} tone="bg-[#987859]"
                     onClick={() => setStaffing({ id: p.id, orgName: p.orgName, facilitator: p.facilitator || "", enabler: p.enabler || "" })} />
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -698,11 +733,49 @@ export default function ProjectsPage() {
               <input list="people-options" className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="בחר או הקלד שם"
                 value={staffing.enabler} onChange={(e) => setStaffing({ ...staffing, enabler: e.target.value })} />
             </div>
+            <button onClick={() => setTeamEditor(true)} className="text-xs text-gray-400 hover:text-gray-700 flex items-center gap-1">
+              <Pencil size={11} /> ערוך אנשי צוות ותמונות
+            </button>
             <div className="flex gap-2 pt-2">
               <button onClick={() => { updateProject(staffing.id, { facilitator: staffing.facilitator.trim(), enabler: staffing.enabler.trim() }); setStaffing(null); }}
                 className="flex-1 bg-[#1a1a1a] text-white py-2 rounded-lg text-sm hover:bg-[#333]">שמור</button>
               <button onClick={() => setStaffing(null)} className="flex-1 border py-2 rounded-lg text-sm hover:bg-gray-50">ביטול</button>
             </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Team editor */}
+      {teamEditor && (
+        <Modal title="אנשי צוות" onClose={() => setTeamEditor(false)}>
+          <p className="text-xs text-gray-400 mb-3">האנשים שמופיעים ברשימת האיוש, עם תמונה. אפשר להוסיף, לשנות שם, להחליף תמונה או למחוק.</p>
+          <div className="space-y-2 mb-3">
+            {team.map((m) => (
+              <div key={m.id} className="flex items-center gap-3">
+                <label className="relative w-12 h-12 rounded-full overflow-hidden bg-gray-100 shrink-0 cursor-pointer group" title="החלף תמונה">
+                  {m.photoUrl
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={m.photoUrl} alt={m.name} className="w-full h-full object-cover" />
+                    : <span className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-400">{initialsOf(m.name)}</span>}
+                  <span className="absolute inset-0 bg-black/40 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><Camera size={16} /></span>
+                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    seedTeam();
+                    updateTeamMember(m.id, { photoUrl: await resizePhoto(f) });
+                  }} />
+                </label>
+                <input className="flex-1 border rounded-lg px-3 py-1.5 text-sm" value={m.name}
+                  onChange={(e) => { seedTeam(); updateTeamMember(m.id, { name: e.target.value }); }} />
+                <button onClick={() => { seedTeam(); deleteTeamMember(m.id); }} className="text-gray-300 hover:text-red-500"><Trash2 size={14} /></button>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input className="flex-1 border rounded-lg px-3 py-2 text-sm" placeholder="שם אדם חדש..." value={newPerson}
+              onChange={(e) => setNewPerson(e.target.value)} />
+            <button onClick={() => { if (newPerson.trim()) { seedTeam(); addTeamMember({ name: newPerson.trim() }); setNewPerson(""); } }}
+              className="bg-[#1a1a1a] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#333]">הוסף</button>
           </div>
         </Modal>
       )}

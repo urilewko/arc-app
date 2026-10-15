@@ -142,6 +142,18 @@ export interface Project {
   /** Existing Todoist section new tasks for this project are filed under — never auto-created. */
   todoistSectionId?: string;
   todoistSectionName?: string;
+  /** Event staffing — shown as prominent circles on the project card. */
+  facilitator?: string;
+  enabler?: string;
+  /** Ids of pre-event checklist items already checked for this project. */
+  checklistDone?: string[];
+  createdAt: string;
+}
+
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  position: number;
   createdAt: string;
 }
 
@@ -339,6 +351,7 @@ interface ARCStore {
   marketingCampaigns: MarketingCampaign[];
   marketingEvents: MarketingEvent[];
   marketingIdeas: MarketingIdea[];
+  checklistItems: ChecklistItem[];
 
   // UI state (not synced)
   financeYear: number;
@@ -398,6 +411,10 @@ interface ARCStore {
   updateMarketingCampaign: (id: string, c: Partial<MarketingCampaign>) => void;
   deleteMarketingCampaign: (id: string) => void;
 
+  addChecklistItem: (text: string) => void;
+  updateChecklistItem: (id: string, patch: Partial<ChecklistItem>) => void;
+  deleteChecklistItem: (id: string) => void;
+
   addMarketingIdea: (i: Omit<MarketingIdea, "id" | "createdAt">) => void;
   updateMarketingIdea: (id: string, i: Partial<MarketingIdea>) => void;
   deleteMarketingIdea: (id: string) => void;
@@ -426,6 +443,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
   marketingCampaigns: [],
   marketingEvents: [],
   marketingIdeas: [],
+  checklistItems: [],
 
   financeYear: new Date().getFullYear(),
   financePeriod: "h1",
@@ -433,7 +451,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
   setFinancePeriod: (p) => set({ financePeriod: p }),
 
   loadAll: async () => {
-    const [contacts, leads, projects, infraProjects, blocks, collaborators, financeRecords, recurringExpenses, debriefs, marketingChannels, marketingCampaigns, marketingEvents, marketingIdeas] =
+    const [contacts, leads, projects, infraProjects, blocks, collaborators, financeRecords, recurringExpenses, debriefs, marketingChannels, marketingCampaigns, marketingEvents, marketingIdeas, checklistItems] =
       await Promise.all([
         dbFetch("contacts"),
         dbFetch("leads"),
@@ -448,6 +466,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
         dbFetch("marketing_campaigns"),
         dbFetch("marketing_events"),
         dbFetch("marketing_ideas"),
+        dbFetch("event_checklist_items"),
       ]);
     set({
       contacts: contacts as unknown as Contact[],
@@ -463,6 +482,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
       marketingCampaigns: marketingCampaigns as unknown as MarketingCampaign[],
       marketingEvents: marketingEvents as unknown as MarketingEvent[],
       marketingIdeas: marketingIdeas as unknown as MarketingIdea[],
+      checklistItems: (checklistItems as unknown as ChecklistItem[]).sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
     });
   },
 
@@ -836,6 +856,21 @@ export const useStore = create<ARCStore>()((set, get) => ({
   deleteMarketingCampaign: (id) => {
     set((s) => ({ marketingCampaigns: s.marketingCampaigns.filter((x) => x.id !== id) }));
     dbDelete("marketing_campaigns", id);
+  },
+
+  addChecklistItem: (text) => {
+    const items = get().checklistItems;
+    const row: ChecklistItem = { id: uid(), text, position: items.length ? Math.max(...items.map((x) => x.position ?? 0)) + 1 : 0, createdAt: new Date().toISOString() };
+    set((s) => ({ checklistItems: [...s.checklistItems, row] }));
+    dbInsert("event_checklist_items", row as unknown as Rec);
+  },
+  updateChecklistItem: (id, patch) => {
+    set((s) => ({ checklistItems: s.checklistItems.map((x) => x.id === id ? { ...x, ...patch } : x).sort((a, b) => a.position - b.position) }));
+    dbUpdate("event_checklist_items", id, patch as Rec);
+  },
+  deleteChecklistItem: (id) => {
+    set((s) => ({ checklistItems: s.checklistItems.filter((x) => x.id !== id) }));
+    dbDelete("event_checklist_items", id);
   },
 
   addMarketingIdea: (i) => {

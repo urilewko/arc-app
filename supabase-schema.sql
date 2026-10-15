@@ -129,6 +129,14 @@ create table if not exists recurring_expenses (
   created_at text default ''
 );
 
+-- EVENT CHECKLIST (template shared by all projects)
+create table if not exists event_checklist_items (
+  id text primary key,
+  text text default '',
+  position numeric default 0,
+  created_at text default ''
+);
+
 -- MARKETING
 create table if not exists marketing_channels (
   id text primary key,
@@ -211,6 +219,7 @@ alter table recurring_expenses enable row level security;
 alter table marketing_channels enable row level security;
 alter table marketing_campaigns enable row level security;
 alter table marketing_events enable row level security;
+alter table event_checklist_items enable row level security;
 alter table marketing_ideas enable row level security;
 alter table debriefs enable row level security;
 
@@ -225,5 +234,6 @@ create policy "auth_all" on recurring_expenses for all to authenticated using (t
 create policy "auth_all" on marketing_channels for all to authenticated using (true) with check (true);
 create policy "auth_all" on marketing_campaigns for all to authenticated using (true) with check (true);
 create policy "auth_all" on marketing_events for all to authenticated using (true) with check (true);
+create policy "auth_all" on event_checklist_items for all to authenticated using (true) with check (true);
 create policy "auth_all" on marketing_ideas for all to authenticated using (true) with check (true);
 create policy "auth_all" on debriefs for all to authenticated using (true) with check (true);

@@ -6,7 +6,7 @@ import {
 } from "@/lib/store";
 import Modal from "@/components/Modal";
 import TodoistSectionSelect from "@/components/TodoistSectionSelect";
-import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, CheckSquare, ExternalLink, RefreshCw } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronDown, ChevronUp, CheckSquare, ExternalLink, RefreshCw, ListChecks, ArrowUp, ArrowDown } from "lucide-react";
 
 const PRODUCT_TYPES: ProductType[] = ["ריטריט", "סדנה חד פעמית", "Offsite", "קורס", "אירוע"];
 const PRODUCTION_STATUSES: ProductionStatus[] = ["עוד לא התחלנו", "בעבודה", "בוצע"];
@@ -103,10 +103,31 @@ function TaskRow({ task, onStatusChange, onEdit, onDelete }: {
   );
 }
 
+const initialsOf = (name: string) => {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "";
+  if (parts.length === 1) return Array.from(parts[0]).slice(0, 2).join("");
+  return Array.from(parts[0])[0] + Array.from(parts[1])[0];
+};
+
+function RoleCircle({ label, name, tone, onClick }: { label: string; name?: string; tone: string; onClick: () => void }) {
+  return (
+    <button onClick={(e) => { e.stopPropagation(); onClick(); }} title={name ? `${label}: ${name}` : `לא מאויש — ${label}`}
+      className="flex flex-col items-center gap-1 group">
+      <span className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold transition-transform group-hover:scale-105 ${
+        name ? `${tone} text-white shadow-md ring-2 ring-white` : "border-2 border-dashed border-gray-300 text-gray-300"}`}>
+        {name ? initialsOf(name) : "+"}
+      </span>
+      <span className="text-[10px] font-semibold text-gray-500 leading-none">{label}</span>
+    </button>
+  );
+}
+
 export default function ProjectsPage() {
   const { projects, addProject, updateProject, deleteProject,
           addProjectTask, updateProjectTask, deleteProjectTask,
-          financeRecords, addFinanceRecord } = useStore();
+          financeRecords, addFinanceRecord,
+          collaborators, checklistItems, addChecklistItem, updateChecklistItem, deleteChecklistItem } = useStore();
 
   const [openModal, setOpenModal] = useState(false);
   const [editing, setEditing] = useState<Project | null>(null);
@@ -118,6 +139,21 @@ export default function ProjectsPage() {
   const [editTaskForm, setEditTaskForm] = useState(emptyTask);
   const [catFilter, setCatFilter] = useState<TaskCategory | "הכל">("הכל");
   const [typeFilter, setTypeFilter] = useState<ProductType | "הכל">("הכל");
+  const [staffing, setStaffing] = useState<{ id: string; orgName: string; facilitator: string; enabler: string } | null>(null);
+  const [checklistEditor, setChecklistEditor] = useState(false);
+  const [newCheckText, setNewCheckText] = useState("");
+  const peopleOptions = Array.from(new Set(["אורי", "ינון", ...collaborators.map((c) => c.name)].filter(Boolean)));
+  const toggleCheck = (p: Project, itemId: string) => {
+    const done = new Set(p.checklistDone || []);
+    if (done.has(itemId)) done.delete(itemId); else done.add(itemId);
+    updateProject(p.id, { checklistDone: Array.from(done) });
+  };
+  const moveCheckItem = (idx: number, dir: -1 | 1) => {
+    const a = checklistItems[idx], b = checklistItems[idx + dir];
+    if (!a || !b) return;
+    updateChecklistItem(a.id, { position: b.position });
+    updateChecklistItem(b.id, { position: a.position });
+  };
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
 
@@ -304,6 +340,15 @@ export default function ProjectsPage() {
                         {prog.done}/{prog.total} משימות ({prog.pct}%)
                       </span>
                     )}
+                    {checklistItems.length > 0 && (() => {
+                      const ids = new Set(checklistItems.map((i) => i.id));
+                      const done = (p.checklistDone || []).filter((id) => ids.has(id)).length;
+                      return (
+                        <span className={`flex items-center gap-1.5 ${done === checklistItems.length ? "text-green-600 font-medium" : ""}`}>
+                          <ListChecks size={13} /> בדיקות {done}/{checklistItems.length}
+                        </span>
+                      );
+                    })()}
                   </div>
                   {prog && (
                     <div className="mt-2 h-1.5 bg-gray-100 rounded-full w-64 overflow-hidden">
@@ -311,6 +356,12 @@ export default function ProjectsPage() {
                         style={{ width: `${prog.pct}%` }} />
                     </div>
                   )}
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <RoleCircle label="Facilitator" name={p.facilitator} tone="bg-[#2e5775]"
+                    onClick={() => setStaffing({ id: p.id, orgName: p.orgName, facilitator: p.facilitator || "", enabler: p.enabler || "" })} />
+                  <RoleCircle label="Enabler" name={p.enabler} tone="bg-[#987859]"
+                    onClick={() => setStaffing({ id: p.id, orgName: p.orgName, facilitator: p.facilitator || "", enabler: p.enabler || "" })} />
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button onClick={(e) => { e.stopPropagation(); openEdit(p); }}
@@ -320,6 +371,41 @@ export default function ProjectsPage() {
                   {isOpen ? <ChevronUp size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
                 </div>
               </div>
+
+              {/* Pre-event checklist */}
+              {isOpen && (
+                <div className="border-t border-gray-100 px-5 py-4 bg-[#faf8f4]">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                      <ListChecks size={15} /> בדיקות לפני האירוע
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {(p.checklistDone || []).length > 0 && (
+                        <button onClick={() => updateProject(p.id, { checklistDone: [] })}
+                          className="text-xs text-gray-400 hover:text-gray-700">אפס סימונים</button>
+                      )}
+                      <button onClick={() => setChecklistEditor(true)}
+                        className="text-xs text-gray-500 hover:text-gray-800 flex items-center gap-1"><Pencil size={11} /> ערוך רשימה</button>
+                    </div>
+                  </div>
+                  {checklistItems.length === 0 ? (
+                    <div className="text-xs text-gray-400">אין עדיין פריטי בדיקה. לחץ &quot;ערוך רשימה&quot; כדי להוסיף.</div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
+                      {checklistItems.map((it) => {
+                        const checked = (p.checklistDone || []).includes(it.id);
+                        return (
+                          <label key={it.id} className="flex items-start gap-2 py-1 cursor-pointer text-sm">
+                            <input type="checkbox" checked={checked} onChange={() => toggleCheck(p, it.id)}
+                              className="mt-0.5 w-4 h-4 accent-green-600" />
+                            <span className={checked ? "line-through text-gray-400" : "text-gray-700"}>{it.text}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Tasks section */}
               {isOpen && (
@@ -593,6 +679,56 @@ export default function ProjectsPage() {
               <button onClick={() => setTaskModal(null)}
                 className="flex-1 border py-2 rounded-lg text-sm hover:bg-gray-50">ביטול</button>
             </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Staffing modal */}
+      {staffing && (
+        <Modal title={`איוש תפקידים — ${staffing.orgName}`} onClose={() => setStaffing(null)}>
+          <div className="space-y-3">
+            <datalist id="people-options">{peopleOptions.map((n) => <option key={n} value={n} />)}</datalist>
+            <div>
+              <label className="block text-sm font-medium mb-1">Facilitator</label>
+              <input list="people-options" className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="בחר או הקלד שם"
+                value={staffing.facilitator} onChange={(e) => setStaffing({ ...staffing, facilitator: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Enabler</label>
+              <input list="people-options" className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="בחר או הקלד שם"
+                value={staffing.enabler} onChange={(e) => setStaffing({ ...staffing, enabler: e.target.value })} />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button onClick={() => { updateProject(staffing.id, { facilitator: staffing.facilitator.trim(), enabler: staffing.enabler.trim() }); setStaffing(null); }}
+                className="flex-1 bg-[#1a1a1a] text-white py-2 rounded-lg text-sm hover:bg-[#333]">שמור</button>
+              <button onClick={() => setStaffing(null)} className="flex-1 border py-2 rounded-lg text-sm hover:bg-gray-50">ביטול</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Checklist template editor */}
+      {checklistEditor && (
+        <Modal title="רשימת בדיקות לפני אירוע" onClose={() => setChecklistEditor(false)}>
+          <p className="text-xs text-gray-400 mb-3">הרשימה משותפת לכל הפרויקטים. הסימונים נשמרים בנפרד לכל פרויקט.</p>
+          <div className="space-y-1.5 mb-3">
+            {checklistItems.length === 0 && <div className="text-sm text-gray-400 py-2">אין פריטים עדיין</div>}
+            {checklistItems.map((it, idx) => (
+              <div key={it.id} className="flex items-center gap-2">
+                <input className="flex-1 border rounded-lg px-3 py-1.5 text-sm" value={it.text}
+                  onChange={(e) => updateChecklistItem(it.id, { text: e.target.value })} />
+                <button onClick={() => moveCheckItem(idx, -1)} disabled={idx === 0} className="text-gray-300 hover:text-gray-600 disabled:opacity-30"><ArrowUp size={14} /></button>
+                <button onClick={() => moveCheckItem(idx, 1)} disabled={idx === checklistItems.length - 1} className="text-gray-300 hover:text-gray-600 disabled:opacity-30"><ArrowDown size={14} /></button>
+                <button onClick={() => deleteChecklistItem(it.id)} className="text-gray-300 hover:text-red-500"><Trash2 size={14} /></button>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input className="flex-1 border rounded-lg px-3 py-2 text-sm" placeholder="פריט חדש..." value={newCheckText}
+              onChange={(e) => setNewCheckText(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && newCheckText.trim()) { addChecklistItem(newCheckText.trim()); setNewCheckText(""); } }} />
+            <button onClick={() => { if (newCheckText.trim()) { addChecklistItem(newCheckText.trim()); setNewCheckText(""); } }}
+              className="bg-[#1a1a1a] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#333]">הוסף</button>
           </div>
         </Modal>
       )}

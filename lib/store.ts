@@ -520,6 +520,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
     dbUpdate("contacts", id, c as Rec);
   },
   deleteContact: (id) => {
+    if (typeof window !== "undefined" && !window.confirm("למחוק? הפעולה לא ניתנת לשחזור.")) return;
     set((s) => ({ contacts: s.contacts.filter((x) => x.id !== id) }));
     dbDelete("contacts", id);
   },
@@ -535,6 +536,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
     dbUpdate("leads", id, l as Rec);
   },
   deleteLead: (id) => {
+    if (typeof window !== "undefined" && !window.confirm("למחוק? הפעולה לא ניתנת לשחזור.")) return;
     set((s) => ({ leads: s.leads.filter((x) => x.id !== id) }));
     dbDelete("leads", id);
   },
@@ -591,6 +593,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
     dbUpdate("projects", id, p as Rec);
   },
   deleteProject: (id) => {
+    if (typeof window !== "undefined" && !window.confirm("למחוק? הפעולה לא ניתנת לשחזור.")) return;
     set((s) => ({ projects: s.projects.filter((x) => x.id !== id) }));
     dbDelete("projects", id);
   },
@@ -664,6 +667,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
     if (project) dbUpdate("projects", projectId, { tasks: project.tasks } as Rec);
   },
   deleteProjectTask: (projectId, taskId) => {
+    if (typeof window !== "undefined" && !window.confirm("למחוק? הפעולה לא ניתנת לשחזור.")) return;
     const prevTask = get().projects.find((p) => p.id === projectId)?.tasks?.find((t) => t.id === taskId);
     set((s) => ({
       projects: s.projects.map((p) =>
@@ -695,6 +699,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
     dbUpdate("infra_projects", id, p as Rec);
   },
   deleteInfraProject: (id) => {
+    if (typeof window !== "undefined" && !window.confirm("למחוק? הפעולה לא ניתנת לשחזור.")) return;
     set((s) => ({ infraProjects: s.infraProjects.filter((x) => x.id !== id) }));
     dbDelete("infra_projects", id);
   },
@@ -767,6 +772,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
     if (project) dbUpdate("infra_projects", projectId, { tasks: project.tasks } as Rec);
   },
   deleteInfraTask: (projectId, taskId) => {
+    if (typeof window !== "undefined" && !window.confirm("למחוק? הפעולה לא ניתנת לשחזור.")) return;
     const prevTask = get().infraProjects.find((p) => p.id === projectId)?.tasks?.find((t) => t.id === taskId);
     set((s) => ({
       infraProjects: s.infraProjects.map((p) =>
@@ -797,6 +803,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
     dbUpdate("blocks", id, b as Rec);
   },
   deleteBlock: (id) => {
+    if (typeof window !== "undefined" && !window.confirm("למחוק? הפעולה לא ניתנת לשחזור.")) return;
     set((s) => ({ blocks: s.blocks.filter((x) => x.id !== id) }));
     dbDelete("blocks", id);
   },
@@ -812,6 +819,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
     dbUpdate("collaborators", id, c as Rec);
   },
   deleteCollaborator: (id) => {
+    if (typeof window !== "undefined" && !window.confirm("למחוק? הפעולה לא ניתנת לשחזור.")) return;
     set((s) => ({ collaborators: s.collaborators.filter((x) => x.id !== id) }));
     dbDelete("collaborators", id);
   },
@@ -827,6 +835,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
     dbUpdate("finance_records", id, f as Rec);
   },
   deleteFinanceRecord: (id) => {
+    if (typeof window !== "undefined" && !window.confirm("למחוק? הפעולה לא ניתנת לשחזור.")) return;
     set((s) => ({ financeRecords: s.financeRecords.filter((x) => x.id !== id) }));
     dbDelete("finance_records", id);
   },
@@ -841,6 +850,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
     dbUpdate("recurring_expenses", id, r as Rec);
   },
   deleteRecurringExpense: (id) => {
+    if (typeof window !== "undefined" && !window.confirm("למחוק? הפעולה לא ניתנת לשחזור.")) return;
     set((s) => ({ recurringExpenses: s.recurringExpenses.filter((x) => x.id !== id) }));
     dbDelete("recurring_expenses", id);
   },
@@ -856,6 +866,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
     dbUpdate("marketing_channels", id, c as Rec);
   },
   deleteMarketingChannel: (id) => {
+    if (typeof window !== "undefined" && !window.confirm("למחוק? הפעולה לא ניתנת לשחזור.")) return;
     set((s) => ({ marketingChannels: s.marketingChannels.filter((x) => x.id !== id) }));
     dbDelete("marketing_channels", id);
   },
@@ -870,6 +881,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
     dbUpdate("marketing_campaigns", id, c as Rec);
   },
   deleteMarketingCampaign: (id) => {
+    if (typeof window !== "undefined" && !window.confirm("למחוק? הפעולה לא ניתנת לשחזור.")) return;
     set((s) => ({ marketingCampaigns: s.marketingCampaigns.filter((x) => x.id !== id) }));
     dbDelete("marketing_campaigns", id);
   },
@@ -889,6 +901,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
     dbUpdate("team_members", id, patch as Rec);
   },
   deleteTeamMember: (id) => {
+    if (typeof window !== "undefined" && !window.confirm("למחוק? הפעולה לא ניתנת לשחזור.")) return;
     set((s) => ({ teamMembers: s.teamMembers.filter((x) => x.id !== id) }));
     dbDelete("team_members", id);
   },
@@ -904,6 +917,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
     dbUpdate("event_checklist_items", id, patch as Rec);
   },
   deleteChecklistItem: (id) => {
+    if (typeof window !== "undefined" && !window.confirm("למחוק? הפעולה לא ניתנת לשחזור.")) return;
     set((s) => ({ checklistItems: s.checklistItems.filter((x) => x.id !== id) }));
     dbDelete("event_checklist_items", id);
   },
@@ -918,6 +932,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
     dbUpdate("marketing_ideas", id, i as Rec);
   },
   deleteMarketingIdea: (id) => {
+    if (typeof window !== "undefined" && !window.confirm("למחוק? הפעולה לא ניתנת לשחזור.")) return;
     set((s) => ({ marketingIdeas: s.marketingIdeas.filter((x) => x.id !== id) }));
     dbDelete("marketing_ideas", id);
   },
@@ -932,6 +947,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
     dbUpdate("marketing_events", id, e as Rec);
   },
   deleteMarketingEvent: (id) => {
+    if (typeof window !== "undefined" && !window.confirm("למחוק? הפעולה לא ניתנת לשחזור.")) return;
     set((s) => ({ marketingEvents: s.marketingEvents.filter((x) => x.id !== id) }));
     dbDelete("marketing_events", id);
   },
@@ -947,6 +963,7 @@ export const useStore = create<ARCStore>()((set, get) => ({
     dbUpdate("debriefs", id, d as Rec);
   },
   deleteDebrief: (id) => {
+    if (typeof window !== "undefined" && !window.confirm("למחוק? הפעולה לא ניתנת לשחזור.")) return;
     set((s) => ({ debriefs: s.debriefs.filter((x) => x.id !== id) }));
     dbDelete("debriefs", id);
   },

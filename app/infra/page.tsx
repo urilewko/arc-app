@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { useStore, InfraProject, InfraCategory, ProductionStatus, ExpenseItem, InfraTask, TaskStatus, TaskCategory } from "@/lib/store";
 import Modal from "@/components/Modal";
 import TodoistSectionSelect from "@/components/TodoistSectionSelect";
@@ -93,7 +93,11 @@ export default function InfraPage() {
     setOpen(false);
   };
 
-  const filtered = catFilter === "הכל" ? infraProjects : infraProjects.filter((p) => p.category === catFilter);
+  const byCat = catFilter === "הכל" ? infraProjects : infraProjects.filter((p) => p.category === catFilter);
+  // Finished projects sink to the bottom, under their own "בוצעו" heading.
+  const filtered = [...byCat.filter((p) => p.productionStatus !== "בוצע"), ...byCat.filter((p) => p.productionStatus === "בוצע")];
+  const firstDoneId = filtered.find((p) => p.productionStatus === "בוצע")?.id;
+  const hasActive = filtered.some((p) => p.productionStatus !== "בוצע");
 
   const toggleSection = (projectId: string, section: "tasks" | "expenses") => {
     setExpandedSection((prev) => ({
@@ -177,7 +181,11 @@ export default function InfraPage() {
           const section = expandedSection[p.id] || null;
 
           return (
-            <div key={p.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <Fragment key={p.id}>
+            {p.id === firstDoneId && (
+              <h2 className={`text-sm font-semibold text-gray-500 pb-1 ${hasActive ? "pt-6" : ""}`}>בוצעו ({filtered.filter((x) => x.productionStatus === "בוצע").length})</h2>
+            )}
+            <div className={`bg-white rounded-xl shadow-sm overflow-hidden ${p.productionStatus === "בוצע" ? "opacity-70" : ""}`}>
               {/* Main row */}
               <div className="p-5 flex items-start justify-between gap-4">
                 <div className="flex-1">
@@ -328,6 +336,7 @@ export default function InfraPage() {
                 </div>
               )}
             </div>
+            </Fragment>
           );
         })}
       </div>

@@ -161,6 +161,7 @@ export interface TeamMember {
 export interface ChecklistItem {
   id: string;
   text: string;
+  category?: string;
   position: number;
   createdAt: string;
 }
@@ -424,7 +425,7 @@ interface ARCStore {
   updateTeamMember: (id: string, patch: Partial<TeamMember>) => void;
   deleteTeamMember: (id: string) => void;
 
-  addChecklistItem: (text: string) => void;
+  addChecklistItem: (text: string, category?: string) => void;
   updateChecklistItem: (id: string, patch: Partial<ChecklistItem>) => void;
   deleteChecklistItem: (id: string) => void;
 
@@ -906,9 +907,9 @@ export const useStore = create<ARCStore>()((set, get) => ({
     dbDelete("team_members", id);
   },
 
-  addChecklistItem: (text) => {
+  addChecklistItem: (text, category) => {
     const items = get().checklistItems;
-    const row: ChecklistItem = { id: uid(), text, position: items.length ? Math.max(...items.map((x) => x.position ?? 0)) + 1 : 0, createdAt: new Date().toISOString() };
+    const row: ChecklistItem = { id: uid(), text, category: category || "", position: items.length ? Math.max(...items.map((x) => x.position ?? 0)) + 1 : 0, createdAt: new Date().toISOString() };
     set((s) => ({ checklistItems: [...s.checklistItems, row] }));
     dbInsert("event_checklist_items", row as unknown as Rec);
   },

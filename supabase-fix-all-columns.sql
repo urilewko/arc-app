@@ -173,3 +173,5 @@ alter table team_members enable row level security;
 do $$ begin
   create policy "auth_all" on team_members for all to authenticated using (true) with check (true);
 exception when duplicate_object then null; end $$;
+
+alter table event_checklist_items add column if not exists category text default '';

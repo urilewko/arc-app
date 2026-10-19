@@ -133,6 +133,7 @@ create table if not exists recurring_expenses (
 create table if not exists event_checklist_items (
   id text primary key,
   text text default '',
+  category text default '',
   position numeric default 0,
   created_at text default ''
 );

@@ -168,6 +168,7 @@ export default function ProjectsPage() {
   const [typeFilter, setTypeFilter] = useState<ProductType | "הכל">("הכל");
   const [staffing, setStaffing] = useState<{ id: string; orgName: string; facilitator: string; enabler: string } | null>(null);
   const [checklistEditor, setChecklistEditor] = useState(false);
+  const [newCheckCat, setNewCheckCat] = useState("");
   const [newCheckText, setNewCheckText] = useState("");
   const team = teamMembers.length ? teamMembers : DEFAULT_TEAM;
   const photoOf = (name?: string) => (name ? team.find((m) => m.name.trim() === name.trim())?.photoUrl : undefined);
@@ -183,6 +184,13 @@ export default function ProjectsPage() {
     if (done.has(itemId)) done.delete(itemId); else done.add(itemId);
     updateProject(p.id, { checklistDone: Array.from(done) });
   };
+  const checkCategories = Array.from(new Set(checklistItems.map((i) => (i.category || "").trim()).filter(Boolean)));
+  // Group items by category, in order of first appearance; uncategorized items come first without a heading.
+  const checkGroups: { cat: string; items: typeof checklistItems }[] = [];
+  [""].concat(checkCategories).forEach((cat) => {
+    const items = checklistItems.filter((i) => (i.category || "").trim() === cat);
+    if (items.length) checkGroups.push({ cat, items });
+  });
   const moveCheckItem = (idx: number, dir: -1 | 1) => {
     const a = checklistItems[idx], b = checklistItems[idx + dir];
     if (!a || !b) return;
@@ -426,15 +434,29 @@ export default function ProjectsPage() {
                   {checklistItems.length === 0 ? (
                     <div className="text-xs text-gray-400">אין עדיין פריטי בדיקה. לחץ &quot;ערוך רשימה&quot; כדי להוסיף.</div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
-                      {checklistItems.map((it) => {
-                        const checked = (p.checklistDone || []).includes(it.id);
+                    <div className="space-y-3">
+                      {checkGroups.map((g) => {
+                        const doneN = g.items.filter((it) => (p.checklistDone || []).includes(it.id)).length;
                         return (
-                          <label key={it.id} className="flex items-start gap-2 py-1 cursor-pointer text-sm">
-                            <input type="checkbox" checked={checked} onChange={() => toggleCheck(p, it.id)}
-                              className="mt-0.5 w-4 h-4 accent-green-600" />
-                            <span className={checked ? "line-through text-gray-400" : "text-gray-700"}>{it.text}</span>
-                          </label>
+                          <div key={g.cat || "_"}>
+                            {g.cat && (
+                              <div className="text-xs font-semibold text-[#987859] mb-1 flex items-center gap-2">
+                                {g.cat} <span className="text-gray-400 font-normal">{doneN}/{g.items.length}</span>
+                              </div>
+                            )}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1">
+                              {g.items.map((it) => {
+                                const checked = (p.checklistDone || []).includes(it.id);
+                                return (
+                                  <label key={it.id} className="flex items-start gap-2 py-1 cursor-pointer text-sm">
+                                    <input type="checkbox" checked={checked} onChange={() => toggleCheck(p, it.id)}
+                                      className="mt-0.5 w-4 h-4 accent-green-600" />
+                                    <span className={checked ? "line-through text-gray-400" : "text-gray-700"}>{it.text}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
                         );
                       })}
                     </div>
@@ -790,17 +812,22 @@ export default function ProjectsPage() {
               <div key={it.id} className="flex items-center gap-2">
                 <input className="flex-1 border rounded-lg px-3 py-1.5 text-sm" value={it.text}
                   onChange={(e) => updateChecklistItem(it.id, { text: e.target.value })} />
+                <input list="check-cats" className="w-28 border rounded-lg px-2 py-1.5 text-xs text-gray-600" placeholder="קטגוריה" value={it.category || ""}
+                  onChange={(e) => updateChecklistItem(it.id, { category: e.target.value })} />
                 <button onClick={() => moveCheckItem(idx, -1)} disabled={idx === 0} className="text-gray-300 hover:text-gray-600 disabled:opacity-30"><ArrowUp size={14} /></button>
                 <button onClick={() => moveCheckItem(idx, 1)} disabled={idx === checklistItems.length - 1} className="text-gray-300 hover:text-gray-600 disabled:opacity-30"><ArrowDown size={14} /></button>
                 <button onClick={() => deleteChecklistItem(it.id)} className="text-gray-300 hover:text-red-500"><Trash2 size={14} /></button>
               </div>
             ))}
           </div>
+          <datalist id="check-cats">{checkCategories.map((c) => <option key={c} value={c} />)}</datalist>
           <div className="flex gap-2">
             <input className="flex-1 border rounded-lg px-3 py-2 text-sm" placeholder="פריט חדש..." value={newCheckText}
               onChange={(e) => setNewCheckText(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && newCheckText.trim()) { addChecklistItem(newCheckText.trim()); setNewCheckText(""); } }} />
-            <button onClick={() => { if (newCheckText.trim()) { addChecklistItem(newCheckText.trim()); setNewCheckText(""); } }}
+              onKeyDown={(e) => { if (e.key === "Enter" && newCheckText.trim()) { addChecklistItem(newCheckText.trim(), newCheckCat.trim()); setNewCheckText(""); } }} />
+            <input list="check-cats" className="w-28 border rounded-lg px-2 py-2 text-xs" placeholder="קטגוריה" value={newCheckCat}
+              onChange={(e) => setNewCheckCat(e.target.value)} />
+            <button onClick={() => { if (newCheckText.trim()) { addChecklistItem(newCheckText.trim(), newCheckCat.trim()); setNewCheckText(""); } }}
               className="bg-[#1a1a1a] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#333]">הוסף</button>
           </div>
         </Modal>

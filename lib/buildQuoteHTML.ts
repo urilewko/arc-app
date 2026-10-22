@@ -114,12 +114,15 @@ const EN_LABELS: Record<string, string> = {
   "סה״כ לתשלום": "Total payable",
   "מומלץ": "Recommended",
   "סה״כ + מע״מ": "Total incl. VAT",
+  "משך:": "Duration:",
+  "גודל קבוצה:": "Group size:",
 };
 /** Every fixed text on the quote that can be edited from the builder (key = default Hebrew text). */
 export const FIXED_TEXT_GROUPS: { title: string; keys: string[] }[] = [
   { title: "כותרת עליונה", keys: ["הצעת מחיר", "תאריך הצעה:", "תוקף עד:", "תאריך אירוע:", "משתתפים:", "מיקום:", "שם הארגון"] },
   { title: "כותרות קטעים", keys: ["תוכנית הפעילות", "⚡ על החוויה", "אפשרויות לבחירה", "פירוט השירותים", "מה כלול", "הערות:", "תנאי תשלום", "מדיניות ביטול", "חומרים נוספים"] },
   { title: "טבלת מחירים", keys: ["תיאור", "כמות", "מחיר יחידה", "סה״כ", "לפני מע״מ", "מע״מ (18%)", "סה״כ לתשלום", "מומלץ", "סה״כ + מע״מ"] },
+  { title: "על החוויה", keys: ["משך:", "גודל קבוצה:"] },
   { title: "חתימות", keys: ["חתימת הלקוח", "שם, תפקיד ותאריך", "חתימת ARC", "חתום דיגיטלית", "אורי לבקוביץ, ARC"] },
   { title: "תחתית", keys: ["ARC", "Irreplaceable Experiences", "Office@arc-exp.com", "052-6108102"] },
 ];
@@ -151,51 +154,9 @@ export const fmt = (n: number) =>
 export const calcItems = (items: QuoteItem[]) =>
   items.reduce((s, it) => s + it.quantity * it.unitPrice, 0);
 
-function buildLogoTag(logoUrl: string, color = "#e7ded2") {
-  const filter = color === "#e7ded2"
-    ? "brightness(0) saturate(100%) invert(93%) sepia(10%) saturate(300%) hue-rotate(330deg) brightness(102%)"
-    : "brightness(0) invert(1)";
-  return `<img src="${logoUrl}" alt="ARC" style="height:32px;width:auto;max-width:140px;object-fit:contain;display:block;filter:${filter};" />`;
-}
-
-function itemsTableHTML(items: QuoteItem[], tr: (he: string) => string = (x) => x, money: (n: number) => string = fmt): string {
-  const sub = calcItems(items);
-  const vat = Math.round(sub * 0.18);
-  const total = sub + vat;
-  const F = FONT;
-  return `
-    <table style="width:100%;border-collapse:collapse;margin-bottom:8px;font-family:${F};">
-      <thead>
-        <tr>
-          <th style="text-align:right;font-size:11px;font-weight:600;color:#999;padding:8px 12px;border-bottom:2px solid ${BRAND_ACCENT};width:50%;font-family:${F};">${tr("תיאור")}</th>
-          <th style="text-align:center;font-size:11px;font-weight:600;color:#999;padding:8px 12px;border-bottom:2px solid ${BRAND_ACCENT};width:15%;font-family:${F};">${tr("כמות")}</th>
-          <th style="text-align:left;font-size:11px;font-weight:600;color:#999;padding:8px 12px;border-bottom:2px solid ${BRAND_ACCENT};width:18%;font-family:${F};">${tr("מחיר יחידה")}</th>
-          <th style="text-align:left;font-size:11px;font-weight:600;color:#999;padding:8px 12px;border-bottom:2px solid ${BRAND_ACCENT};width:17%;font-family:${F};">${tr("סה״כ")}</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${items.map((it) => `
-        <tr>
-          <td style="padding:13px 12px;font-size:13px;border-bottom:1px solid #f0ece8;font-weight:600;color:${BRAND_TEXT};font-family:${F};">${it.description || "—"}</td>
-          <td style="padding:13px 12px;font-size:13px;border-bottom:1px solid #f0ece8;text-align:center;color:#777;font-family:${F};">${it.quantity}</td>
-          <td style="padding:13px 12px;font-size:13px;border-bottom:1px solid #f0ece8;text-align:left;color:#777;font-family:${F};">${money(it.unitPrice)}</td>
-          <td style="padding:13px 12px;font-size:13px;border-bottom:1px solid #f0ece8;text-align:left;font-weight:700;color:${BRAND_TEXT};font-family:${F};">${money(it.quantity * it.unitPrice)}</td>
-        </tr>`).join("")}
-      </tbody>
-    </table>
-    <div style="display:flex;justify-content:flex-end;margin-top:8px;">
-      <div style="width:280px;font-family:${F};">
-        <div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;color:#888;">
-          <span>${tr("לפני מע״מ")}</span><span>${money(sub)}</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;color:#888;">
-          <span>${tr("מע״מ (18%)")}</span><span>${money(vat)}</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:19px;font-weight:700;color:${BRAND_TEXT};border-top:2px solid ${BRAND_TEXT};padding-top:12px;margin-top:6px;">
-          <span>${tr("סה״כ לתשלום")}</span><span>${money(total)}</span>
-        </div>
-      </div>
-    </div>`;
+function buildLogoTag(logoUrl: string) {
+  const filter = "brightness(0) saturate(100%) invert(93%) sepia(10%) saturate(300%) hue-rotate(330deg) brightness(102%)";
+  return `<img src="${logoUrl}" alt="ARC" style="height:34px;width:auto;max-width:150px;object-fit:contain;display:block;filter:${filter};" />`;
 }
 
 // ─── Main builder ─────────────────────────────────────────────────────────────
@@ -229,222 +190,307 @@ export function buildQuoteHTML(
   const selectedBlock = blockIn && en?.block ? { ...blockIn, ...en.block } : blockIn;
   const activeLinks = q.blockLinks?.filter((l) => l.url) ?? [];
 
+  const lbl = (k: string) => tr(k).replace(/[:：]\s*$/, "");
+  let secN = 0;
+  const sec = (title: string) =>
+    `<div class="sec-h"><span class="num">${String(++secN).padStart(2, "0")}</span><span class="lbl">${title}</span><span class="rule"></span></div>`;
+  const bracket = (inner: string) => `<span class="br-wrap"><span class="br">(</span>${inner}<span class="br">)</span></span>`;
+  const introShort = (q.intro || "").length < 260;
+
+  const itemsTable = (items: QuoteItem[]) => {
+    const sub = calcItems(items);
+    const vat = Math.round(sub * 0.18);
+    return `
+    <table class="items">
+      <thead><tr>
+        <th class="c-desc">${tr("תיאור")}</th><th class="c-qty">${tr("כמות")}</th>
+        <th class="c-num">${tr("מחיר יחידה")}</th><th class="c-num">${tr("סה״כ")}</th>
+      </tr></thead>
+      <tbody>
+        ${items.map((it) => `<tr>
+          <td class="c-desc strong">${it.description || "—"}</td>
+          <td class="c-qty">${it.quantity}</td>
+          <td class="c-num muted">${money(it.unitPrice)}</td>
+          <td class="c-num strong">${money(it.quantity * it.unitPrice)}</td></tr>`).join("")}
+      </tbody>
+    </table>
+    <div class="totals avoid">
+      <div class="trow"><span>${tr("לפני מע״מ")}</span><span class="n">${money(sub)}</span></div>
+      <div class="trow"><span>${tr("מע״מ (18%)")}</span><span class="n">${money(vat)}</span></div>
+      <div class="grand"><span class="gl">${tr("סה״כ לתשלום")}</span>${bracket(`<span class="gv">${money(sub + vat)}</span>`)}</div>
+    </div>`;
+  };
+
   const packagesHTML = (q.packages ?? []).map((pkg) => {
     const pkgSub = calcItems(pkg.items);
     const pkgVat = Math.round(pkgSub * 0.18);
     return `
-    <div style="border:2px solid ${pkg.isRecommended ? BRAND_ACCENT : "#e5e0db"};border-radius:12px;overflow:hidden;font-family:${F};page-break-inside:avoid;">
-      ${pkg.isRecommended
-        ? `<div style="background:${BRAND_ACCENT};color:white;text-align:center;font-size:11px;font-weight:700;letter-spacing:1px;padding:6px;text-transform:uppercase;font-family:${F};">${tr("מומלץ")}</div>`
-        : `<div style="height:29px;background:#d4c9bc;"></div>`}
-      <div style="padding:20px 18px;">
-        <div style="font-size:16px;font-weight:700;color:${BRAND_TEXT};margin-bottom:6px;font-family:${F};">${pkg.name}</div>
-        ${pkg.description ? `<div style="font-size:12px;color:#888;margin-bottom:14px;font-family:${F};">${pkg.description}</div>` : ""}
-        ${pkg.items.map((it) => `
-          <div style="display:flex;justify-content:space-between;font-size:12px;color:${BRAND_TEXT};padding:5px 0;border-bottom:1px solid #f0ece8;font-family:${F};">
-            <span>${it.description || "—"}${it.quantity > 1 ? ` ×${it.quantity}` : ""}</span>
-            <span style="font-weight:600;">${money(it.quantity * it.unitPrice)}</span>
-          </div>`).join("")}
-        <div style="margin-top:14px;padding-top:10px;border-top:2px solid ${BRAND_TEXT};font-family:${F};">
-          <div style="display:flex;justify-content:space-between;font-size:11px;color:#999;margin-bottom:3px;">
-            <span>${tr("לפני מע״מ")}</span><span>${money(pkgSub)}</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:${BRAND_TEXT};">
-            <span>${tr("סה״כ + מע״מ")}</span><span>${money(pkgSub + pkgVat)}</span>
-          </div>
+    <div class="pkg avoid ${pkg.isRecommended ? "rec" : ""}">
+      <div class="pkg-tag">${pkg.isRecommended ? tr("מומלץ") : "&nbsp;"}</div>
+      <div class="pkg-body">
+        <div class="pkg-name">${pkg.name}</div>
+        ${pkg.description ? `<div class="pkg-desc">${pkg.description}</div>` : ""}
+        <div class="pkg-items">
+          ${pkg.items.map((it) => `<div class="pkg-item"><span>${it.description || "—"}${it.quantity > 1 ? ` ×${it.quantity}` : ""}</span><span class="n">${money(it.quantity * it.unitPrice)}</span></div>`).join("")}
+        </div>
+        <div class="pkg-sum">
+          <div class="trow"><span>${tr("לפני מע״מ")}</span><span class="n">${money(pkgSub)}</span></div>
+          <div class="pkg-total"><span>${tr("סה״כ + מע״מ")}</span><span class="n">${money(pkgSub + pkgVat)}</span></div>
         </div>
       </div>
     </div>`;
   }).join("");
+
+  const meta: [string, string][] = ([
+    [lbl("תאריך הצעה:"), formatDate(q.quoteDate, lang)],
+    [lbl("תוקף עד:"), formatDate(q.validUntil, lang)],
+    [lbl("תאריך אירוע:"), q.eventDate ? formatDate(q.eventDate, lang) : ""],
+    [lbl("משתתפים:"), q.participants || ""],
+    [lbl("מיקום:"), q.location || ""],
+  ] as [string, string][]).filter(([, v]) => v);
+
+  const grain = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='.5'/></svg>")`;
+  const today = new Date().toLocaleDateString(lang === "en" ? "en-GB" : "he-IL");
 
   const html = `<!DOCTYPE html>
 <html dir="${lang === "en" ? "ltr" : "rtl"}" lang="${lang}">
 <head>
 <meta charset="UTF-8"/>
 <title>${tr("הצעת מחיר")} — ${q.orgName}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@200;400;600&family=Heebo:wght@300;400;500;600;700&family=Mynerve&display=swap" rel="stylesheet"/>
 <style>
+  :root{--harbor:#2e5775;--harbor-900:#172b3b;--harbor-100:#dde6ec;--linen:#e7ded2;--bg:#f7f3ed;--surface:#fcfaf6;--surface-2:#efe8de;--border:#ddd3c5;--dune:#b29a7f;--bark:#987859;--bark-700:#6f5640;--text:#22201d;--muted:#5e554b;--subtle:#6e6357;}
   *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
-  html,body{font-family:${F};background:${BRAND_PAPER};color:${BRAND_TEXT};direction:rtl;}
-  table.doc{width:100%;max-width:720px;margin:32px auto;background:${BRAND_PAPER};box-shadow:0 4px 40px rgba(46,87,117,0.12);border-radius:2px;border-collapse:collapse;}
-  @media(max-width:760px){table.doc{margin:0;border-radius:0;box-shadow:none;}}
-  thead{display:none;}
+  html,body{font-family:${F};background:var(--surface-2);color:var(--text);line-height:1.65;}
+  .n,.gv,.mono{font-variant-numeric:tabular-nums;}
+  table.doc{width:100%;max-width:760px;margin:32px auto;background:var(--bg);border-collapse:collapse;box-shadow:0 10px 30px -12px rgba(34,32,29,.22);}
+  @media(max-width:780px){table.doc{margin:0;box-shadow:none;}}
   tfoot.footer-space{display:none;}
+  .print-footer{display:none;}
+
+  .cover{position:relative;background:var(--harbor);color:var(--linen);padding:30px 48px 28px;overflow:hidden;}
+  .cover::after{content:"";position:absolute;inset:0;background-image:${grain};opacity:.10;mix-blend-mode:screen;pointer-events:none;}
+  .cover > *{position:relative;z-index:1;}
+  .cover-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:34px;}
+  .kicker{font-family:'Assistant',${F};font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;opacity:.85;}
+  .org{font-size:40px;font-weight:500;line-height:1.15;letter-spacing:-.01em;}
+  .contact{font-family:'Assistant',${F};font-weight:200;font-size:22px;line-height:1.4;margin-top:6px;opacity:.95;}
+  .ptype{margin-top:14px;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;opacity:.8;}
+  .meta{display:flex;flex-wrap:wrap;gap:18px 40px;margin-top:28px;padding-top:18px;border-top:1px solid rgba(231,222,210,.28);}
+  .meta .k{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;opacity:.7;}
+  .meta .v{font-size:15px;font-weight:500;margin-top:2px;}
+
+  .body{padding:44px 48px 40px;}
+  .lead{font-family:'Assistant',${F};font-weight:200;font-size:22px;line-height:1.55;color:var(--text);white-space:pre-line;margin-bottom:44px;}
+  .lead.long{font-weight:400;font-size:16px;line-height:1.85;color:var(--muted);}
+  .section{margin-bottom:40px;}
+  .sec-h{break-after:avoid;page-break-after:avoid;display:flex;align-items:baseline;gap:14px;margin-bottom:18px;}
+  .sec-h .num{font-family:'Mynerve',cursive;font-size:26px;color:var(--bark-700);line-height:1;}
+  .sec-h .lbl{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text);white-space:nowrap;}
+  .sec-h .rule{flex:1;height:1px;background:var(--dune);opacity:.6;transform:translateY(-3px);}
+  .avoid{break-inside:avoid;page-break-inside:avoid;}
+
+  /* dots and the line */
+  .steps{position:relative;padding-inline-start:34px;}
+  .steps::before{content:"";position:absolute;inset-inline-start:7px;top:10px;bottom:10px;width:1px;background:var(--dune);}
+  .step{position:relative;padding-bottom:26px;break-inside:avoid;page-break-inside:avoid;}
+  .step:last-child{padding-bottom:0;}
+  .step .dot{position:absolute;inset-inline-start:-34px;top:5px;width:15px;height:15px;border-radius:50%;background:var(--harbor);border:3px solid var(--bg);box-sizing:content-box;margin:-3px;}
+  .step.up .dot{background:var(--bg);border:1.5px solid var(--harbor);margin:0;}
+  .step-t{font-size:20px;font-weight:500;line-height:1.35;}
+  .step-d{margin-top:6px;font-size:15px;color:var(--muted);line-height:1.75;white-space:pre-line;}
+  .step-n{margin-top:8px;font-size:13px;color:var(--bark-700);white-space:pre-line;}
+
+  .xp{background:var(--surface-2);border-radius:8px;padding:24px 28px;}
+  .xp-name{font-size:24px;font-weight:500;line-height:1.3;}
+  .xp-tag{font-family:'Assistant',${F};font-weight:200;font-size:22px;line-height:1.4;color:var(--muted);margin-top:4px;}
+  .xp-desc{margin-top:12px;font-size:15px;color:var(--muted);line-height:1.8;}
+  .xp-meta{display:flex;gap:32px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;}
+  .xp-meta b{font-weight:600;letter-spacing:.06em;color:var(--bark-700);margin-inline-end:6px;}
+
+  table.items{width:100%;border-collapse:collapse;}
+  table.items th{background:var(--surface-2);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--subtle);padding:11px 14px;text-align:start;white-space:nowrap;}
+  table.items td{padding:14px;font-size:15px;border-bottom:1px solid var(--border);}
+  table.items tr{break-inside:avoid;page-break-inside:avoid;}
+  .c-desc{width:44%;} .c-qty{width:12%;text-align:center !important;} .c-num{width:22%;text-align:end !important;}
+  .strong{font-weight:600;} .muted{color:var(--muted);}
+  .totals{width:320px;margin-inline-start:auto;margin-top:18px;}
+  .trow{display:flex;justify-content:space-between;font-size:14px;color:var(--muted);padding:5px 0;}
+  .grand{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:14px;border-top:1px solid var(--dune);}
+  .gl{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;}
+  .br-wrap{display:inline-flex;align-items:center;direction:ltr;gap:6px;color:var(--harbor);}
+  .br{font-family:'Assistant',${F};font-weight:200;font-size:46px;line-height:1;transform:translateY(-3px);}
+  .gv{font-size:26px;font-weight:600;color:var(--harbor);}
+
+  .pkgs{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;}
+  .pkg{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;}
+  .pkg.rec{border-color:var(--harbor);}
+  .pkg-tag{height:26px;background:var(--surface-2);color:transparent;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;text-align:center;line-height:26px;}
+  .pkg.rec .pkg-tag{background:var(--harbor);color:var(--bg);}
+  .pkg-body{padding:20px;flex:1;display:flex;flex-direction:column;}
+  .pkg-name{font-size:20px;font-weight:500;}
+  .pkg-desc{font-size:13px;color:var(--muted);margin-top:4px;}
+  .pkg-items{margin-top:14px;flex:1;}
+  .pkg-item{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:7px 0;border-bottom:1px solid var(--border);}
+  .pkg-sum{margin-top:14px;}
+  .pkg-total{display:flex;justify-content:space-between;font-size:17px;font-weight:600;color:var(--harbor);padding-top:8px;border-top:1px solid var(--dune);margin-top:4px;}
+
+  .prose{font-size:15px;color:var(--muted);line-height:1.85;white-space:pre-line;}
+  .note{background:var(--surface-2);border-radius:8px;padding:18px 22px;font-size:14px;line-height:1.8;color:var(--text);white-space:pre-line;}
+  .note b{display:block;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--bark-700);margin-bottom:6px;}
+  .terms{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-bottom:40px;}
+  .term{border-top:1px solid var(--dune);padding-top:12px;}
+  .term .t{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--bark-700);margin-bottom:6px;}
+  .term .v{font-size:13px;color:var(--muted);line-height:1.8;}
+  .links{display:flex;flex-wrap:wrap;gap:8px 24px;}
+  .links a{color:var(--harbor);font-size:15px;font-weight:600;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1px;}
+
+  .sig-block{margin-top:48px;padding-top:28px;border-top:1px solid var(--dune);display:grid;grid-template-columns:1fr 1fr;gap:48px;break-inside:avoid;page-break-inside:avoid;}
+  .sig-block .t{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--bark-700);}
+  .sig-gap{height:88px;display:flex;align-items:center;}
+  .sig-line{border-bottom:1px solid var(--text);opacity:.35;margin-bottom:8px;}
+  .sig-sub{font-size:12px;color:var(--subtle);}
+  .stamp{display:inline-flex;align-items:center;gap:10px;direction:ltr;color:var(--harbor);}
+  .stamp .txt{text-align:center;direction:${lang === "en" ? "ltr" : "rtl"};}
+  .stamp .a{font-size:16px;font-weight:600;line-height:1.2;}
+  .stamp .d{font-size:11px;color:var(--subtle);font-family:ui-monospace,Menlo,monospace;}
+  .stamp .br{font-size:56px;transform:translateY(-4px);}
+
   @page{margin:0;size:A4 portrait;}
   @media print{
-    html,body{background:${BRAND_PAPER};margin:0;padding:0;zoom:1.18;}
-    table.doc{margin:0;box-shadow:none;max-width:100%;width:100%;border-radius:0;}
-    .print-footer{position:fixed;bottom:0;left:0;right:0;width:100%;background:${BRAND_BG};display:flex;justify-content:space-between;align-items:center;padding:12px 44px;font-family:${F};z-index:10;}
-    .sig-block{page-break-inside:avoid;page-break-before:avoid;}
-    .compact-header{padding:10px 44px 14px !important;}
-    .compact-body{padding:16px 44px 20px !important}
-    .sig-block{margin-top:36px !important;padding-top:22px !important;}
-    .sig-block .sig-gap{height:92px !important;}
+    html,body{background:var(--bg);margin:0;padding:0;zoom:1.18;}
+    .cover::after{display:none;}
+    table.doc{margin:0;box-shadow:none;max-width:100%;width:100%;}
+    .cover{padding:22px 44px 22px;}
+    .cover-top{margin-bottom:22px;}
+    .org{font-size:34px;}
+    .meta{margin-top:20px;}
+    .body{padding:28px 44px 20px;}
+    .lead{margin-bottom:30px;}
+    .section{margin-bottom:22px;}
+    .xp{padding:18px 24px;}
+    .sig-block{margin-top:30px;padding-top:20px;}
+    .sig-gap{height:72px;}
     tfoot.footer-space{display:table-footer-group;}
-    tfoot.footer-space td{height:76px;}
+    tfoot.footer-space td{height:70px;}
+    .print-footer{display:flex;position:fixed;bottom:0;left:0;right:0;width:100%;background:var(--harbor-900);color:var(--linen);justify-content:space-between;align-items:center;padding:13px 44px;z-index:10;}
   }
 </style>
 </head>
 <body>
 <table class="doc">
-  <thead>
-    <tr><td style="padding:0;">
-      <div style="background:${BRAND_BG};height:44px;display:flex;align-items:center;padding:0 44px;justify-content:space-between;direction:rtl;font-family:${F};">
-        <div style="font-size:15px;font-weight:700;color:${BRAND_ON_BG};letter-spacing:3px;font-family:${F};">${tr("ARC")}</div>
-        <div style="font-size:9px;color:${BRAND_ON_BG};opacity:0.6;letter-spacing:2px;text-transform:uppercase;font-family:${F};">${tr("Irreplaceable Experiences")}</div>
-      </div>
-    </td></tr>
-  </thead>
   <tbody><tr><td style="padding:0;">
-    <div class="compact-header" style="background:${BRAND_BG};padding:16px 44px 20px;direction:rtl;font-family:${F};">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <div style="text-align:left;font-family:${F};">
-          <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_ON_BG};opacity:0.6;">${tr("הצעת מחיר")}</div>
-        </div>
+    <div class="cover">
+      <div class="cover-top">
         <div>${buildLogoTag(logoUrl)}</div>
+        <div class="kicker">${tr("הצעת מחיר")}</div>
       </div>
-      <div style="display:flex;justify-content:space-between;align-items:flex-end;">
+      <div class="org">${q.orgName || tr("שם הארגון")}</div>
+      ${q.contactName ? `<div class="contact">${q.contactName}</div>` : ""}
+      ${q.productType ? `<div class="ptype">${q.productType}</div>` : ""}
+      <div class="meta">
+        ${meta.map(([k, v]) => `<div><div class="k">${k}</div><div class="v n">${v}</div></div>`).join("")}
+      </div>
+    </div>
+
+    <div class="body">
+      ${q.intro ? `<p class="lead ${introShort ? "" : "long"}">${q.intro}</p>` : ""}
+
+      ${(q.workshops ?? []).length > 0 ? `
+      <div class="section">
+        ${sec(tr("תוכנית הפעילות"))}
+        <div class="steps">
+          ${(q.workshops ?? []).map((ws, i) => `
+          <div class="step ${i === 0 ? "" : ""}">
+            <span class="dot"></span>
+            <div class="step-t">${ws.title || tr("סדנה")}</div>
+            ${ws.description ? `<div class="step-d">${ws.description}</div>` : ""}
+            ${ws.notes ? `<div class="step-n">${ws.notes}</div>` : ""}
+          </div>`).join("")}
+        </div>
+      </div>` : ""}
+
+      ${selectedBlock?.description ? `
+      <div class="section avoid">
+        ${sec(tr("⚡ על החוויה").replace(/^⚡\s*/, ""))}
+        <div class="xp">
+          <div class="xp-name">${selectedBlock.name}</div>
+          ${selectedBlock.tagline ? `<div class="xp-tag">${selectedBlock.tagline}</div>` : ""}
+          <div class="xp-desc">${selectedBlock.description}</div>
+          ${selectedBlock.duration || selectedBlock.groupSize ? `
+          <div class="xp-meta">
+            ${selectedBlock.duration ? `<span><b>${lbl("משך:")}</b>${selectedBlock.duration}</span>` : ""}
+            ${selectedBlock.groupSize ? `<span><b>${lbl("גודל קבוצה:")}</b>${selectedBlock.groupSize}</span>` : ""}
+          </div>` : ""}
+        </div>
+      </div>` : ""}
+
+      <div class="section">
+        ${sec(q.mode === "packages" ? tr("אפשרויות לבחירה") : tr("פירוט השירותים"))}
+        ${q.mode === "single" ? itemsTable(q.items ?? []) : `<div class="pkgs">${packagesHTML}</div>`}
+      </div>
+
+      ${q.includes ? `
+      <div class="section">
+        ${sec(tr("מה כלול"))}
+        <div class="prose">${q.includes}</div>
+      </div>` : ""}
+
+      ${q.notes ? `<div class="section avoid"><div class="note"><b>${lbl("הערות:")}</b>${q.notes}</div></div>` : ""}
+
+      ${q.paymentTerms || q.cancellationPolicy ? `
+      <div class="terms avoid">
+        ${q.paymentTerms ? `<div class="term"><div class="t">${tr("תנאי תשלום")}</div><div class="v">${q.paymentTerms}</div></div>` : "<div></div>"}
+        ${q.cancellationPolicy ? `<div class="term"><div class="t">${tr("מדיניות ביטול")}</div><div class="v">${q.cancellationPolicy}</div></div>` : "<div></div>"}
+      </div>` : ""}
+
+      ${activeLinks.length > 0 ? `
+      <div class="section avoid">
+        ${sec(tr("חומרים נוספים"))}
+        <div class="links">
+          ${activeLinks.map((l) => `<a href="${l.url}" target="_blank">${l.label || l.url} ↗</a>`).join("")}
+        </div>
+      </div>` : ""}
+
+      <div class="sig-block">
         <div>
-          <div style="font-size:26px;font-weight:700;color:${BRAND_ON_BG};font-family:${F};">${q.orgName || tr("שם הארגון")}</div>
-          ${q.contactName ? `<div style="font-size:13px;color:${BRAND_ON_BG};margin-top:4px;font-family:${F};">${q.contactName}</div>` : ""}
-          ${q.productType ? `<div style="font-size:11px;color:${BRAND_ON_BG};letter-spacing:1px;text-transform:uppercase;margin-top:6px;font-family:${F};">${q.productType}</div>` : ""}
+          <div class="t">${tr("חתימת הלקוח")}</div>
+          <div class="sig-gap"></div>
+          <div class="sig-line"></div>
+          <div class="sig-sub">${tr("שם, תפקיד ותאריך")}</div>
         </div>
-        <div style="text-align:left;font-size:12px;color:${BRAND_ON_BG};line-height:2;font-family:${F};">
-          <div><strong style="color:${BRAND_ON_BG};">${tr("תאריך הצעה:")}</strong> ${formatDate(q.quoteDate, lang)}</div>
-          <div><strong style="color:${BRAND_ON_BG};">${tr("תוקף עד:")}</strong> ${formatDate(q.validUntil, lang)}</div>
-          ${q.eventDate ? `<div><strong style="color:${BRAND_ON_BG};">${tr("תאריך אירוע:")}</strong> ${formatDate(q.eventDate, lang)}</div>` : ""}
-          ${q.participants ? `<div><strong style="color:${BRAND_ON_BG};">${tr("משתתפים:")}</strong> ${q.participants}</div>` : ""}
-          ${q.location ? `<div><strong style="color:${BRAND_ON_BG};">${tr("מיקום:")}</strong> ${q.location}</div>` : ""}
-        </div>
-      </div>
-    </div>
-
-  <div class="compact-body" style="padding:36px 44px;direction:rtl;font-family:${F};">
-
-    ${q.intro ? `<p style="font-size:14px;line-height:1.85;color:${BRAND_TEXT};margin-bottom:40px;white-space:pre-line;font-family:${F};">${q.intro}</p>` : ""}
-
-    ${(q.workshops ?? []).length > 0 ? `
-    <div style="margin-bottom:40px;font-family:${F};">
-      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:16px;border-bottom:2px solid ${BRAND_BG};padding-bottom:6px;font-family:${F};">${tr("תוכנית הפעילות")}</div>
-      ${(q.workshops ?? []).map((ws, i) => `
-      <div style="margin-bottom:20px;padding:18px 22px;background:#d4c9bc;border-radius:10px;border-right:4px solid ${BRAND_BG};font-family:${F};">
-        <div style="font-size:15px;font-weight:700;color:${BRAND_TEXT};margin-bottom:8px;font-family:${F};">${i + 1}. ${ws.title || tr("סדנה")}</div>
-        ${ws.description ? `<div style="font-size:13px;color:${BRAND_TEXT};line-height:1.8;white-space:pre-line;font-family:${F};">${ws.description}</div>` : ""}
-        ${ws.notes ? `<div style="margin-top:10px;font-size:12px;color:#999;font-style:italic;font-family:${F};">📌 ${ws.notes}</div>` : ""}
-      </div>`).join("")}
-    </div>` : ""}
-
-    ${selectedBlock?.description ? `
-    <div style="background:#d4c9bc;border-right:4px solid ${BRAND_BG};padding:20px 24px;border-radius:0 10px 10px 0;margin-bottom:36px;font-family:${F};">
-      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_BG};margin-bottom:8px;font-family:${F};">${tr("⚡ על החוויה")}</div>
-      <div style="font-size:15px;font-weight:700;color:${BRAND_TEXT};margin-bottom:6px;font-family:${F};">${selectedBlock.name}</div>
-      ${selectedBlock.tagline ? `<div style="font-size:13px;color:#999;font-style:italic;margin-bottom:10px;font-family:${F};">"${selectedBlock.tagline}"</div>` : ""}
-      <div style="font-size:13px;color:${BRAND_TEXT};line-height:1.75;font-family:${F};">${selectedBlock.description}</div>
-      ${selectedBlock.duration || selectedBlock.groupSize ? `
-      <div style="display:flex;gap:20px;margin-top:12px;font-size:12px;color:#999;font-family:${F};">
-        ${selectedBlock.duration ? `<span>⏱ ${selectedBlock.duration}</span>` : ""}
-        ${selectedBlock.groupSize ? `<span>👥 ${selectedBlock.groupSize}</span>` : ""}
-      </div>` : ""}
-    </div>` : ""}
-
-    <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:14px;font-family:${F};border-bottom:2px solid ${BRAND_BG};padding-bottom:6px;">
-      ${q.mode === "packages" ? tr("אפשרויות לבחירה") : tr("פירוט השירותים")}
-    </div>
-
-    ${q.mode === "single"
-      ? itemsTableHTML(q.items ?? [], tr, money)
-      : `<div style="display:flex;flex-direction:column;gap:16px;">${packagesHTML}</div>`
-    }
-
-    ${q.includes ? `
-    <div style="margin-top:36px;">
-      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:12px;border-bottom:2px solid ${BRAND_BG};padding-bottom:6px;font-family:${F};">${tr("מה כלול")}</div>
-      <div style="font-size:13px;color:${BRAND_TEXT};line-height:1.8;white-space:pre-line;font-family:${F};">${q.includes}</div>
-    </div>` : ""}
-
-    ${q.notes ? `
-    <div style="background:#d4c9bc;border-right:3px solid ${BRAND_BG};padding:16px 20px;margin-top:36px;font-size:13px;color:${BRAND_TEXT};line-height:1.75;white-space:pre-line;border-radius:0 8px 8px 0;font-family:${F};">
-      <strong style="color:${BRAND_TEXT};">${tr("הערות:")}</strong><br/>${q.notes}
-    </div>` : ""}
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:28px;font-family:${F};">
-      ${q.paymentTerms ? `
-      <div style="background:#d4c9bc;border-radius:8px;padding:14px 16px;">
-        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:6px;font-family:${F};">${tr("תנאי תשלום")}</div>
-        <div style="font-size:12px;color:${BRAND_TEXT};line-height:1.7;font-family:${F};">${q.paymentTerms}</div>
-      </div>` : ""}
-      ${q.cancellationPolicy ? `
-      <div style="background:#d4c9bc;border-radius:8px;padding:14px 16px;">
-        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:6px;font-family:${F};">${tr("מדיניות ביטול")}</div>
-        <div style="font-size:12px;color:${BRAND_TEXT};line-height:1.7;font-family:${F};">${q.cancellationPolicy}</div>
-      </div>` : ""}
-    </div>
-
-    ${activeLinks.length > 0 ? `
-    <div style="margin-top:36px;">
-      <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:12px;border-bottom:2px solid ${BRAND_BG};padding-bottom:6px;font-family:${F};">${tr("חומרים נוספים")}</div>
-      <div style="display:flex;flex-wrap:wrap;gap:10px;">
-        ${activeLinks.map((l) => `
-        <a href="${l.url}" target="_blank"
-           style="display:inline-flex;align-items:center;gap:6px;background:#d4c9bc;border:1px solid ${BRAND_BG};border-radius:8px;padding:8px 14px;font-size:13px;color:${BRAND_TEXT};text-decoration:none;font-weight:600;font-family:${F};">
-          🔗 ${l.label || l.url}
-        </a>`).join("")}
-      </div>
-    </div>` : ""}
-
-    <div class="sig-block" style="margin-top:52px;padding-top:32px;border-top:1px solid #e8e3de;display:grid;grid-template-columns:1fr 1fr;gap:48px;font-family:${F};">
-      <div>
-        <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:8px;font-family:${F};">${tr("חתימת הלקוח")}</div>
-        <div class="sig-gap" style="height:90px;"></div>
-        <div style="border-bottom:2px solid ${BRAND_TEXT};opacity:0.25;margin-bottom:8px;"></div>
-        <div style="font-size:11px;color:${BRAND_TEXT};font-family:${F};">${tr("שם, תפקיד ותאריך")}</div>
-      </div>
-      <div>
-        <div style="font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:${BRAND_TEXT};margin-bottom:8px;font-family:${F};">${tr("חתימת ARC")}</div>
-        <div class="sig-gap" style="height:90px;display:flex;align-items:center;justify-content:center;">
-          <div style="display:inline-flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid ${BRAND_BG};border-radius:8px;padding:6px 12px;gap:3px;opacity:0.85;">
-            <div style="font-size:13px;">✓</div>
-            <div style="font-size:15px;font-weight:700;letter-spacing:0.5px;color:${BRAND_TEXT};font-family:${F};">${tr("חתום דיגיטלית")}</div>
-            <div style="font-size:9px;color:#aaa;font-family:${F};">${new Date().toLocaleDateString(lang === "en" ? "en-GB" : "he-IL")}</div>
+        <div>
+          <div class="t">${tr("חתימת ARC")}</div>
+          <div class="sig-gap">
+            <div class="stamp">
+              <span class="br">(</span>
+              <div class="txt"><div class="a">${tr("חתום דיגיטלית")}</div><div class="d">${today}</div></div>
+              <span class="br">)</span>
+            </div>
           </div>
+          <div class="sig-line"></div>
+          <div class="sig-sub">${tr("אורי לבקוביץ, ARC")}</div>
         </div>
-        <div style="border-bottom:2px solid ${BRAND_TEXT};opacity:0.25;margin-bottom:8px;"></div>
-        <div style="font-size:11px;color:${BRAND_TEXT};font-family:${F};">${tr("אורי לבקוביץ, ARC")}</div>
       </div>
     </div>
-
-  </div>
   </td></tr></tbody>
   <tfoot class="footer-space"><tr><td></td></tr></tfoot>
 </table>
 
-<div class="print-footer" style="background:${BRAND_BG};display:flex;justify-content:space-between;align-items:center;direction:rtl;padding:16px 44px;font-family:${F};">
+<div class="print-footer">
   <div>
-    <div style="font-size:17px;font-weight:700;color:${BRAND_ON_BG};letter-spacing:3px;font-family:${F};">${tr("ARC")}</div>
-    <div style="font-size:10px;color:${BRAND_ON_BG};opacity:0.75;letter-spacing:2px;text-transform:uppercase;margin-top:2px;font-family:${F};">${tr("Irreplaceable Experiences")}</div>
+    <div style="font-size:16px;font-weight:600;letter-spacing:.3em;">${tr("ARC")}</div>
+    <div style="font-size:10px;opacity:.75;letter-spacing:.2em;text-transform:uppercase;margin-top:2px;">${tr("Irreplaceable Experiences")}</div>
   </div>
-  <div style="text-align:left;font-size:11px;color:${BRAND_ON_BG};line-height:1.9;font-family:${F};">
+  <div style="font-size:12px;line-height:1.8;text-align:end;">
     <div>${tr("Office@arc-exp.com")}</div>
     <div>${tr("052-6108102")}</div>
   </div>
 </div>
 </body>
 </html>`;
-  return lang === "en" ? mirrorToLtr(html) : html;
-}
-
-/** Flips right-aligned inline styles so the English document reads left-to-right. */
-function mirrorToLtr(html: string): string {
-  return html
-    .replace(/direction:rtl/g, "direction:ltr")
-    .replace(/text-align:right/g, "text-align:@@L")
-    .replace(/text-align:left/g, "text-align:right")
-    .replace(/text-align:@@L/g, "text-align:left")
-    .replace(/border-right:/g, "border-@@L:")
-    .replace(/border-left:/g, "border-right:")
-    .replace(/border-@@L:/g, "border-left:")
-    .replace(/border-radius:0 (\d+px) (\d+px) 0/g, "border-radius:$1 0 0 $2");
+  return html;
 }

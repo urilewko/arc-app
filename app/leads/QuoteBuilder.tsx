@@ -277,7 +277,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     items: [{ id: uid(), description: lead.productType || "חוויה מותאמת", quantity: 1, unitPrice: lead.dealValue || 0 }],
     packages: [defaultPkg(), { ...defaultPkg(), id: uid(), name: "אפשרות ב׳" }],
     notes: lead.notes || "",
-    cancellationPolicy: "ביטול עד שבוע לפני האירוע — החזר מלא. ביטול לאחר מכן — 50%.",
+    cancellationPolicy: "ביטול עד שבועיים לפני האירוע — החזר מלא. ביטול לאחר מכן — 50%.",
     paymentTerms: "תשלום מלא עד 30 יום לאחר האירוע.",
     selectedBlockId: "",
     blockLinks: [

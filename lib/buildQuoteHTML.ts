@@ -464,9 +464,7 @@ export function buildQuoteHTML(
           <div class="t">${tr("חתימת ARC")}</div>
           <div class="sig-gap">
             <div class="stamp">
-              <span class="br">(</span>
               <div class="txt"><div class="a">${tr("חתום דיגיטלית")}</div><div class="d">${today}</div></div>
-              <span class="br">)</span>
             </div>
           </div>
           <div class="sig-line"></div>

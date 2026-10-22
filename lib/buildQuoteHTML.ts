@@ -194,7 +194,6 @@ export function buildQuoteHTML(
   let secN = 0;
   const sec = (title: string) =>
     `<div class="sec-h"><span class="num">${String(++secN).padStart(2, "0")}</span><span class="lbl">${title}</span><span class="rule"></span></div>`;
-  const bracket = (inner: string) => `<span class="br-wrap"><span class="br">(</span>${inner}<span class="br">)</span></span>`;
   const introShort = (q.intro || "").length < 260;
 
   const itemsTable = (items: QuoteItem[]) => {
@@ -217,7 +216,7 @@ export function buildQuoteHTML(
     <div class="totals avoid">
       <div class="trow"><span>${tr("לפני מע״מ")}</span><span class="n">${money(sub)}</span></div>
       <div class="trow"><span>${tr("מע״מ (18%)")}</span><span class="n">${money(vat)}</span></div>
-      <div class="grand"><span class="gl">${tr("סה״כ לתשלום")}</span>${bracket(`<span class="gv">${money(sub + vat)}</span>`)}</div>
+      <div class="grand"><span class="gl">${tr("סה״כ לתשלום")}</span><span class="gv">${money(sub + vat)}</span></div>
     </div>`;
   };
 
@@ -321,7 +320,6 @@ export function buildQuoteHTML(
   .trow{display:flex;justify-content:space-between;font-size:14px;color:var(--muted);padding:5px 0;}
   .grand{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:14px;border-top:1px solid var(--dune);}
   .gl{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;}
-  .br-wrap{display:inline-flex;align-items:center;direction:ltr;gap:6px;color:var(--harbor);}
   .br{font-family:'Assistant',${F};font-weight:200;font-size:46px;line-height:1;transform:translateY(-3px);}
   .gv{font-size:26px;font-weight:600;color:var(--harbor);}
 

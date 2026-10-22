@@ -359,7 +359,7 @@ export function buildQuoteHTML(
 
   @page{margin:0;size:A4 portrait;}
   @media print{
-    html,body{background:var(--bg);margin:0;padding:0;zoom:1.18;}
+    html,body{background:var(--bg);margin:0;padding:0;}
     .cover::after{display:none;}
     table.doc{margin:0;box-shadow:none;max-width:100%;width:100%;}
     .cover{padding:22px 44px 22px;}
@@ -373,8 +373,8 @@ export function buildQuoteHTML(
     .sig-block{margin-top:30px;padding-top:20px;}
     .sig-gap{height:72px;}
     tfoot.footer-space{display:table-footer-group;}
-    tfoot.footer-space td{height:70px;}
-    .print-footer{display:flex;position:fixed;bottom:0;left:0;right:0;width:100%;background:var(--harbor-900);color:var(--linen);justify-content:space-between;align-items:center;padding:13px 44px;z-index:10;}
+    tfoot.footer-space td{height:84px;}
+    .print-footer{display:flex;position:fixed;bottom:0;left:0;right:0;width:100%;background:var(--harbor-900);color:var(--linen);justify-content:space-between;align-items:center;padding:16px 44px;z-index:10;}
   }
 </style>
 </head>

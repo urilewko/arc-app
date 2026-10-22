@@ -270,7 +270,7 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
     location: "",
     participants: "",
     quoteNumber: quoteNum,
-    intro: `אנו שמחים להציג בפניכם הצעה לחוויה בלתי ניתנת להחלפה עבור צוות ${lead.orgName}.\nהצעה זו נבנתה בהתאמה אישית לצרכיכם ולמטרות שהגדרתם יחד.`,
+    intro: "",
     includes: "",
     workshops: [],
     mode: "single",

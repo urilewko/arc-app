@@ -35,7 +35,7 @@ const links = [
   { href: "/infra", label: "פרויקטי תשתית", icon: Wrench },
   { href: "/collaborators", label: "אנשים שהשזם לא מזהה", icon: HandshakeIcon },
   { href: "/suppliers", label: "ספקים", icon: ShoppingCart },
-  { href: "/contacts", label: "הקהילה שלנו", icon: Users },
+  { href: "/contacts", label: "שימור לקוחות", icon: Users },
 ];
 
 export default function Sidebar() {

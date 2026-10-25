@@ -221,7 +221,7 @@ export default function DebriefForm({ debrief, onClose }: Props) {
             <textarea
               className="w-full border rounded-lg px-3 py-2 text-sm"
               rows={4}
-              placeholder={"09:00 פתיחה\n09:30 פעילות קרח\n10:00 The Blender\n12:30 ארוחת צהריים"}
+              placeholder={"09:00 פתיחה\n09:30 פעילות קרח\n10:00 Connect\n12:30 ארוחת צהריים"}
               value={scheduleText}
               onChange={(e) => setScheduleText(e.target.value)}
             />

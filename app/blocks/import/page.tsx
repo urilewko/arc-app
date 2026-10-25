@@ -6,13 +6,13 @@ import { BLOCK_SEEDS, type BlockSeed } from "@/lib/blockSeeds";
 import { ArrowRight, Check, RefreshCw, Plus, AlertTriangle } from "lucide-react";
 
 /**
- * Seeds the nine blocks distilled from Yinon's archive.
+ * Seeds the four Signature workshops (deck of 22/10/2026).
  *
  * Runs in the browser, under the signed-in user's session, because the blocks
  * table is behind RLS — a server-side script with the anon key sees nothing.
  */
 
-/** Loose match so "The Blender" in the DB finds "הבלנדר · The Blender". */
+/** Loose match so a name in the DB finds its seed, e.g. "Connect" in the DB finds "Connect" here. */
 function matchExisting(seed: BlockSeed, blocks: Block[]): Block | undefined {
   const norm = (s: string) => s.toLowerCase().replace(/[·|\-–—\s]+/g, " ").trim();
   const seedParts = norm(seed.name).split(" ").filter((w) => w.length > 2);
@@ -77,7 +77,7 @@ export default function ImportBlocksPage() {
 
       <h1 className="text-2xl font-bold text-gray-800 mb-1">ייבוא הבלוקים</h1>
       <p className="text-sm text-gray-500 mb-6">
-        9 בלוקים שחולצו מהארכיון של ינון — תוכן, חוויה, לוגיסטיקה ושיווק.
+        4 הבלוקים מהמצגת Signature workshops (22/10/2026). נמלאו רק הפרטים שבמצגת - את השאר משלימים עם ינון. הבלוקים הישנים שכבר קיימים במערכת לא נמחקים בייבוא.
       </p>
 
       <div className="flex gap-3 mb-6">

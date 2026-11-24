@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { Lead, useStore } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
 import { reportDbError } from "@/lib/dbErrors";
+import DesignedProposals from "./DesignedProposals";
 import { ChevronLeft, Plus, Trash2, Download, FileCode, Eye, Package, Zap, Link, Languages } from "lucide-react";
 import { buildQuoteHTML, FIXED_TEXT_GROUPS, defaultFixedText, type QuoteEnglish, type QuoteLang, type QuoteLabels } from "@/lib/buildQuoteHTML";
 
@@ -574,6 +575,8 @@ export default function QuoteBuilder({ lead, onClose }: { lead: Lead; onClose: (
           <Plus size={11} /> הצעה חדשה
         </button>
       </div>
+
+      <DesignedProposals leadId={lead.id} />
 
       <div className="flex flex-1 overflow-hidden">
 
